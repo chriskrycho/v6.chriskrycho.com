@@ -1,3 +1,10 @@
+use clap::Parser;
+
+mod cli;
+mod md;
+
 fn main() {
-    println!("Hello, world!");
+    let args = cli::Args::parse();
+    println!("{:?}", args.mode);
+    md::example().unwrap();
 }
