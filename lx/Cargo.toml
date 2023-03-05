@@ -8,3 +8,5 @@ rust-version = "1.67.1"
 
 [dependencies]
 markdown = "^1.0.0-alpha.7"
+tera = "1"
+"clap" = { version = "4", features = ["unicode", "derive"] }
