@@ -38,7 +38,7 @@ impl ToHTML for mdast::Node {
          mdast::Node::LinkReference(_) => todo!("LinkReference"),
          mdast::Node::Strong(strong) => strong.to_html(buffer),
          mdast::Node::Text(text) => text.to_html(buffer),
-         mdast::Node::Code(_) => todo!("Code"),
+         mdast::Node::Code(code) => code.to_html(buffer),
          mdast::Node::Math(_) => todo!("Math"),
          mdast::Node::MdxFlowExpression(_) => todo!("MdxFlowExpression"),
          mdast::Node::Heading(h) => h.to_html(buffer),
@@ -503,7 +503,7 @@ mod tests {
    }
 
    #[test]
-   fn code() {
+   fn inline_code() {
       let mut buffer = String::new();
       let ast = to_mdast(
          "Hello `world`.",
@@ -518,6 +518,21 @@ mod tests {
       .unwrap();
       ast.to_html(&mut buffer);
       assert_eq!(buffer, "<p>Hello <code>world</code>.</p>");
+   }
+
+   #[test]
+   fn code_block() {
+      let mut buffer = String::new();
+      let ast = to_mdast(
+         "```rust\nfn main() {\n    println!(\"Hello, world!\");\n}\n```",
+         &ParseOptions::default(),
+      )
+      .unwrap();
+      ast.to_html(&mut buffer);
+      assert_eq!(
+             buffer,
+             "<pre><code class=\"language-rust\">fn main() {\n    println!(\"Hello, world!\");\n}</code></pre>"
+        );
    }
 
    mod headings {
