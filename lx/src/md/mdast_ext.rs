@@ -23,7 +23,7 @@ impl ToHTML for mdast::Node {
          mdast::Node::MdxjsEsm(_) => todo!("MdxjsEsm"),
          mdast::Node::Toml(_) => todo!("Toml"),
          mdast::Node::Yaml(_) => todo!("Yaml"),
-         mdast::Node::Break(_) => todo!("Break"),
+         mdast::Node::Break(br) => br.to_html(buffer),
          mdast::Node::InlineCode(_) => todo!("InlineCode"),
          mdast::Node::InlineMath(_) => todo!("InlineMath"),
          mdast::Node::Delete(_) => todo!("Delete"),
@@ -474,6 +474,14 @@ mod tests {
       let ast = to_mdast("---", &ParseOptions::default()).unwrap();
       ast.to_html(&mut buffer);
       assert_eq!(buffer, "<hr/>");
+   }
+
+   #[test]
+   fn r#break() {
+      let mut buffer = String::new();
+      let ast = to_mdast("Hello  \nWorld", &ParseOptions::default()).unwrap();
+      ast.to_html(&mut buffer);
+      assert_eq!(buffer, "<p>Hello<br/>World</p>");
    }
 
    mod headings {
