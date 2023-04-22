@@ -2,7 +2,7 @@
 
 use markdown::mdast;
 
-trait ToHTML {
+pub(crate) trait ToHTML {
    fn to_html(&self, buffer: &mut String);
 }
 
@@ -79,13 +79,13 @@ impl ToHTML for mdast::BlockQuote {
 
 impl ToHTML for mdast::FootnoteDefinition {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("FootnoteDefinition")
    }
 }
 
 impl ToHTML for mdast::MdxJsxFlowElement {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("MdxJsxFlowElement")
    }
 }
 
@@ -169,19 +169,19 @@ impl ToHTML for mdast::List {
 
 impl ToHTML for mdast::MdxjsEsm {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("MdxjsEsm")
    }
 }
 
 impl ToHTML for mdast::Toml {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("Toml")
    }
 }
 
 impl ToHTML for mdast::Yaml {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("Yaml")
    }
 }
 
@@ -201,7 +201,7 @@ impl ToHTML for mdast::InlineCode {
 
 impl ToHTML for mdast::InlineMath {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("InlineMath")
    }
 }
 
@@ -227,13 +227,13 @@ impl ToHTML for mdast::Emphasis {
 
 impl ToHTML for mdast::MdxTextExpression {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("MdxTextExpression")
    }
 }
 
 impl ToHTML for mdast::FootnoteReference {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("FootnoteReference")
    }
 }
 
@@ -255,31 +255,31 @@ impl ToHTML for mdast::Image {
          buffer.push('"');
       }
       buffer.push('>');
-      todo!()
+      todo!("Image")
    }
 }
 
 impl ToHTML for mdast::ImageReference {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("ImageReference")
    }
 }
 
 impl ToHTML for mdast::MdxJsxTextElement {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("MdxJsxTextElement")
    }
 }
 
 impl ToHTML for mdast::Link {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("Link")
    }
 }
 
 impl ToHTML for mdast::LinkReference {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("LinkReference")
    }
 }
 
@@ -319,13 +319,13 @@ impl ToHTML for mdast::Code {
 
 impl ToHTML for mdast::Math {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("Math")
    }
 }
 
 impl ToHTML for mdast::MdxFlowExpression {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("MdxFlowExpression")
    }
 }
 
@@ -432,7 +432,7 @@ impl ToHTML for mdast::TableRow {
 
 impl ToHTML for mdast::Definition {
    fn to_html(&self, buffer: &mut String) {
-      todo!()
+      todo!("Definition")
    }
 }
 

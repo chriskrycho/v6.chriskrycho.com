@@ -1,4 +1,5 @@
 mod mdast_ext;
+use mdast_ext::ToHTML;
 
 pub fn example() -> Result<String, String> {
    let parse_options = markdown::ParseOptions {
@@ -33,8 +34,9 @@ COOL.[^really]
 Or so I have been told.
 "#;
 
-   match markdown::to_mdast(test_content, &parse_options) {
-      Ok(ast) => Ok(format!("{ast:?}")),
-      Err(reason) => Err(reason),
-   }
+   markdown::to_mdast(test_content, &parse_options).map(|ast| {
+      let mut buffer = String::with_capacity(test_content.len() * 2);
+      ast.to_html(&mut buffer);
+      buffer
+   })
 }
