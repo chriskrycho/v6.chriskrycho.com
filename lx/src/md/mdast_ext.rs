@@ -45,7 +45,7 @@ impl ToHTML for mdast::Node {
          mdast::Node::Table(table) => table.to_html(buffer),
          mdast::Node::ThematicBreak(hr) => hr.to_html(buffer),
          mdast::Node::TableRow(table_row) => table_row.to_html(buffer),
-         mdast::Node::TableCell(_) => todo!("TableCell"),
+         mdast::Node::TableCell(table_cell) => table_cell.to_html(buffer),
          // This is a 'safe' fallback for the case where it isn't handle in the
          // implementation of a `List` (but it always should be).
          mdast::Node::ListItem(list_item) => ListItem {
@@ -359,7 +359,13 @@ impl ToHTML for mdast::Table {
       // The first lets us know whether to emit `<thead>` or `<trow>` for each
       // row; the second lets us know whether to emit `align` directives, and
       // to match it up to the correct value from the `table` we are in.
+      //
+      // Additionally, we need to track whether we have emitted the `<tbody>`
+      // yet: if we have, we will not emit it again and we *will* emit the
+      // closing tag when we get to the end. If we have never emitted it, we are
+      // in a weird state, but avoid emitting a non-matching `</tbody>`.
       let mut head = true;
+      let mut body_start = true;
       for child in &self.children {
          match child {
             mdast::Node::TableRow(table_row) => {
@@ -369,36 +375,54 @@ impl ToHTML for mdast::Table {
                if head {
                   head = false;
                   buffer.push_str("<thead><tr>");
-                  for (index, cell) in table_row.children.iter().enumerate() {
-                     match cell {
+                  for (index, row_child) in table_row.children.iter().enumerate() {
+                     match row_child {
+                        // We need to emit `th` instead of `td` and also to
+                        // handle alignment, so emit ourselves instead of using
+                        // `TableCell::to_html()`.
                         mdast::Node::TableCell(table_cell) => {
+                           // Start by building the tag, with alignment.
                            buffer.push_str("<th");
                            if let Some(align) = self.align.get(index) {
-                              buffer.push_str(" align=\"");
                               match align {
-                                 mdast::AlignKind::Left => buffer.push_str("left"),
-                                 mdast::AlignKind::Right => buffer.push_str("right"),
-                                 mdast::AlignKind::Center => buffer.push_str("center"),
+                                 mdast::AlignKind::Left => {
+                                    buffer.push_str(" align=\"left\"")
+                                 }
+                                 mdast::AlignKind::Right => {
+                                    buffer.push_str(" align=\"right\"")
+                                 }
+                                 mdast::AlignKind::Center => {
+                                    buffer.push_str(" align=\"center\"")
+                                 }
                                  mdast::AlignKind::None => {}
                               }
-                              buffer.push('"');
                            }
                            buffer.push('>');
-                           for child in &table_cell.children {
-                              child.to_html(buffer);
+
+                           // Then handle its children.
+                           for cell_child in &table_cell.children {
+                              cell_child.to_html(buffer);
                            }
+
+                           // And close the tag.
                            buffer.push_str("</th>");
                         }
-                        _ => cell.to_html(buffer),
+                        _ => row_child.to_html(buffer),
                      }
                   }
                   buffer.push_str("</tr></thead>");
-               } else {
+               } else if body_start {
+                  body_start = false;
+                  buffer.push_str("<tbody>");
                   table_row.to_html(buffer);
                }
             }
             _ => child.to_html(buffer),
          }
+      }
+
+      if !body_start {
+         buffer.push_str("</tbody>");
       }
 
       buffer.push_str("</table>")
@@ -414,19 +438,20 @@ impl ToHTML for mdast::ThematicBreak {
 impl ToHTML for mdast::TableRow {
    fn to_html(&self, buffer: &mut String) {
       buffer.push_str("<tr>");
-      for cell in &self.children {
-         match cell {
-            mdast::Node::TableCell(table_cell) => {
-               buffer.push_str("<td>");
-               for child in &table_cell.children {
-                  child.to_html(buffer);
-               }
-               buffer.push_str("</td>");
-            }
-            _ => cell.to_html(buffer),
-         }
+      for child in &self.children {
+         child.to_html(buffer);
       }
       buffer.push_str("</tr>");
+   }
+}
+
+impl ToHTML for mdast::TableCell {
+   fn to_html(&self, buffer: &mut String) {
+      buffer.push_str("<td>");
+      for child in &self.children {
+         child.to_html(buffer);
+      }
+      buffer.push_str("</td>");
    }
 }
 
@@ -676,6 +701,28 @@ mod tests {
             ast.to_html(&mut buffer);
             assert_eq!(buffer, "<ol><li>Hello<ol><li><p>Good day to you!</p></li><li><p>Ahoy!</p></li></ol></li></ol>");
          }
+      }
+   }
+
+   mod tables {
+      use super::*;
+
+      #[test]
+      fn basic() {
+         let mut buffer = String::new();
+         let ast = to_mdast(
+            "| Hello | World |\n|-------|-------|\n| Foo   | Bar   |",
+            &ParseOptions {
+               constructs: Constructs {
+                  gfm_table: true,
+                  ..Constructs::default()
+               },
+               ..ParseOptions::default()
+            },
+         )
+         .unwrap();
+         ast.to_html(&mut buffer);
+         assert_eq!(buffer, "<table><thead><tr><th>Hello</th><th>World</th></tr></thead><tbody><tr><td>Foo</td><td>Bar</td></tr></tbody></table>");
       }
    }
 }
