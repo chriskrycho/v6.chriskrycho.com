@@ -25,7 +25,7 @@ impl ToHTML for mdast::Node {
             mdx_jsx_flow_element.to_html(buffer)
          }
          mdast::Node::List(list) => list.to_html(buffer),
-         mdast::Node::MdxjsEsm(_) => todo!("MdxjsEsm"),
+         mdast::Node::MdxjsEsm(mdx_js_esm) => mdx_js_esm.to_html(buffer),
          mdast::Node::Toml(_) => todo!("Toml"),
          mdast::Node::Yaml(_) => todo!("Yaml"),
          mdast::Node::Break(br) => br.to_html(buffer),
@@ -33,19 +33,25 @@ impl ToHTML for mdast::Node {
          mdast::Node::InlineMath(math) => math.to_html(buffer),
          mdast::Node::Delete(del) => del.to_html(buffer),
          mdast::Node::Emphasis(em) => em.to_html(buffer),
-         mdast::Node::MdxTextExpression(_) => todo!("MdxTextExpression"),
+         mdast::Node::MdxTextExpression(mdx_text_expression) => {
+            mdx_text_expression.to_html(buffer)
+         }
          mdast::Node::FootnoteReference(_) => todo!("FootnoteReference"),
          mdast::Node::Html(html) => html.to_html(buffer),
          mdast::Node::Image(_) => todo!("Image"),
          mdast::Node::ImageReference(_) => todo!("ImageReference"),
-         mdast::Node::MdxJsxTextElement(_) => todo!("MdxJsxTextElement"),
+         mdast::Node::MdxJsxTextElement(mdx_jsx_text_element) => {
+            mdx_jsx_text_element.to_html(buffer)
+         }
          mdast::Node::Link(_) => todo!("Link"),
          mdast::Node::LinkReference(_) => todo!("LinkReference"),
          mdast::Node::Strong(strong) => strong.to_html(buffer),
          mdast::Node::Text(text) => text.to_html(buffer),
          mdast::Node::Code(code) => code.to_html(buffer),
          mdast::Node::Math(math) => math.to_html(buffer),
-         mdast::Node::MdxFlowExpression(_) => todo!("MdxFlowExpression"),
+         mdast::Node::MdxFlowExpression(mdx_flow_expression) => {
+            mdx_flow_expression.to_html(buffer)
+         }
          mdast::Node::Heading(h) => h.to_html(buffer),
          mdast::Node::Table(table) => table.to_html(buffer),
          mdast::Node::ThematicBreak(hr) => hr.to_html(buffer),
@@ -89,8 +95,8 @@ impl ToHTML for mdast::FootnoteDefinition {
 }
 
 impl ToHTML for mdast::MdxJsxFlowElement {
-   fn to_html(&self, buffer: &mut String) {
-      todo!("MdxJsxFlowElement")
+   fn to_html(&self, _buffer: &mut String) {
+      // intentionally a no-op; do nothing with MDX!
    }
 }
 
@@ -174,8 +180,8 @@ impl ToHTML for mdast::List {
 }
 
 impl ToHTML for mdast::MdxjsEsm {
-   fn to_html(&self, buffer: &mut String) {
-      todo!("MdxjsEsm")
+   fn to_html(&self, _buffer: &mut String) {
+      // intentionally a no-op; do nothing with MDX!
    }
 }
 
@@ -235,8 +241,8 @@ impl ToHTML for mdast::Emphasis {
 }
 
 impl ToHTML for mdast::MdxTextExpression {
-   fn to_html(&self, buffer: &mut String) {
-      todo!("MdxTextExpression")
+   fn to_html(&self, _buffer: &mut String) {
+      // intentionally a no-op; do nothing with MDX!
    }
 }
 
@@ -275,8 +281,8 @@ impl ToHTML for mdast::ImageReference {
 }
 
 impl ToHTML for mdast::MdxJsxTextElement {
-   fn to_html(&self, buffer: &mut String) {
-      todo!("MdxJsxTextElement")
+   fn to_html(&self, _buffer: &mut String) {
+      // intentionally a no-op; do nothing with MDX!
    }
 }
 
@@ -335,8 +341,8 @@ impl ToHTML for mdast::Math {
 }
 
 impl ToHTML for mdast::MdxFlowExpression {
-   fn to_html(&self, buffer: &mut String) {
-      todo!("MdxFlowExpression")
+   fn to_html(&self, _buffer: &mut String) {
+      // intentionally a no-op; do nothing with MDX!
    }
 }
 
