@@ -7,6 +7,35 @@
 
 use markdown::mdast;
 
+/// Handle the internal state necessary for properly emitting links and footnotes, since
+/// in both cases the definitions can appear anywhere in the text and whether they
+/// actually produce any text is a function of whether such a definition *does* exist.
+///
+/// For example, given this input:
+///
+/// ```markdown
+/// [link-target]: https://www.chriskrycho.com
+///
+/// This is a paragraph with a [link][link-target]. Note that the link target came
+/// *before* the link which uses it! Similarly, [this link][bad-target] does not go
+/// anywhere at all.
+/// ```
+///
+/// The emitted HTML should be:
+///
+/// ```html
+/// <p>This is a paragraph with a <a href="https://www.chriskrycho.com">link.</a>
+/// Note that the link target came <em>before</em> the link which uses it!
+/// Similarly, [this link][bad-target] does not go anywhere at all.
+/// ```
+///
+/// The same basic dynamic is in play for image definitions and footnote definitions. The
+/// `State` struct tracks a set of each kind of reference and definition, and then the AST
+/// → HTML conversion can combine that state with the overall conversion state to emit the
+/// correct result once the entire document has been traversed, by doing another single
+/// pass over the state.
+struct State {}
+
 pub(crate) trait ToHTML {
    fn to_html(&self, buffer: &mut String);
 }
@@ -85,6 +114,16 @@ impl ToHTML for mdast::BlockQuote {
          child.to_html(buffer);
       }
       buffer.push_str("</blockquote>")
+   }
+}
+
+struct Footnote {
+   identifier: String,
+}
+
+impl Footnote {
+   fn to_html(&self, buffer: &mut String) {
+      todo!("implement footnote handling with state")
    }
 }
 
