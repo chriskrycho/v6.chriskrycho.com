@@ -51,7 +51,7 @@ impl ToHTML for mdast::Node {
          mdast::Node::ThematicBreak(hr) => hr.to_html(buffer),
          mdast::Node::TableRow(table_row) => table_row.to_html(buffer),
          mdast::Node::TableCell(table_cell) => table_cell.to_html(buffer),
-         // This is a 'safe' fallback for the case where it isn't handle in the
+         // This is a 'safe' fallback for the case where it isn't handled in the
          // implementation of a `List` (but it always should be).
          mdast::Node::ListItem(list_item) => ListItem {
             node: list_item,
@@ -94,6 +94,7 @@ impl ToHTML for mdast::MdxJsxFlowElement {
    }
 }
 
+/// Newtype wrapper to allow implementing a custom `to_html()`.
 struct ListItem<'i> {
    node: &'i mdast::ListItem,
    list_is_spread: bool,
