@@ -24,7 +24,7 @@ impl ToHTML for mdast::Node {
          mdast::Node::Toml(_) => todo!("Toml"),
          mdast::Node::Yaml(_) => todo!("Yaml"),
          mdast::Node::Break(br) => br.to_html(buffer),
-         mdast::Node::InlineCode(_) => todo!("InlineCode"),
+         mdast::Node::InlineCode(code) => code.to_html(buffer),
          mdast::Node::InlineMath(_) => todo!("InlineMath"),
          mdast::Node::Delete(del) => del.to_html(buffer),
          mdast::Node::Emphasis(em) => em.to_html(buffer),
@@ -500,6 +500,24 @@ mod tests {
       .unwrap();
       ast.to_html(&mut buffer);
       assert_eq!(buffer, "<p>Hello <del>world</del>.</p>");
+   }
+
+   #[test]
+   fn code() {
+      let mut buffer = String::new();
+      let ast = to_mdast(
+         "Hello `world`.",
+         &ParseOptions {
+            constructs: Constructs {
+               gfm_strikethrough: true,
+               ..Constructs::default()
+            },
+            ..ParseOptions::default()
+         },
+      )
+      .unwrap();
+      ast.to_html(&mut buffer);
+      assert_eq!(buffer, "<p>Hello <code>world</code>.</p>");
    }
 
    mod headings {
