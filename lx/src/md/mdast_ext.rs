@@ -1,4 +1,9 @@
-// Provides an extension trait for mdast that converts it to HTML.
+//! Provides an extension trait for mdast that uses it for converting it to HTML.
+//!
+//! This enables (well: *will* enable) nice things like: passing in a handler to map over
+//! the AST nodes to customize the handling, e.g. to run Syntect on code blocks to get
+//! nice syntax highlighting without doing it in JS or having to parse the HTML to ID
+//! what to run it against.
 
 use markdown::mdast;
 
@@ -8,10 +13,10 @@ pub(crate) trait ToHTML {
 
 impl ToHTML for mdast::Node {
    fn to_html(&self, buffer: &mut String) {
-      // This trivally recurses to the `to_html()` implementations on each item,
-      // taking advantage of the fact that they in turn will call `to_html` on
-      // child nodes (i.e. recursing to this call in the case where it is merely
-      // a `Node` again, or to other implementations otherwise).
+      // This trivally recurses to the `to_html()` implementations on each item, taking
+      // advantage of the fact that they in turn will call `to_html` on child nodes (i.e.
+      // recursing to this call in the case where it is merely a `Node` again, or to other
+      // implementations otherwise).
       match self {
          mdast::Node::Root(root) => root.to_html(buffer),
          mdast::Node::BlockQuote(blockquote) => blockquote.to_html(buffer),
@@ -350,35 +355,35 @@ impl ToHTML for mdast::Table {
    fn to_html(&self, buffer: &mut String) {
       buffer.push_str("<table>");
 
-      // MDAST does not include an explicit distinction between `<thead>` and
-      // `<tbody>`, so iterate over the children and track two things:
+      // MDAST does not include an explicit distinction between `<thead>` and `<tbody>`,
+      // so iterate over the children and track two things:
       //
       // 1. Are we in the head?
       // 2. If we are in the head, what column are we in?
       //
-      // The first lets us know whether to emit `<thead>` or `<trow>` for each
-      // row; the second lets us know whether to emit `align` directives, and
-      // to match it up to the correct value from the `table` we are in.
+      // The first lets us know whether to emit `<thead>` or `<trow>` for each row; the
+      // second lets us know whether to emit `align` directives, and to match it up to the
+      // correct value from the `table` we are in.
       //
-      // Additionally, we need to track whether we have emitted the `<tbody>`
-      // yet: if we have, we will not emit it again and we *will* emit the
-      // closing tag when we get to the end. If we have never emitted it, we are
-      // in a weird state, but avoid emitting a non-matching `</tbody>`.
+      // Additionally, we need to track whether we have emitted the `<tbody>` yet: if we
+      // have, we will not emit it again and we *will* emit the closing tag when we get to
+      // the end. If we have never emitted it, we are in a weird state, but avoid emitting
+      // a non-matching `</tbody>`.
       let mut head = true;
       let mut body_start = true;
       for child in &self.children {
          match child {
             mdast::Node::TableRow(table_row) => {
-               // However, note that *all* of the special handling is in the
-               // case we *are* in the `head`; otherwise we can just do the
-               // normal `TableRow::to_html()`.
+               // However, note that *all* of the special handling is in the case we *are*
+               // in the `head`; otherwise we can just do the normal
+               // `TableRow::to_html()`.
                if head {
                   head = false;
                   buffer.push_str("<thead><tr>");
                   for (index, row_child) in table_row.children.iter().enumerate() {
                      match row_child {
-                        // We need to emit `th` instead of `td` and also to
-                        // handle alignment, so emit ourselves instead of using
+                        // We need to emit `th` instead of `td` and also to handle
+                        // alignment, so emit ourselves instead of using
                         // `TableCell::to_html()`.
                         mdast::Node::TableCell(table_cell) => {
                            // Start by building the tag, with alignment.
