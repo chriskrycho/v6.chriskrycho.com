@@ -30,7 +30,7 @@ impl ToHTML for mdast::Node {
          mdast::Node::Yaml(_) => todo!("Yaml"),
          mdast::Node::Break(br) => br.to_html(buffer),
          mdast::Node::InlineCode(code) => code.to_html(buffer),
-         mdast::Node::InlineMath(_) => todo!("InlineMath"),
+         mdast::Node::InlineMath(math) => math.to_html(buffer),
          mdast::Node::Delete(del) => del.to_html(buffer),
          mdast::Node::Emphasis(em) => em.to_html(buffer),
          mdast::Node::MdxTextExpression(_) => todo!("MdxTextExpression"),
@@ -44,7 +44,7 @@ impl ToHTML for mdast::Node {
          mdast::Node::Strong(strong) => strong.to_html(buffer),
          mdast::Node::Text(text) => text.to_html(buffer),
          mdast::Node::Code(code) => code.to_html(buffer),
-         mdast::Node::Math(_) => todo!("Math"),
+         mdast::Node::Math(math) => math.to_html(buffer),
          mdast::Node::MdxFlowExpression(_) => todo!("MdxFlowExpression"),
          mdast::Node::Heading(h) => h.to_html(buffer),
          mdast::Node::Table(table) => table.to_html(buffer),
@@ -205,8 +205,11 @@ impl ToHTML for mdast::InlineCode {
 }
 
 impl ToHTML for mdast::InlineMath {
+   /// Pass through body of math unchanged, to be processed by JS etc.
    fn to_html(&self, buffer: &mut String) {
-      todo!("InlineMath")
+      buffer.push_str(r#"<code class="language-math math-inline">"#);
+      buffer.push_str(&self.value);
+      buffer.push_str("</code>")
    }
 }
 
@@ -324,7 +327,9 @@ impl ToHTML for mdast::Code {
 
 impl ToHTML for mdast::Math {
    fn to_html(&self, buffer: &mut String) {
-      todo!("Math")
+      buffer.push_str(r#"<pre><code class="language-math math-display">"#);
+      buffer.push_str(&self.value);
+      buffer.push_str("</code></pre>")
    }
 }
 
@@ -728,6 +733,51 @@ mod tests {
          .unwrap();
          ast.to_html(&mut buffer);
          assert_eq!(buffer, "<table><thead><tr><th>Hello</th><th>World</th></tr></thead><tbody><tr><td>Foo</td><td>Bar</td></tr></tbody></table>");
+      }
+   }
+
+   mod math {
+      use super::*;
+
+      #[test]
+      fn inline() {
+         let mut buffer = String::new();
+         let ast = to_mdast(
+            "This is some text with math $x + y$ and it's cool.",
+            &ParseOptions {
+               constructs: Constructs {
+                  math_flow: true,
+                  math_text: true,
+                  ..Constructs::default()
+               },
+               ..ParseOptions::default()
+            },
+         )
+         .unwrap();
+         ast.to_html(&mut buffer);
+         assert_eq!(buffer, "<p>This is some text with math <code class=\"language-math math-inline\">x + y</code> and it's cool.</p>");
+      }
+
+      #[test]
+      fn block() {
+         let mut buffer = String::new();
+         let ast = to_mdast(
+            "$$\nx = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}.\n$$",
+            &ParseOptions {
+               constructs: Constructs {
+                  math_flow: true,
+                  math_text: true,
+                  ..Constructs::default()
+               },
+               ..ParseOptions::default()
+            },
+         )
+         .unwrap();
+         ast.to_html(&mut buffer);
+         assert_eq!(
+            buffer,
+            "<pre><code class=\"language-math math-display\">x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}.</code></pre>"
+         );
       }
    }
 }
