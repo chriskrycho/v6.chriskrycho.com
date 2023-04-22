@@ -26,7 +26,7 @@ impl ToHTML for mdast::Node {
          mdast::Node::Break(br) => br.to_html(buffer),
          mdast::Node::InlineCode(_) => todo!("InlineCode"),
          mdast::Node::InlineMath(_) => todo!("InlineMath"),
-         mdast::Node::Delete(_) => todo!("Delete"),
+         mdast::Node::Delete(del) => del.to_html(buffer),
          mdast::Node::Emphasis(em) => em.to_html(buffer),
          mdast::Node::MdxTextExpression(_) => todo!("MdxTextExpression"),
          mdast::Node::FootnoteReference(_) => todo!("FootnoteReference"),
@@ -448,7 +448,7 @@ impl ToHTML for mdast::Paragraph {
 
 #[cfg(test)]
 mod tests {
-   use markdown::{to_mdast, ParseOptions};
+   use markdown::{to_mdast, Constructs, ParseOptions};
 
    use super::*;
 
@@ -482,6 +482,24 @@ mod tests {
       let ast = to_mdast("Hello  \nWorld", &ParseOptions::default()).unwrap();
       ast.to_html(&mut buffer);
       assert_eq!(buffer, "<p>Hello<br/>World</p>");
+   }
+
+   #[test]
+   fn del() {
+      let mut buffer = String::new();
+      let ast = to_mdast(
+         "Hello ~~world~~.",
+         &ParseOptions {
+            constructs: Constructs {
+               gfm_strikethrough: true,
+               ..Constructs::default()
+            },
+            ..ParseOptions::default()
+         },
+      )
+      .unwrap();
+      ast.to_html(&mut buffer);
+      assert_eq!(buffer, "<p>Hello <del>world</del>.</p>");
    }
 
    mod headings {
