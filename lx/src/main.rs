@@ -7,8 +7,8 @@ mod errors;
 mod md;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut lx = cli::Lx::parse();
-    lx.run()?;
-    md::example().unwrap();
-    Ok(())
+   let mut lx = cli::Lx::parse();
+   lx.run()?;
+   // md::example().unwrap();
+   Ok(())
 }
