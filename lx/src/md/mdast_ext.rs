@@ -1,6 +1,6 @@
 // Provides an extension trait for mdast that converts it to HTML.
 
-use markdown::mdast::{self, ThematicBreak};
+use markdown::mdast;
 
 trait ToHTML {
    fn to_html(&self, buffer: &mut String);
@@ -27,7 +27,7 @@ impl ToHTML for mdast::Node {
          mdast::Node::InlineCode(_) => todo!("InlineCode"),
          mdast::Node::InlineMath(_) => todo!("InlineMath"),
          mdast::Node::Delete(_) => todo!("Delete"),
-         mdast::Node::Emphasis(_) => todo!("Emphasis"),
+         mdast::Node::Emphasis(em) => em.to_html(buffer),
          mdast::Node::MdxTextExpression(_) => todo!("MdxTextExpression"),
          mdast::Node::FootnoteReference(_) => todo!("FootnoteReference"),
          mdast::Node::Html(html) => html.to_html(buffer),
@@ -36,14 +36,14 @@ impl ToHTML for mdast::Node {
          mdast::Node::MdxJsxTextElement(_) => todo!("MdxJsxTextElement"),
          mdast::Node::Link(_) => todo!("Link"),
          mdast::Node::LinkReference(_) => todo!("LinkReference"),
-         mdast::Node::Strong(_) => todo!("Strong"),
+         mdast::Node::Strong(strong) => strong.to_html(buffer),
          mdast::Node::Text(text) => text.to_html(buffer),
          mdast::Node::Code(_) => todo!("Code"),
          mdast::Node::Math(_) => todo!("Math"),
          mdast::Node::MdxFlowExpression(_) => todo!("MdxFlowExpression"),
          mdast::Node::Heading(h) => h.to_html(buffer),
          mdast::Node::Table(table) => table.to_html(buffer),
-         mdast::Node::ThematicBreak(br) => br.to_html(buffer),
+         mdast::Node::ThematicBreak(hr) => hr.to_html(buffer),
          mdast::Node::TableRow(table_row) => table_row.to_html(buffer),
          mdast::Node::TableCell(_) => todo!("TableCell"),
          // This is a 'safe' fallback for the case where it isn't handle in the
@@ -407,7 +407,7 @@ impl ToHTML for mdast::Table {
 
 impl ToHTML for mdast::ThematicBreak {
    fn to_html(&self, buffer: &mut String) {
-      buffer.push_str("<br/>");
+      buffer.push_str("<hr/>");
    }
 }
 
@@ -473,7 +473,7 @@ mod tests {
       let mut buffer = String::new();
       let ast = to_mdast("---", &ParseOptions::default()).unwrap();
       ast.to_html(&mut buffer);
-      assert_eq!(buffer, "<br/>");
+      assert_eq!(buffer, "<hr/>");
    }
 
    mod headings {
@@ -541,6 +541,14 @@ mod tests {
          let ast = to_mdast("###### H6", &ParseOptions::default()).unwrap();
          ast.to_html(&mut buffer);
          assert_eq!(buffer, "<h6>H6</h6>");
+      }
+
+      #[test]
+      fn with_embedded_formatting() {
+         let mut buffer = String::new();
+         let ast = to_mdast("# *H1*", &ParseOptions::default()).unwrap();
+         ast.to_html(&mut buffer);
+         assert_eq!(buffer, "<h1><em>H1</em></h1>");
       }
    }
 
