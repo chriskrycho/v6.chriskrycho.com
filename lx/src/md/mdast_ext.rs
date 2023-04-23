@@ -106,8 +106,12 @@ impl FirstPassState {
 
 /// Once the first pass has finished, we can iterate the emitted Vec<Content>
 fn second_pass(first_pass_result: FirstPassResult, buffer: &mut String) {
-   // Identifier -> list of back-refs in the order they appear in the document.
+   // Identifier -> list of back-refs in the order they appear in the document. Only used
+   // with footnotes, but we have to build up the list of these by way of seeing how they
+   // are actually emitted in the document, since we won't be emitting back-refs for
+   // footnotes we actually don't emit!
    let mut footnote_backrefs = HashMap::<String, Vec<String>>::new();
+
    for entry in first_pass_result.content.iter() {
       match entry {
          Content::String(s) => buffer.push_str(s.as_str()),
@@ -116,7 +120,9 @@ fn second_pass(first_pass_result: FirstPassResult, buffer: &mut String) {
             emit_link_ref(&first_pass_result.defs, l_ref, buffer);
          }
 
-         Content::Reference(Reference::Image(i_ref)) => todo!(),
+         Content::Reference(Reference::Image(i_ref)) => {
+            emit_image_ref(&first_pass_result.defs, i_ref, buffer)
+         }
 
          Content::Reference(Reference::Footnote(f_ref)) => {
             let backrefs =
@@ -239,6 +245,48 @@ fn emit_link_ref(
             mdast::ReferenceKind::Shortcut => {
                buffer.push('[');
                buffer.push_str(&l_ref.identifier);
+               buffer.push(']');
+            }
+            mdast::ReferenceKind::Collapsed => buffer.push_str("[]"),
+         }
+      }
+   }
+}
+
+fn emit_image_ref(
+   defs: &HashMap<String, mdast::Definition>,
+   i_ref: &mdast::ImageReference,
+   buffer: &mut String,
+) {
+   match defs.get(&i_ref.identifier) {
+      // Given we have a definition, we can transform the reference into an
+      // anchor tag
+      Some(def) => {
+         buffer.push_str("<img src=\"");
+         buffer.push_str(&def.url);
+         buffer.push('"');
+         if let Some(ref title) = def.title {
+            buffer.push_str(" alt=\"");
+            buffer.push_str(title.as_str());
+         }
+         buffer.push_str("/>");
+      }
+      // When we have no definition, we just put back the text as we originally
+      // got it, i.e. full `[foo][a]`, shortcut `[foo]`, or collapsed `[foo][]`.
+      None => {
+         let mut buffer = String::new();
+         buffer.push('[');
+         buffer.push_str(&i_ref.identifier);
+         buffer.push(']');
+         match i_ref.reference_kind {
+            mdast::ReferenceKind::Full => {
+               buffer.push('[');
+               buffer.push_str(&i_ref.identifier);
+               buffer.push(']');
+            }
+            mdast::ReferenceKind::Shortcut => {
+               buffer.push('[');
+               buffer.push_str(&i_ref.identifier);
                buffer.push(']');
             }
             mdast::ReferenceKind::Collapsed => buffer.push_str("[]"),
