@@ -5,6 +5,9 @@
 //! nice syntax highlighting without doing it in JS or having to parse the HTML to ID
 //! what to run it against.
 
+use std::collections::HashMap;
+
+use clap::builder::Str;
 use markdown::mdast;
 
 /// Handle the internal state necessary for properly emitting links and footnotes, since
@@ -34,7 +37,156 @@ use markdown::mdast;
 /// → HTML conversion can combine that state with the overall conversion state to emit the
 /// correct result once the entire document has been traversed, by doing another single
 /// pass over the state.
-struct State {}
+#[derive(Default, Debug)]
+struct FirstPassState {
+   curr_buf: String,
+   content: Vec<Content>,
+   defs: HashMap<String, mdast::Definition>,
+   footnote_defs: HashMap<String, mdast::FootnoteDefinition>,
+}
+
+/// Once I complete the first pass, there is no longer a current buffer, and the list of
+/// definitions and footnote definitions is the full set.
+struct FirstPassResult {
+   content: Vec<Content>,
+   defs: HashMap<String, mdast::Definition>,
+   footnote_defs: HashMap<String, mdast::FootnoteDefinition>,
+}
+
+/// Given an MDAST instance, do a first pass to generate all HTML which can be known
+/// *from* a first pass.
+fn first_pass(ast: &mdast::Node) -> FirstPassResult {
+   let mut state = FirstPassState::default();
+
+   // TODO: implement AST walk
+
+   state.finalize()
+}
+
+impl FirstPassState {
+   fn finalize(mut self) -> FirstPassResult {
+      let last = self.curr_buf;
+      self.content.push(Content::String(last));
+      FirstPassResult {
+         content: self.content,
+         defs: self.defs,
+         footnote_defs: self.footnote_defs,
+      }
+   }
+
+   fn add_definition(&mut self, def: mdast::Definition) {
+      self.defs.insert(def.identifier.clone(), def);
+   }
+
+   fn add_footnote_definition(mut self, def: mdast::FootnoteDefinition) {
+      self.footnote_defs.insert(def.identifier.clone(), def);
+   }
+
+   fn add_link_ref(&mut self, reference: mdast::LinkReference) {
+      self.add_ref(Reference::Link(reference));
+   }
+
+   fn add_image_ref(&mut self, reference: mdast::ImageReference) {
+      self.add_ref(Reference::Image(reference));
+   }
+
+   fn add_footnote_ref(&mut self, reference: mdast::FootnoteReference) {
+      self.add_ref(Reference::Footnote(reference));
+   }
+
+   fn add_ref(&mut self, reference: Reference) {
+      // Initializes the new buffer at self.current and gives us the old one. We need to
+      // do this to
+      self.next_buffer();
+      self.content.push(Content::Reference(reference));
+   }
+
+   fn next_buffer(&mut self) {
+      let previous = std::mem::take(&mut self.curr_buf);
+      self.content.push(Content::String(previous));
+   }
+}
+
+/// Once the first pass has finished, we can iterate the emitted Vec<Content>
+fn second_pass(
+   FirstPassResult {
+      content,
+      defs,
+      footnote_defs,
+   }: FirstPassResult,
+   buffer: &mut String,
+) {
+   for entry in content.iter() {
+      match entry {
+         Content::String(s) => buffer.push_str(s.as_str()),
+
+         Content::Reference(Reference::Link(l_ref)) => {
+            match defs.get(&l_ref.identifier) {
+               // Given we have a definition, we can transform the reference into an
+               // anchor tag
+               Some(def) => {
+                  buffer.push_str("<a href=\"");
+                  buffer.push_str(&def.url);
+                  buffer.push('"');
+                  if let Some(ref title) = def.title {
+                     buffer.push_str(" title=\"");
+                     buffer.push_str(title.as_str());
+                  }
+                  buffer.push('>');
+                  for _child in &l_ref.children {
+                     // TODO: parse 'em!
+                  }
+                  buffer.push_str("</a>");
+               }
+               // When we have no definition, we just put back the text as we originally
+               // got it, i.e. full `[foo][a]`, shortcut `[foo]`, or collapsed `[foo][]`.
+               None => {
+                  let mut buffer = String::new();
+                  buffer.push('[');
+                  buffer.push_str(&l_ref.identifier);
+                  buffer.push(']');
+                  match l_ref.reference_kind {
+                     mdast::ReferenceKind::Full => {
+                        buffer.push('[');
+                        buffer.push_str(&l_ref.identifier);
+                        buffer.push(']');
+                     }
+                     mdast::ReferenceKind::Shortcut => {
+                        buffer.push('[');
+                        buffer.push_str(&l_ref.identifier);
+                        buffer.push(']');
+                     }
+                     mdast::ReferenceKind::Collapsed => buffer.push_str("[]"),
+                  }
+               }
+            }
+         }
+         Content::Reference(Reference::Image(i_ref)) => todo!(),
+         Content::Reference(Reference::Footnote(f_ref)) => todo!(),
+      }
+   }
+
+   // Now, emit all the footnote definitions
+   // TODO: handle multiple back-refs
+}
+
+#[derive(Debug)]
+enum Content {
+   String(String),
+   Reference(Reference),
+}
+
+#[derive(Debug)]
+enum Reference {
+   Link(mdast::LinkReference),
+   Image(mdast::ImageReference),
+   Footnote(mdast::FootnoteReference),
+}
+
+pub(crate) fn ast_to_html(ast: &mdast::Node, buffer: &mut String) {
+   let first_pass_result = first_pass(ast);
+   second_pass(first_pass_result, buffer);
+}
 
 pub(crate) trait ToHTML {
    fn to_html(&self, buffer: &mut String);
