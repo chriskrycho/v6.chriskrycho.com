@@ -96,71 +96,24 @@ impl FirstPassState {
 
    fn add_ref(&mut self, reference: Reference) {
       // Initializes the new buffer at self.current and gives us the old one. We need to
-      // do this to
-      self.next_buffer();
-      self.content.push(Content::Reference(reference));
-   }
-
-   fn next_buffer(&mut self) {
+      // do this to allow toggling between known `String` contents (where we can just emit
+      // in the first pass) and `Reference` types (where we need the second pass).
       let previous = std::mem::take(&mut self.curr_buf);
       self.content.push(Content::String(previous));
+      self.content.push(Content::Reference(reference));
    }
 }
 
 /// Once the first pass has finished, we can iterate the emitted Vec<Content>
-fn second_pass(
-   FirstPassResult {
-      content,
-      defs,
-      footnote_defs,
-   }: FirstPassResult,
-   buffer: &mut String,
-) {
-   for entry in content.iter() {
+fn second_pass(first_pass_result: FirstPassResult, buffer: &mut String) {
+   for entry in first_pass_result.content.iter() {
       match entry {
          Content::String(s) => buffer.push_str(s.as_str()),
 
          Content::Reference(Reference::Link(l_ref)) => {
-            match defs.get(&l_ref.identifier) {
-               // Given we have a definition, we can transform the reference into an
-               // anchor tag
-               Some(def) => {
-                  buffer.push_str("<a href=\"");
-                  buffer.push_str(&def.url);
-                  buffer.push('"');
-                  if let Some(ref title) = def.title {
-                     buffer.push_str(" title=\"");
-                     buffer.push_str(title.as_str());
-                  }
-                  buffer.push('>');
-                  for _child in &l_ref.children {
-                     // TODO: parse 'em!
-                  }
-                  buffer.push_str("</a>");
-               }
-               // When we have no definition, we just put back the text as we originally
-               // got it, i.e. full `[foo][a]`, shortcut `[foo]`, or collapsed `[foo][]`.
-               None => {
-                  let mut buffer = String::new();
-                  buffer.push('[');
-                  buffer.push_str(&l_ref.identifier);
-                  buffer.push(']');
-                  match l_ref.reference_kind {
-                     mdast::ReferenceKind::Full => {
-                        buffer.push('[');
-                        buffer.push_str(&l_ref.identifier);
-                        buffer.push(']');
-                     }
-                     mdast::ReferenceKind::Shortcut => {
-                        buffer.push('[');
-                        buffer.push_str(&l_ref.identifier);
-                        buffer.push(']');
-                     }
-                     mdast::ReferenceKind::Collapsed => buffer.push_str("[]"),
-                  }
-               }
-            }
+            emit_link_ref(&first_pass_result.defs, l_ref, buffer)
          }
+
          Content::Reference(Reference::Image(i_ref)) => todo!(),
          Content::Reference(Reference::Footnote(f_ref)) => todo!(),
       }
@@ -168,6 +121,52 @@ fn second_pass(
 
    // Now, emit all the footnote definitions
    // TODO: handle multiple back-refs
+}
+
+fn emit_link_ref(
+   defs: &HashMap<String, mdast::Definition>,
+   l_ref: &mdast::LinkReference,
+   buffer: &mut String,
+) {
+   match defs.get(&l_ref.identifier) {
+      // Given we have a definition, we can transform the reference into an
+      // anchor tag
+      Some(def) => {
+         buffer.push_str("<a href=\"");
+         buffer.push_str(&def.url);
+         buffer.push('"');
+         if let Some(ref title) = def.title {
+            buffer.push_str(" title=\"");
+            buffer.push_str(title.as_str());
+         }
+         buffer.push('>');
+         for _child in &l_ref.children {
+            // TODO: parse 'em!
+         }
+         buffer.push_str("</a>");
+      }
+      // When we have no definition, we just put back the text as we originally
+      // got it, i.e. full `[foo][a]`, shortcut `[foo]`, or collapsed `[foo][]`.
+      None => {
+         let mut buffer = String::new();
+         buffer.push('[');
+         buffer.push_str(&l_ref.identifier);
+         buffer.push(']');
+         match l_ref.reference_kind {
+            mdast::ReferenceKind::Full => {
+               buffer.push('[');
+               buffer.push_str(&l_ref.identifier);
+               buffer.push(']');
+            }
+            mdast::ReferenceKind::Shortcut => {
+               buffer.push('[');
+               buffer.push_str(&l_ref.identifier);
+               buffer.push(']');
+            }
+            mdast::ReferenceKind::Collapsed => buffer.push_str("[]"),
+         }
+      }
+   }
 }
 
 #[derive(Debug)]
