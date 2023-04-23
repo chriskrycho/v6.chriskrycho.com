@@ -106,21 +106,99 @@ impl FirstPassState {
 
 /// Once the first pass has finished, we can iterate the emitted Vec<Content>
 fn second_pass(first_pass_result: FirstPassResult, buffer: &mut String) {
+   // Identifier -> list of back-refs in the order they appear in the document.
+   let mut footnote_backrefs = HashMap::<String, Vec<String>>::new();
    for entry in first_pass_result.content.iter() {
       match entry {
          Content::String(s) => buffer.push_str(s.as_str()),
 
          Content::Reference(Reference::Link(l_ref)) => {
-            emit_link_ref(&first_pass_result.defs, l_ref, buffer)
+            emit_link_ref(&first_pass_result.defs, l_ref, buffer);
          }
 
          Content::Reference(Reference::Image(i_ref)) => todo!(),
-         Content::Reference(Reference::Footnote(f_ref)) => todo!(),
+
+         Content::Reference(Reference::Footnote(f_ref)) => {
+            let backrefs =
+               emit_footnote_ref(&first_pass_result.footnote_defs, f_ref, buffer);
+            footnote_backrefs.insert(f_ref.identifier.clone(), backrefs);
+         }
       }
    }
 
-   // Now, emit all the footnote definitions
-   // TODO: handle multiple back-refs
+   if !first_pass_result.footnote_defs.is_empty() {
+      buffer.push_str("<section><ol>");
+      for (identifier, body) in first_pass_result.footnote_defs {
+         buffer.push_str("<li>");
+         emit_named_anchor(buffer, &identifier);
+         for child in body.children {
+            // TODO: emit the HTML!
+         }
+
+         if let Some(backrefs) = footnote_backrefs.get(&identifier) {
+            if backrefs.len() == 1 {
+               emit_link(
+                  buffer,
+                  &Link {
+                     url: &backrefs[0],
+                     title: Some("back to content"),
+                     name: None,
+                     body: "↩",
+                  },
+               )
+            } else {
+               for (index, backref) in backrefs.iter().enumerate() {
+                  emit_link(
+                     buffer,
+                     &Link {
+                        url: backref,
+                        title: Some("back to content"),
+                        name: None,
+                        body: &format!("↩<sup>{index}</sup>"),
+                     },
+                  );
+               }
+            }
+         }
+
+         buffer.push_str("</li>");
+      }
+      buffer.push_str("</ol></section>");
+   }
+}
+
+fn emit_named_anchor<N: AsRef<str>>(buffer: &mut String, name: N) {
+   buffer.push_str("<a name=\"");
+   buffer.push_str(name.as_ref());
+   buffer.push_str("\"></a>");
+}
+
+struct Link<'a> {
+   url: &'a str,
+   title: Option<&'a str>,
+   name: Option<&'a str>,
+   body: &'a str,
+}
+
+fn emit_link(buffer: &mut String, link: &Link) {
+   buffer.push_str("<a href=\"");
+   buffer.push_str(link.url);
+   buffer.push('"');
+   if let Some(title) = link.title {
+      buffer.push_str(" title=\"");
+      buffer.push_str(title);
+      buffer.push('"');
+   }
+
+   if let Some(name) = link.name {
+      buffer.push_str(" name=\"");
+      buffer.push_str(name);
+      buffer.push('"');
+   }
+
+   buffer.push('>');
+   buffer.push_str(link.body);
+   buffer.push_str("</a>");
 }
 
 fn emit_link_ref(
@@ -167,6 +245,14 @@ fn emit_link_ref(
          }
       }
    }
+}
+
+fn emit_footnote_ref(
+   footnote_defs: &HashMap<String, mdast::FootnoteDefinition>,
+   f_ref: &mdast::FootnoteReference,
+   buffer: &str,
+) -> Vec<String> {
+   todo!()
 }
 
 #[derive(Debug)]
