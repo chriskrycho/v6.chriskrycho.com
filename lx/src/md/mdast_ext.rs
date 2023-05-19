@@ -5,9 +5,9 @@
 //! nice syntax highlighting without doing it in JS or having to parse the HTML to ID
 //! what to run it against.
 
-use std::{collections::HashMap, hash::Hash, vec};
+use std::collections::HashMap;
 
-use markdown::mdast;
+use markdown::mdast::{self, ReferenceKind};
 
 /// Handle the internal state necessary for properly emitting links and footnotes, since
 /// in both cases the definitions can appear anywhere in the text and whether they
@@ -36,13 +36,13 @@ use markdown::mdast;
 /// → HTML conversion can combine that state with the overall conversion state to emit the
 /// correct result once the entire document has been traversed, by doing another single
 /// pass over the state.
-#[derive(Default, Debug)]
+#[derive(Debug)]
 struct FirstPass<'a> {
    curr_buf: String,
    content: Vec<Content<'a>>,
    defs: Defs<'a>,
    footnote_defs: FootnoteDefs<'a>,
-   transforms: Transforms,
+   transforms: &'a Transforms,
 }
 
 type Defs<'a> = HashMap<String, &'a mdast::Definition>;
@@ -52,14 +52,14 @@ type FootnoteDefs<'a> = HashMap<String, &'a mdast::FootnoteDefinition>;
 /// definitions and footnote definitions is the full set.
 struct FirstPassResult<'a> {
    content: Vec<Content<'a>>,
-   defs: HashMap<String, &'a mdast::Definition>,
-   footnote_defs: HashMap<String, &'a mdast::FootnoteDefinition>,
+   defs: Defs<'a>,
+   footnote_defs: FootnoteDefs<'a>,
 }
 
 #[derive(Default)]
 pub(crate) struct Transforms {
-   toml: Option<Box<dyn Fn(String) -> String>>,
-   yaml: Option<Box<dyn Fn(String) -> String>>,
+   toml: Option<Box<dyn Fn(&str) -> String>>,
+   yaml: Option<Box<dyn Fn(&str) -> String>>,
    ast: Option<Box<dyn Fn(&mdast::Node) -> String>>,
 }
 
@@ -92,10 +92,10 @@ impl std::fmt::Debug for Transforms {
 }
 
 impl<'a> FirstPass<'a> {
-   fn from_ast(ast: &mdast::Node) -> FirstPassResult {
+   fn from_ast(ast: &'a mdast::Node) -> FirstPassResult {
       FirstPass::from_ast_with_transforms(
          ast,
-         Transforms {
+         &Transforms {
             toml: None,
             yaml: None,
             ast: None,
@@ -106,12 +106,15 @@ impl<'a> FirstPass<'a> {
    /// Given an MDAST instance, do a first pass to generate all HTML which can be known
    /// *from* a first pass.
    fn from_ast_with_transforms(
-      ast: &mdast::Node,
-      transforms: Transforms,
-   ) -> FirstPassResult {
+      ast: &'a mdast::Node,
+      transforms: &'a Transforms,
+   ) -> FirstPassResult<'a> {
       let mut state = FirstPass {
          transforms,
-         ..Default::default()
+         curr_buf: String::new(),
+         content: Vec::new(),
+         defs: HashMap::new(),
+         footnote_defs: HashMap::new(),
       };
 
       state.walk(ast);
@@ -121,7 +124,7 @@ impl<'a> FirstPass<'a> {
    // TODO: when walking the AST, on encountering a definition of whatever sort, which has
    // children, process the children *on the spot*, rather than waiting for the second
    // pass to do it.
-   fn walk(&mut self, ast: &mdast::Node) {
+   fn walk(&mut self, ast: &'a mdast::Node) {
       // In most cases, this trivally recurses to the `to_html()` implementations on each
       // item, taking advantage of the fact that they in turn will call `to_html` on child
       // nodes (i.e. recursing to this call in the case where it is merely a `Node` again,
@@ -175,7 +178,7 @@ impl<'a> FirstPass<'a> {
                node: list_item,
                list_is_spread: false,
             };
-            self.add(&li);
+            li.to_html(self);
          }
          mdast::Node::Definition(def) => self.add_definition(def),
          mdast::Node::Paragraph(p) => self.add(p),
@@ -192,7 +195,7 @@ impl<'a> FirstPass<'a> {
       }
    }
 
-   fn add<S: ToHtml>(&mut self, content: &S) {
+   fn add<S: ToHtml>(&mut self, content: &'a S) {
       content.to_html(self);
    }
 
@@ -205,7 +208,19 @@ impl<'a> FirstPass<'a> {
    }
 
    fn add_link_ref(&mut self, reference: &'a mdast::LinkReference) {
-      self.add_ref(Reference::Link(reference));
+      let body = reference
+         .children
+         .iter()
+         .fold(String::new(), |mut buffer, child| {
+            ast_to_html(&child, &mut buffer, self.transforms);
+            buffer
+         });
+
+      self.add_ref(Reference::Link(LinkReference {
+         kind: reference.reference_kind,
+         identifier: reference.identifier.clone(),
+         body,
+      }));
    }
 
    fn add_image_ref(&mut self, reference: &'a mdast::ImageReference) {
@@ -226,12 +241,18 @@ impl<'a> FirstPass<'a> {
    }
 
    fn add_toml(&mut self, toml: &'a mdast::Toml) {
-      let content = self.transforms.toml.map_or(toml.value, |f| f(toml.value));
+      let content = match &self.transforms.toml {
+         Some(transform) => transform(&toml.value),
+         None => toml.value.clone(),
+      };
       self.curr_buf.push_str(&content);
    }
 
    fn add_yaml(&mut self, yaml: &'a mdast::Yaml) {
-      let content = self.transforms.yaml.map_or(yaml.value, |f| f(yaml.value));
+      let content = match &self.transforms.yaml {
+         Some(transform) => transform(&yaml.value),
+         None => yaml.value.clone(),
+      };
       self.curr_buf.push_str(&content);
    }
 }
@@ -248,18 +269,19 @@ fn second_pass(first_pass_result: FirstPassResult, buffer: &mut String) {
       match entry {
          Content::String(s) => buffer.push_str(s.as_str()),
 
-         Content::Reference(Reference::Link(l_ref)) => {
-            emit_link_ref(&first_pass_result.defs, l_ref, buffer);
+         Content::Reference(Reference::Link(link_ref)) => {
+            // emit_link_ref(&first_pass_result.defs, link_ref, buffer);
+            todo!("link_ref")
          }
 
-         Content::Reference(Reference::Image(i_ref)) => {
-            emit_image_ref(&first_pass_result.defs, i_ref, buffer)
+         Content::Reference(Reference::Image(img_ref)) => {
+            emit_image_ref(&first_pass_result.defs, img_ref, buffer)
          }
 
-         Content::Reference(Reference::Footnote(f_ref)) => {
+         Content::Reference(Reference::Footnote(footnote_ref)) => {
             let backrefs =
-               emit_footnote_ref(&first_pass_result.footnote_defs, f_ref, buffer);
-            footnote_backrefs.insert(f_ref.identifier.clone(), backrefs);
+               emit_footnote_ref(&first_pass_result.footnote_defs, footnote_ref, buffer);
+            footnote_backrefs.insert(footnote_ref.identifier.clone(), backrefs);
          }
       }
    }
@@ -269,7 +291,7 @@ fn second_pass(first_pass_result: FirstPassResult, buffer: &mut String) {
       for (identifier, body) in first_pass_result.footnote_defs {
          buffer.push_str("<li>");
          emit_named_anchor(buffer, &identifier);
-         for child in body.children {
+         for child in &body.children {
             // TODO: emit the HTML!
          }
 
@@ -340,90 +362,92 @@ fn emit_link(buffer: &mut String, link: &Link) {
 }
 
 trait ToHtml {
-   fn to_html(&self, state: &mut FirstPass);
+   fn to_html<'s, 'a: 's>(&'a self, state: &'a mut FirstPass<'s>);
 }
 
-impl ToHtml for &mdast::LinkReference {
-   fn to_html(&self, state: &mut FirstPass) {
-      match state.defs.get(&self.identifier) {
+#[derive(Debug)]
+struct LinkReference {
+   kind: ReferenceKind,
+   identifier: String,
+   body: String,
+}
+
+impl LinkReference {
+   fn to_html(&self, buffer: &mut String, defs: &Defs) {
+      match defs.get(&self.identifier) {
          // Given we have a definition, we can transform the reference into an anchor tag
          Some(def) => {
-            state.curr_buf.push_str("<a href=\"");
-            state.curr_buf.push_str(&def.url);
-            state.curr_buf.push('"');
+            buffer.push_str("<a href=\"");
+            buffer.push_str(&def.url);
+            buffer.push('"');
             if let Some(ref title) = def.title {
-               state.curr_buf.push_str(" title=\"");
-               state.curr_buf.push_str(title.as_str());
+               buffer.push_str(" title=\"");
+               buffer.push_str(title.as_str());
             }
-            state.curr_buf.push('>');
-            for child in &self.children {
-               state.walk(child)
-            }
-            state.curr_buf.push_str("</a>");
+            buffer.push('>');
+            buffer.push_str(&self.body);
+            buffer.push_str("</a>");
          }
          // When we have no definition, we just put back the text as we originally got it,
          // i.e. full `[foo][a]`, shortcut `[foo]`, or collapsed `[foo][]`.
          None => {
-            state.curr_buf.push('[');
-            state.curr_buf.push_str(&self.identifier);
-            state.curr_buf.push(']');
-            match self.reference_kind {
+            buffer.push('[');
+            buffer.push_str(&self.identifier);
+            buffer.push(']');
+            match self.kind {
                mdast::ReferenceKind::Full => {
-                  state.curr_buf.push('[');
-                  state.curr_buf.push_str(&self.identifier);
-                  state.curr_buf.push(']');
+                  buffer.push('[');
+                  buffer.push_str(&self.identifier);
+                  buffer.push(']');
                }
                mdast::ReferenceKind::Shortcut => {
-                  state.curr_buf.push('[');
-                  state.curr_buf.push_str(&self.identifier);
-                  state.curr_buf.push(']');
+                  buffer.push('[');
+                  buffer.push_str(&self.identifier);
+                  buffer.push(']');
                }
-               mdast::ReferenceKind::Collapsed => state.curr_buf.push_str("[]"),
+               mdast::ReferenceKind::Collapsed => buffer.push_str("[]"),
             }
          }
       }
    }
 }
 
-fn emit_link_ref<'a>(
-   defs: &Defs<'a>,
-   l_ref: &'a mdast::LinkReference,
-   buffer: &mut String,
-) {
-   match defs.get(&l_ref.identifier) {
+// TODO: for these, we don't have `FirstPass` around anymore, so we actually need to have
+// done the pre-emit of children described above.
+
+fn emit_link_ref(link_ref: &LinkReference, state: &mut FirstPass) {
+   match state.defs.get(&link_ref.identifier) {
       // Given we have a definition, we can transform the reference into an anchor tag
       Some(def) => {
-         buffer.push_str("<a href=\"");
-         buffer.push_str(&def.url);
-         buffer.push('"');
+         state.curr_buf.push_str("<a href=\"");
+         state.curr_buf.push_str(&def.url);
+         state.curr_buf.push('"');
          if let Some(ref title) = def.title {
-            buffer.push_str(" title=\"");
-            buffer.push_str(title.as_str());
+            state.curr_buf.push_str(" title=\"");
+            state.curr_buf.push_str(title.as_str());
          }
-         buffer.push('>');
-         for _child in &l_ref.children {
-            // TODO: parse 'em!
-         }
-         buffer.push_str("</a>");
+         state.curr_buf.push('>');
+         state.curr_buf.push_str(&link_ref.body);
+         state.curr_buf.push_str("</a>");
       }
       // When we have no definition, we just put back the text as we originally got it,
       // i.e. full `[foo][a]`, shortcut `[foo]`, or collapsed `[foo][]`.
       None => {
-         buffer.push('[');
-         buffer.push_str(&l_ref.identifier);
-         buffer.push(']');
-         match l_ref.reference_kind {
+         state.curr_buf.push('[');
+         state.curr_buf.push_str(&link_ref.identifier);
+         state.curr_buf.push(']');
+         match link_ref.kind {
             mdast::ReferenceKind::Full => {
-               buffer.push('[');
-               buffer.push_str(&l_ref.identifier);
-               buffer.push(']');
+               state.curr_buf.push('[');
+               state.curr_buf.push_str(&link_ref.identifier);
+               state.curr_buf.push(']');
             }
             mdast::ReferenceKind::Shortcut => {
-               buffer.push('[');
-               buffer.push_str(&l_ref.identifier);
-               buffer.push(']');
+               state.curr_buf.push('[');
+               state.curr_buf.push_str(&link_ref.identifier);
+               state.curr_buf.push(']');
             }
-            mdast::ReferenceKind::Collapsed => buffer.push_str("[]"),
+            mdast::ReferenceKind::Collapsed => state.curr_buf.push_str("[]"),
          }
       }
    }
@@ -483,7 +507,7 @@ enum Content<'a> {
 
 #[derive(Debug)]
 enum Reference<'a> {
-   Link(&'a mdast::LinkReference),
+   Link(LinkReference),
    Image(&'a mdast::ImageReference),
    Footnote(&'a mdast::FootnoteReference),
 }
@@ -491,14 +515,14 @@ enum Reference<'a> {
 pub(crate) fn ast_to_html(
    ast: &mdast::Node,
    buffer: &mut String,
-   transforms: Transforms,
+   transforms: &Transforms,
 ) {
    let first_pass_result = FirstPass::from_ast_with_transforms(ast, transforms);
    second_pass(first_pass_result, buffer);
 }
 
 impl ToHtml for mdast::Root {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &'a mut FirstPass<'s>) {
       for child in &self.children {
          state.walk(child);
       }
@@ -506,12 +530,8 @@ impl ToHtml for mdast::Root {
 }
 
 impl ToHtml for mdast::BlockQuote {
-   fn to_html(&self, state: &mut FirstPass) {
-      state.curr_buf.push_str("<blockquote>");
-      for child in &self.children {
-         state.walk(child);
-      }
-      state.curr_buf.push_str("</blockquote>")
+   fn to_html<'s, 'a: 's>(&'a self, state: &'a mut FirstPass<'s>) {
+      emit_tag("blockquote", &self.children, state);
    }
 }
 
@@ -520,19 +540,19 @@ struct Footnote {
 }
 
 impl Footnote {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       todo!("implement footnote handling with state")
    }
 }
 
 impl ToHtml for mdast::FootnoteDefinition {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       todo!("FootnoteDefinition")
    }
 }
 
 impl ToHtml for mdast::MdxJsxFlowElement {
-   fn to_html(&self, _state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, _state: &mut FirstPass<'s>) {
       // intentionally a no-op; do nothing with MDX!
    }
 }
@@ -543,8 +563,43 @@ struct ListItem<'i> {
    list_is_spread: bool,
 }
 
-impl<'i> ToHtml for ListItem<'i> {
-   fn to_html(&self, state: &mut FirstPass) {
+impl ToHtml for mdast::List {
+   fn to_html<'s, 'a: 's>(&'a self, state: &'a mut FirstPass<'s>) {
+      match (self.ordered, self.start) {
+         (true, Some(n)) => {
+            if n != 1 {
+               state.curr_buf.push_str("<ol start=\"");
+               state.curr_buf.push_str(&n.to_string());
+               state.curr_buf.push_str("\">");
+            } else {
+               state.curr_buf.push_str("<ol>");
+            }
+         }
+         // Should never happen, but handle it reasonably anyway!
+         (true, None) => state.curr_buf.push_str("<ol>"),
+         (false, _) => state.curr_buf.push_str("<ul>"),
+      }
+      for child in &self.children {
+         if let mdast::Node::ListItem(list_item) = child {
+            let li = ListItem {
+               list_is_spread: self.spread,
+               node: list_item,
+            };
+            li.to_html(state);
+         } else {
+            state.walk(child)
+         }
+      }
+
+      match self.ordered {
+         true => state.curr_buf.push_str("</ol>"),
+         false => state.curr_buf.push_str("</ul>"),
+      }
+   }
+}
+
+impl<'i> ListItem<'i> {
+   fn to_html(self, state: &mut FirstPass) {
       state.curr_buf.push_str("<li>");
 
       if self.list_is_spread || self.node.spread {
@@ -582,68 +637,32 @@ impl<'i> ToHtml for ListItem<'i> {
    }
 }
 
-impl ToHtml for mdast::List {
-   fn to_html(&self, state: &mut FirstPass) {
-      match (self.ordered, self.start) {
-         (true, Some(n)) => {
-            if n != 1 {
-               state.curr_buf.push_str("<ol start=\"");
-               state.curr_buf.push_str(&n.to_string());
-               state.curr_buf.push_str("\">");
-            } else {
-               state.curr_buf.push_str("<ol>");
-            }
-         }
-         // Should never happen, but handle it reasonably anyway!
-         (true, None) => state.curr_buf.push_str("<ol>"),
-         (false, _) => state.curr_buf.push_str("<ul>"),
-      }
-      for child in &self.children {
-         match child {
-            mdast::Node::ListItem(list_item) => {
-               let li = ListItem {
-                  list_is_spread: self.spread,
-                  node: list_item,
-               };
-               li.to_html(state)
-            }
-            _ => state.walk(child),
-         }
-      }
-
-      match self.ordered {
-         true => state.curr_buf.push_str("</ol>"),
-         false => state.curr_buf.push_str("</ul>"),
-      }
-   }
-}
-
 impl ToHtml for mdast::MdxjsEsm {
-   fn to_html(&self, _state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, _state: &mut FirstPass<'s>) {
       // intentionally a no-op; do nothing with MDX!
    }
 }
 
 impl ToHtml for mdast::Toml {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       todo!("Toml")
    }
 }
 
 impl ToHtml for mdast::Yaml {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       todo!("Yaml")
    }
 }
 
 impl ToHtml for mdast::Break {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       state.curr_buf.push_str("<br/>");
    }
 }
 
 impl ToHtml for mdast::InlineCode {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       state.curr_buf.push_str("<code>");
       state.curr_buf.push_str(&self.value);
       state.curr_buf.push_str("</code>");
@@ -652,7 +671,7 @@ impl ToHtml for mdast::InlineCode {
 
 impl ToHtml for mdast::InlineMath {
    /// Pass through body of math unchanged, to be processed by JS etc.
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       state
          .curr_buf
          .push_str(r#"<code class="language-math math-inline">"#);
@@ -662,45 +681,37 @@ impl ToHtml for mdast::InlineMath {
 }
 
 impl ToHtml for mdast::Delete {
-   fn to_html(&self, state: &mut FirstPass) {
-      state.curr_buf.push_str("<del>");
-      for child in &self.children {
-         state.walk(child);
-      }
-      state.curr_buf.push_str("</del>");
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
+      emit_tag("del", &self.children, state);
    }
 }
 
 impl ToHtml for mdast::Emphasis {
-   fn to_html(&self, state: &mut FirstPass) {
-      state.curr_buf.push_str("<em>");
-      for child in &self.children {
-         state.walk(child);
-      }
-      state.curr_buf.push_str("</em>");
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
+      emit_tag("em", &self.children, state);
    }
 }
 
 impl ToHtml for mdast::MdxTextExpression {
-   fn to_html(&self, _buffer: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, _state: &mut FirstPass<'s>) {
       // intentionally a no-op; do nothing with MDX!
    }
 }
 
 impl ToHtml for mdast::FootnoteReference {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       todo!("FootnoteReference")
    }
 }
 
 impl ToHtml for mdast::Html {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       state.curr_buf.push_str(&self.value);
    }
 }
 
 impl ToHtml for mdast::Image {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       state.curr_buf.push_str("<img src=\"");
       state.curr_buf.push_str(&self.url);
       state.curr_buf.push_str("\" alt=\"");
@@ -716,43 +727,37 @@ impl ToHtml for mdast::Image {
 }
 
 impl ToHtml for mdast::ImageReference {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       todo!("ImageReference")
    }
 }
 
 impl ToHtml for mdast::MdxJsxTextElement {
-   fn to_html(&self, _state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, _state: &mut FirstPass<'s>) {
       // intentionally a no-op; do nothing with MDX!
    }
 }
 
 impl ToHtml for mdast::Link {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       todo!("Link")
    }
 }
 
-impl ToHtml for mdast::LinkReference {
-   fn to_html(&self, state: &mut FirstPass) {
-      todo!("LinkReference")
-   }
-}
-
 impl ToHtml for mdast::Strong {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       emit_tag("strong", &self.children, state);
    }
 }
 
 impl ToHtml for mdast::Text {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       state.curr_buf.push_str(&self.value);
    }
 }
 
 impl ToHtml for mdast::Code {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       state.curr_buf.push_str("<pre><code class=\"language-");
       let lang = self.lang.as_deref().unwrap_or("text");
       state.curr_buf.push_str(lang);
@@ -770,7 +775,7 @@ impl ToHtml for mdast::Code {
 }
 
 impl ToHtml for mdast::Math {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       state
          .curr_buf
          .push_str(r#"<pre><code class="language-math math-display">"#);
@@ -780,13 +785,13 @@ impl ToHtml for mdast::Math {
 }
 
 impl ToHtml for mdast::MdxFlowExpression {
-   fn to_html(&self, _state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, _state: &mut FirstPass<'s>) {
       // intentionally a no-op; do nothing with MDX!
    }
 }
 
 impl ToHtml for mdast::Heading {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       let level =
          char::from_digit(self.depth as u32, 10).expect("Heading depth must be 1-6");
 
@@ -803,7 +808,7 @@ impl ToHtml for mdast::Heading {
 }
 
 impl ToHtml for mdast::Table {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       state.curr_buf.push_str("<table>");
 
       // MDAST does not include an explicit distinction between `<thead>` and `<tbody>`,
@@ -886,36 +891,40 @@ impl ToHtml for mdast::Table {
 }
 
 impl ToHtml for mdast::ThematicBreak {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       state.curr_buf.push_str("<hr/>");
    }
 }
 
 impl ToHtml for mdast::TableRow {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       emit_tag("tr", &self.children, state);
    }
 }
 
 impl ToHtml for mdast::TableCell {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       emit_tag("td", &self.children, state);
    }
 }
 
 impl ToHtml for mdast::Definition {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       todo!("Definition")
    }
 }
 
 impl ToHtml for mdast::Paragraph {
-   fn to_html(&self, state: &mut FirstPass) {
+   fn to_html<'s, 'a: 's>(&'a self, state: &mut FirstPass<'s>) {
       emit_tag("p", &self.children, state);
    }
 }
 
-fn emit_tag(name: &str, children: &Vec<mdast::Node>, state: &mut FirstPass) {
+fn emit_tag<'s, 'a: 's>(
+   name: &str,
+   children: &'a Vec<mdast::Node>,
+   state: &'s mut FirstPass<'s>,
+) {
    state.curr_buf.push('<');
    state.curr_buf.push_str(name);
    state.curr_buf.push('>');
@@ -937,7 +946,7 @@ mod tests {
    fn paragraph() {
       let mut buffer = String::new();
       let ast = to_mdast("Hello, world!", &ParseOptions::default()).unwrap();
-      ast_to_html(&ast, &mut buffer, Transforms::default());
+      ast_to_html(&ast, &mut buffer, &Transforms::default());
       assert_eq!(buffer, "<p>Hello, world!</p>");
    }
 
@@ -945,7 +954,7 @@ mod tests {
    fn blockquote() {
       let mut buffer = String::new();
       let ast = to_mdast(r#"> Hello, world!"#, &ParseOptions::default()).unwrap();
-      ast_to_html(&ast, &mut buffer, Transforms::default());
+      ast_to_html(&ast, &mut buffer, &Transforms::default());
       assert_eq!(buffer, "<blockquote><p>Hello, world!</p></blockquote>");
    }
 
@@ -953,7 +962,7 @@ mod tests {
    fn thematic_break() {
       let mut buffer = String::new();
       let ast = to_mdast("---", &ParseOptions::default()).unwrap();
-      ast_to_html(&ast, &mut buffer, Transforms::default());
+      ast_to_html(&ast, &mut buffer, &Transforms::default());
       assert_eq!(buffer, "<hr/>");
    }
 
@@ -961,7 +970,7 @@ mod tests {
    fn r#break() {
       let mut buffer = String::new();
       let ast = to_mdast("Hello  \nWorld", &ParseOptions::default()).unwrap();
-      ast_to_html(&ast, &mut buffer, Transforms::default());
+      ast_to_html(&ast, &mut buffer, &Transforms::default());
       assert_eq!(buffer, "<p>Hello<br/>World</p>");
    }
 
@@ -979,7 +988,7 @@ mod tests {
          },
       )
       .unwrap();
-      ast_to_html(&ast, &mut buffer, Transforms::default());
+      ast_to_html(&ast, &mut buffer, &Transforms::default());
       assert_eq!(buffer, "<p>Hello <del>world</del>.</p>");
    }
 
@@ -997,7 +1006,7 @@ mod tests {
          },
       )
       .unwrap();
-      ast_to_html(&ast, &mut buffer, Transforms::default());
+      ast_to_html(&ast, &mut buffer, &Transforms::default());
       assert_eq!(buffer, "<p>Hello <code>world</code>.</p>");
    }
 
@@ -1009,7 +1018,7 @@ mod tests {
          &ParseOptions::default(),
       )
       .unwrap();
-      ast_to_html(&ast, &mut buffer, Transforms::default());
+      ast_to_html(&ast, &mut buffer, &Transforms::default());
       assert_eq!(
              buffer,
              "<pre><code class=\"language-rust\">fn main() {\n    println!(\"Hello, world!\");\n}</code></pre>"
@@ -1023,7 +1032,7 @@ mod tests {
       fn h1() {
          let mut buffer = String::new();
          let ast = to_mdast("# H1", &ParseOptions::default()).unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<h1>H1</h1>");
       }
 
@@ -1031,7 +1040,7 @@ mod tests {
       fn h1_atx() {
          let mut buffer = String::new();
          let ast = to_mdast("H1\n==", &ParseOptions::default()).unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<h1>H1</h1>");
       }
 
@@ -1039,7 +1048,7 @@ mod tests {
       fn h2() {
          let mut buffer = String::new();
          let ast = to_mdast("## H2", &ParseOptions::default()).unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<h2>H2</h2>");
       }
 
@@ -1047,7 +1056,7 @@ mod tests {
       fn h2_atx() {
          let mut buffer = String::new();
          let ast = to_mdast("H2\n--", &ParseOptions::default()).unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<h2>H2</h2>");
       }
 
@@ -1055,7 +1064,7 @@ mod tests {
       fn h3() {
          let mut buffer = String::new();
          let ast = to_mdast("### H3", &ParseOptions::default()).unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<h3>H3</h3>");
       }
 
@@ -1063,7 +1072,7 @@ mod tests {
       fn h4() {
          let mut buffer = String::new();
          let ast = to_mdast("#### H4", &ParseOptions::default()).unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<h4>H4</h4>");
       }
 
@@ -1071,7 +1080,7 @@ mod tests {
       fn h5() {
          let mut buffer = String::new();
          let ast = to_mdast("##### H5", &ParseOptions::default()).unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<h5>H5</h5>");
       }
 
@@ -1079,7 +1088,7 @@ mod tests {
       fn h6() {
          let mut buffer = String::new();
          let ast = to_mdast("###### H6", &ParseOptions::default()).unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<h6>H6</h6>");
       }
 
@@ -1087,7 +1096,7 @@ mod tests {
       fn with_embedded_formatting() {
          let mut buffer = String::new();
          let ast = to_mdast("# *H1*", &ParseOptions::default()).unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<h1><em>H1</em></h1>");
       }
    }
@@ -1102,7 +1111,7 @@ mod tests {
          fn tight() {
             let mut buffer = String::new();
             let ast = to_mdast("- Hello\n- World", &ParseOptions::default()).unwrap();
-            ast_to_html(&ast, &mut buffer, Transforms::default());
+            ast_to_html(&ast, &mut buffer, &Transforms::default());
             assert_eq!(buffer, "<ul><li>Hello</li><li>World</li></ul>");
          }
 
@@ -1114,7 +1123,7 @@ mod tests {
                &ParseOptions::default(),
             )
             .unwrap();
-            ast_to_html(&ast, &mut buffer, Transforms::default());
+            ast_to_html(&ast, &mut buffer, &Transforms::default());
             assert_eq!(
                buffer,
                "<ul><li>Hello<ul><li><p>Good day to you!</p></li><li><p>Ahoy!</p></li></ul></li></ul>"
@@ -1134,7 +1143,7 @@ mod tests {
          fn tight() {
             let mut buffer = String::new();
             let ast = to_mdast("1. Hello\n2. World", &ParseOptions::default()).unwrap();
-            ast_to_html(&ast, &mut buffer, Transforms::default());
+            ast_to_html(&ast, &mut buffer, &Transforms::default());
             assert_eq!(buffer, "<ol><li>Hello</li><li>World</li></ol>");
          }
 
@@ -1142,7 +1151,7 @@ mod tests {
          fn tight_custom_start() {
             let mut buffer = String::new();
             let ast = to_mdast("3. Hello\n4. World", &ParseOptions::default()).unwrap();
-            ast_to_html(&ast, &mut buffer, Transforms::default());
+            ast_to_html(&ast, &mut buffer, &Transforms::default());
             assert_eq!(buffer, "<ol start=\"3\"><li>Hello</li><li>World</li></ol>");
          }
 
@@ -1154,7 +1163,7 @@ mod tests {
                &ParseOptions::default(),
             )
             .unwrap();
-            ast_to_html(&ast, &mut buffer, Transforms::default());
+            ast_to_html(&ast, &mut buffer, &Transforms::default());
             assert_eq!(buffer, "<ol><li>Hello<ol><li><p>Good day to you!</p></li><li><p>Ahoy!</p></li></ol></li></ol>");
          }
       }
@@ -1177,7 +1186,7 @@ mod tests {
             },
          )
          .unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<table><thead><tr><th>Hello</th><th>World</th></tr></thead><tbody><tr><td>Foo</td><td>Bar</td></tr></tbody></table>");
       }
    }
@@ -1200,7 +1209,7 @@ mod tests {
             },
          )
          .unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(buffer, "<p>This is some text with math <code class=\"language-math math-inline\">x + y</code> and it's cool.</p>");
       }
 
@@ -1219,7 +1228,7 @@ mod tests {
             },
          )
          .unwrap();
-         ast_to_html(&ast, &mut buffer, Transforms::default());
+         ast_to_html(&ast, &mut buffer, &Transforms::default());
          assert_eq!(
             buffer,
             "<pre><code class=\"language-math math-display\">x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}.</code></pre>"

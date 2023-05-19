@@ -1,3 +1,5 @@
+use self::mdast_ext::Transforms;
+
 mod mdast_ext;
 
 pub fn example() -> Result<String, String> {
@@ -35,7 +37,7 @@ Or so I have been told.
 
    markdown::to_mdast(test_content, &parse_options).map(|ast| {
       let mut buffer = String::with_capacity(test_content.len() * 2);
-      mdast_ext::ast_to_html(&ast, &mut buffer);
+      mdast_ext::ast_to_html(&ast, &mut buffer, &Transforms::default());
       buffer
    })
 }
