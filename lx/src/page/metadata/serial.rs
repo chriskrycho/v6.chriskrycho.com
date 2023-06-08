@@ -7,55 +7,55 @@ use serde_derive::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub(super) struct Metadata {
-    pub(super) title: Option<String>,
-    pub(super) subtitle: Option<String>,
-    pub(super) summary: Option<String>,
-    pub(super) qualifiers: Option<Qualifiers>,
-    pub(super) date: Option<DateTime<FixedOffset>>,
-    pub(super) updated: Option<DateTime<FixedOffset>>,
-    pub(super) permalink: Option<String>,
-    pub(super) thanks: Option<String>,
-    #[serde(default)]
-    pub(super) tags: Vec<String>,
-    #[serde(default)]
-    pub(super) featured: bool,
-    pub(super) layout: Option<String>,
-    pub(super) book: Option<Book>,
-    pub(super) series: Option<Series>,
-    pub(super) subscribe: Option<Subscribe>,
+   pub(super) title: Option<String>,
+   pub(super) subtitle: Option<String>,
+   pub(super) summary: Option<String>,
+   pub(super) qualifiers: Option<Qualifiers>,
+   pub(super) date: Option<DateTime<FixedOffset>>,
+   pub(super) updated: Option<DateTime<FixedOffset>>,
+   pub(super) permalink: Option<String>,
+   pub(super) thanks: Option<String>,
+   #[serde(default)]
+   pub(super) tags: Vec<String>,
+   #[serde(default)]
+   pub(super) featured: bool,
+   pub(super) layout: Option<String>,
+   pub(super) book: Option<Book>,
+   pub(super) series: Option<Series>,
+   pub(super) subscribe: Option<Subscribe>,
 }
 
 #[derive(Deserialize, Debug)]
 pub(super) struct Qualifiers {
-    audience: Option<String>,
-    epistemic: Option<String>,
+   audience: Option<String>,
+   epistemic: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub(super) struct Subscribe {
-    atom: Option<String>,
-    json: Option<String>,
+   atom: Option<String>,
+   json: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub(super) struct Book {
-    title: Option<String>,
-    author: Option<String>,
-    /// Year is a `String`, rather than something like a `u16`, because years
-    /// are a lot more complicated than a number represents. If I write "400
-    /// B.C.", for example, the system should still work.
-    year: Option<String>,
-    editors: Option<Vec<String>>,
-    translators: Option<Vec<String>>,
-    cover: Option<String>,
-    link: Option<String>,
-    review: Option<Review>,
+   title: Option<String>,
+   author: Option<String>,
+   /// Year is a `String`, rather than something like a `u16`, because years
+   /// are a lot more complicated than a number represents. If I write "400
+   /// B.C.", for example, the system should still work.
+   year: Option<String>,
+   editors: Option<Vec<String>>,
+   translators: Option<Vec<String>>,
+   cover: Option<String>,
+   link: Option<String>,
+   review: Option<Review>,
 }
 
 #[derive(Deserialize, Debug)]
 pub(super) struct Review {
-    rating: Rating,
-    summary: String,
+   rating: Rating,
+   summary: String,
 }
 
 // TODO: right now this assumes it can be deserialized from the associated text,
@@ -64,36 +64,36 @@ pub(super) struct Review {
 // something cool like that.)
 #[derive(Deserialize, Debug)]
 enum Rating {
-    #[serde(rename = "Not recommended")]
-    NotRecommended,
-    #[serde(rename = "Recommended with qualifications")]
-    WithQualifications,
-    #[serde(rename = "Recommended")]
-    Recommended,
-    #[serde(rename = "Required")]
-    Required,
+   #[serde(rename = "Not recommended")]
+   NotRecommended,
+   #[serde(rename = "Recommended with qualifications")]
+   WithQualifications,
+   #[serde(rename = "Recommended")]
+   Recommended,
+   #[serde(rename = "Required")]
+   Required,
 }
 
 impl std::fmt::Display for Rating {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Rating::NotRecommended => "Not recommended",
-                Rating::WithQualifications => "Recommended with qualifications",
-                Rating::Recommended => "Recommended",
-                Rating::Required => "Required",
-            }
-        )
-    }
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      write!(
+         f,
+         "{}",
+         match self {
+            Rating::NotRecommended => "Not recommended",
+            Rating::WithQualifications => "Recommended with qualifications",
+            Rating::Recommended => "Recommended",
+            Rating::Required => "Required",
+         }
+      )
+   }
 }
 
 #[derive(Deserialize, Debug)]
 pub(super) struct Series {
-    // The name is optional: it could be supplied via the data file somewhere up
-    // the tree.
-    name: Option<String>,
-    // The *part* has to be supplied, though.
-    part: u8,
+   // The name is optional: it could be supplied via the data file somewhere up
+   // the tree.
+   name: Option<String>,
+   // The *part* has to be supplied, though.
+   part: u8,
 }
