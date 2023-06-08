@@ -3,7 +3,7 @@ name = "lx"
 version = "1.0.0"
 authors = ["Chris Krycho <hello@chriskrycho.com>"]
 edition = "2021"
-rust-version = "1.67.1"
+rust-version = "1.70.0"
 description = "⚡️ My awesome tool for building my own website."
 
 [dependencies]
