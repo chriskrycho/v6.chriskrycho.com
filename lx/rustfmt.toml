@@ -1,4 +1,2 @@
-# Reset these to defaults so my fork here doesn't diverge from upstream on
-# formatting concerns specifically.
 max_width = 90
 tab_spaces = 3
