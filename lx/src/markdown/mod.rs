@@ -49,17 +49,6 @@ pub(super) fn render<S: AsRef<str>>(
 
    for event in parser {
       match event {
-         Event::Start(Tag::MetadataBlock(kind)) => match &mut state {
-            State::Default => {
-               state = State::MetadataBlock(kind);
-            },
-            State::DefaultWithMetaData(_) =>
-               unreachable!("should never be entering a metadata block when metadata already parsed"),
-            State::MetadataBlock(_) =>
-               unreachable!("should never be entering a metadata block when already in a metadata block"),
-            State::CodeBlock(_) =>
-               unreachable!("I don't *think* you can be in a code block in a metadata block?!?"),
-         },
          Event::Text(text) => match &mut state {
             State::Default => events.push(Event::Text(text)),
 
@@ -67,14 +56,16 @@ pub(super) fn render<S: AsRef<str>>(
                let metadata: Metadata = serde_yaml::from_slice(text.as_bytes())
                   .map_err(|e| format!("Could not parse metadata!\n\tError: {e}\n\t"))?;
                state = State::DefaultWithMetaData(Box::new(metadata));
-            },
+            }
 
-            State::MetadataBlock(MetadataBlockKind::PlusesStyle) => unimplemented!("No TOML support!"),
+            State::MetadataBlock(MetadataBlockKind::PlusesStyle) => {
+               unimplemented!("No TOML support!")
+            }
 
             State::DefaultWithMetaData(_metadata) => {
                // TODO: rewrite text with metadata using templating language of my choice!
                events.push(Event::Text(text));
-            },
+            }
 
             // This is a little quirky: it hands off the text to the highlighter
             // and relies on correctly calling `highlighter.finalize()` when we
@@ -86,6 +77,7 @@ pub(super) fn render<S: AsRef<str>>(
 
                events.push(Event::Text("".into()));
             }
+
             // This has the same constraint as `KnownSyntax`, but requires that
             // we also try to get a
             State::CodeBlock(HighlightingState::RequiresFirstLineParse) => {
@@ -120,6 +112,22 @@ pub(super) fn render<S: AsRef<str>>(
                events.push(Event::Text(text))
             }
          },
+
+         Event::Start(Tag::MetadataBlock(kind)) => match &mut state {
+            State::Default => {
+               state = State::MetadataBlock(kind);
+            }
+            State::DefaultWithMetaData(_) => unreachable!(
+               "should never be entering a metadata block when metadata already parsed"
+            ),
+            State::MetadataBlock(_) => unreachable!(
+               "should never enter a metadata block when already in a metadata block"
+            ),
+            State::CodeBlock(_) => unreachable!(
+               "I don't *think* you can be in a code block in a metadata block?!?"
+            ),
+         },
+
          Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(name))) => {
             if let Some(looked_up) = syntax_set.find_syntax_by_token(name.as_ref()) {
                state = State::CodeBlock(HighlightingState::KnownSyntax(
@@ -136,6 +144,7 @@ pub(super) fn render<S: AsRef<str>>(
                events.push(Event::Html("<pre><code>".into()));
             }
          }
+
          Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => match state {
             State::Default => {
                state = State::CodeBlock(HighlightingState::RequiresFirstLineParse);
@@ -146,6 +155,7 @@ pub(super) fn render<S: AsRef<str>>(
                )
             }
          },
+
          Event::End(TagEnd::CodeBlock) => match state {
             State::CodeBlock(HighlightingState::KnownSyntax(generator)) => {
                let highlighted = generator.finalize();
@@ -161,6 +171,7 @@ pub(super) fn render<S: AsRef<str>>(
                unreachable!("Cannot *not* be in a code block when ending a code block")
             }
          },
+
          _ => events.push(event),
       }
    }
