@@ -4,6 +4,7 @@ use std::path::Path;
 
 use chrono::{DateTime, FixedOffset};
 use serial::{Book, Qualifiers, Series, Subscribe};
+use slug::slugify;
 
 #[derive(Debug)]
 pub enum RequiredFields {
@@ -64,26 +65,25 @@ impl Metadata {
                .to_string()
          })
          .unwrap_or_else(|| {
-            let slug = slug::slugify(
-               src_path
-                  .file_stem()
-                  .and_then(|stem| stem.to_str())
-                  .unwrap_or_else(|| {
-                     panic!(
-                        "it should be impossible to get here without a valid source path"
-                     )
-                  }),
-            );
+            let src_for_slug = src_path
+               .file_stem()
+               .unwrap_or_else(|| {
+                  panic!("missing file stem on '{}'?!?", src_path.display())
+               })
+               .to_str()
+               .unwrap_or_else(|| {
+                  panic!("Could not get `str` for '{}'?!?", src_path.display())
+               });
 
             src_path
                .strip_prefix(root_dir)
                .and_then(|local_path| {
                   local_path
                      .parent()
-                     .map(|containing_dir| containing_dir.join(&slug))
+                     .map(|containing_dir| containing_dir.join(slugify(src_for_slug)))
                      .ok_or_else(|| {
                         panic!(
-                           "could not construct containing dir in {}",
+                           "could not construct containing dir in '{}'",
                            local_path.display()
                         )
                      })
@@ -97,7 +97,6 @@ impl Metadata {
                   )
                })
                .to_string_lossy()
-               .to_owned()
                .to_string()
          });
 

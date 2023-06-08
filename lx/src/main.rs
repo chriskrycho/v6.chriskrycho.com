@@ -17,7 +17,6 @@ fn main() -> Result<(), String> {
       cli::Command::Publish { site_directory } => publish(&site_directory.unwrap_or(cwd)),
       cli::Command::Completions => cli.completions().map_err(|e| format!("blargle {e}")),
    }
-   .map_err(|e| format!("whoopsie: {e}"))
 }
 
 fn ui() -> Result<(), LxError> {
