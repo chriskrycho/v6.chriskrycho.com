@@ -658,6 +658,7 @@ dependencies = [
  "json5",
  "lazy_static",
  "lx-json-feed",
+ "normalize-path",
  "pulldown-cmark",
  "rayon",
  "regex",
@@ -703,6 +704,12 @@ checksum = "e7810e0be55b428ada41041c41f32c9f1a42817901b4ccf45fa3d4b6561e74c7"
 dependencies = [
  "adler",
 ]
+
+[[package]]
+name = "normalize-path"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf22e319b2e3cb517350572e3b70c6822e0a520abfb5c78f690e829a73e8d9f2"
 
 [[package]]
 name = "num-integer"
