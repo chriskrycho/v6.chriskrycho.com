@@ -5,6 +5,7 @@ use std::{
    collections::HashMap,
    convert::TryFrom,
    hash::Hash,
+   os::unix::prelude::OsStrExt,
    path::{Path, PathBuf},
 };
 
@@ -56,11 +57,33 @@ impl Page {
       syntax_set: &SyntaxSet,
       config: &Config,
    ) -> Result<Self, String> {
+      // TODO: This is the right idea for where I want to take this, but ultimately I
+      // don't want to do it based on the source path (or if I do, *only* initially as
+      // a way of generating it to start). It'll go in the database, so more likely I'll
+      // just use an SQLite id for it! However, this is a fine intermediate point since it
+      // can be used for a weaker form of caching for now.
       let id = Id(Uuid::new_v5(
          &Uuid::NAMESPACE_OID,
-         source.contents.as_bytes(),
+         source.path.as_os_str().as_bytes(),
       ));
 
+      // TODO: the Markdown renderer can now handle metadata blocks. One option here is:
+      // push *all* of this handling into the Markdown iterator. Using the event iterator
+      // directly lets me drive the emit in a couple nice ways:
+      //
+      // 1. I can do custom handling for different kinds of notes; I could, for example,
+      //    make a custom "inline note" syntax like `[^-a]` where the `-` is sufficient to
+      //    tell me "leave it in place".
+      // 2. I can do custom handling for the actual content, doing a smart replacement
+      //    using available metadata *in a single pass*.
+      //
+      // A note there: getting the ordering right matters! `content` can have access to
+      // configuration data (_a la_ the "data cascade" common in many SSGs) and the
+      // content of any item can have access to the metadata, if any, as long as the shape
+      // of the iteration is fold-like where the metadata is "captured".
+      //
+      // (Moving to an actual database would let for much smarter approaches to merging
+      // all of that kind of data.)
       let Components { header, body } = Components::try_from(source.contents.as_ref())?;
       let metadata = Metadata::new(&source.path, root_dir, header)?;
 

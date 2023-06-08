@@ -37,7 +37,10 @@ pub(super) fn render<S: AsRef<str>>(
             // and relies on correctly calling `highlighter.finalize()` when we
             // reach the end of the code block.
             CodeHighlightingState::KnownSyntax(ref mut generator) => {
-               generator.parse_html_for_line_which_includes_newline(text.as_ref());
+               generator
+                  .parse_html_for_line_which_includes_newline(text.as_ref())
+                  .map_err(|e| format!("{e}"))?;
+
                events.push(Event::Text("".into()));
             }
             // This has the same constraint as `KnownSyntax`, but requires that
@@ -57,7 +60,9 @@ pub(super) fn render<S: AsRef<str>>(
                         )
                         .into(),
                      ));
-                     generator.parse_html_for_line_which_includes_newline(&text);
+                     generator
+                        .parse_html_for_line_which_includes_newline(&text)
+                        .map_err(|e| format!("{e}"))?;
                      state = CodeHighlightingState::KnownSyntax(generator);
                      events.push(Event::Text("".into()));
                   }
