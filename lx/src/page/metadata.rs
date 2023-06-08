@@ -1,4 +1,4 @@
-mod serial;
+pub(crate) mod serial;
 
 use std::path::Path;
 

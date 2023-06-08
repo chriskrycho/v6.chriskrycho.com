@@ -4,7 +4,9 @@ use pulldown_cmark::{
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
 
-use crate::page::metadata::Metadata;
+// TODO: use both? Or something. Figure out something reasonable here.
+// use crate::page::metadata::Metadata;
+use crate::page::metadata::serial::Metadata;
 
 enum HighlightingState<'a> {
    RequiresFirstLineParse,
@@ -16,7 +18,7 @@ enum HighlightingState<'a> {
 // amount of it into a DB?)
 enum State<'c> {
    Default,
-   DefaultWithMetaData(Metadata),
+   DefaultWithMetaData(Box<Metadata>),
    MetadataBlock(MetadataBlockKind),
    CodeBlock(HighlightingState<'c>),
 }
@@ -62,7 +64,9 @@ pub(super) fn render<S: AsRef<str>>(
             State::Default => events.push(Event::Text(text)),
 
             State::MetadataBlock(MetadataBlockKind::YamlStyle) => {
-               todo!("Parse metadata as YAML!")
+               let metadata: Metadata = serde_yaml::from_slice(text.as_bytes())
+                  .map_err(|e| format!("Could not parse metadata!\n\tError: {e}\n\t"))?;
+               state = State::DefaultWithMetaData(Box::new(metadata));
             },
 
             State::MetadataBlock(MetadataBlockKind::PlusesStyle) => unimplemented!("No TOML support!"),
