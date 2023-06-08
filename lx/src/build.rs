@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use normalize_path::NormalizePath;
 use rayon::prelude::*;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, ClassStyle};
@@ -9,8 +10,8 @@ use crate::config::Config;
 use crate::page::{Page, Source};
 
 pub fn build(in_dir: &Path) -> Result<(), String> {
-   let in_dir = std::fs::canonicalize(in_dir).map_err(|e| e.to_string())?;
-   let config_path = in_dir.join(PathBuf::from("_data/config.json5"));
+   let in_dir = in_dir.normalize();
+   let config_path = in_dir.join("_data/config.json5");
    let config = Config::from_file(&config_path)?;
 
    let syntax_set = load_syntaxes();
