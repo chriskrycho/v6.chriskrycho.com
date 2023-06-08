@@ -1,26 +1,25 @@
+use std::path::PathBuf;
+
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{generate_to, shells::Fish};
 
-use crate::errors::LxError;
+use lx::errors::LxError;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about)]
-pub struct Lx {
+#[clap(
+   name = "Lightning (lx)",
+   about = "A very fast, very opinionated static site generator",
+   version = "1.0",
+   author = "Chris Krycho <hello@@chriskrycho.com>"
+)]
+#[command(author, version, about, arg_required_else_help(true))]
+pub struct Cli {
    #[command(subcommand)]
-   pub command: Option<Command>,
+   pub command: Command,
 }
 
-impl Lx {
-   pub fn run(&mut self) -> Result<(), LxError> {
-      match self.command.unwrap_or(Command::Run) {
-         Command::UI => todo!("UI"),
-         Command::Publish => todo!("Publish"),
-         Command::Run => todo!("Run"),
-         Command::Completions => self.completions(),
-      }
-   }
-
-   fn completions(&mut self) -> Result<(), LxError> {
+impl Cli {
+   pub(crate) fn completions(&mut self) -> Result<(), LxError> {
       let mut config_dir = dirs::home_dir().ok_or_else(|| LxError::NoHomeDir)?;
       config_dir.extend([".config", "fish", "completions"]);
       let mut cmd = Self::command();
@@ -30,16 +29,19 @@ impl Lx {
    }
 }
 
-#[derive(Subcommand, Debug, PartialEq, Copy, Clone)]
+#[derive(Subcommand, Debug, PartialEq, Clone)]
 pub enum Command {
-   #[command(about = "🕸️ Launch the web UI!")]
-   UI,
+   #[command(about = "🛠️ Let's do some work.")]
+   UI {
+      #[arg(short = 'w')]
+      web: bool,
+   },
 
    #[command(about = "🚀 Go live.")]
-   Publish,
-
-   #[command(about = "🛠️ Let's do some work.")]
-   Run,
+   Publish {
+      /// The root of the site (if different from the current directory).
+      site_directory: Option<PathBuf>,
+   },
 
    /// Give me completions for my own dang tool.
    #[command(about = "🐟 Straight to the config.")]
