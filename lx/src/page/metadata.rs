@@ -56,15 +56,16 @@ impl Metadata {
          (None, None) => Err(String::from("missing date and title")),
       })?;
 
-      let slug = item_metadata
-         .permalink
-         .map(|permalink| {
-            permalink
-               .trim_start_matches('/')
-               .trim_end_matches('/')
-               .to_string()
-         })
-         .unwrap_or_else(|| {
+      let permalink = item_metadata.permalink.map(|permalink| {
+         permalink
+            .trim_start_matches('/')
+            .trim_end_matches('/')
+            .to_string()
+      });
+
+      let slug = match permalink {
+         Some(p) => p,
+         None => {
             let src_for_slug = src_path
                .file_stem()
                .unwrap_or_else(|| {
@@ -98,7 +99,8 @@ impl Metadata {
                })
                .to_string_lossy()
                .to_string()
-         });
+         }
+      };
 
       Ok(Metadata {
          required,

@@ -1,12 +1,11 @@
 use pulldown_cmark::{
    html, CodeBlockKind, Event, MetadataBlockKind, Options, Parser, Tag, TagEnd,
 };
+
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
 
-// TODO: use both? Or something. Figure out something reasonable here.
-// use crate::page::metadata::Metadata;
-use crate::page::metadata::serial::Metadata;
+use crate::page::metadata::Metadata;
 
 enum HighlightingState<'a> {
    RequiresFirstLineParse,
@@ -23,24 +22,41 @@ enum State<'c> {
    CodeBlock(HighlightingState<'c>),
 }
 
-/// The result of rendering the content with Markdown.
-pub struct Rendered(String);
+impl<'c> TryFrom<State<'c>> for Option<Metadata> {
+   type Error = String;
 
-impl From<Rendered> for String {
-   fn from(value: Rendered) -> Self {
-      value.0
+   fn try_from(value: State<'c>) -> Result<Self, Self::Error> {
+      match value {
+         State::Default => Ok(None),
+         State::DefaultWithMetaData(metadata) => Ok(Some(*metadata)),
+         State::MetadataBlock(_) => Err("Missing metadata while in block".into()),
+         State::CodeBlock(_) => Ok(None),
+      }
    }
 }
 
-pub(super) fn render<S: AsRef<str>>(
-   src: S,
-   syntax_set: &SyntaxSet,
-) -> Result<Rendered, String> {
-   // TODO: set up the options *once* and pass them in, don't do it every single time!
-   let mut options = Options::all();
-   options.set(Options::ENABLE_OLD_FOOTNOTES, false);
-   options.set(Options::ENABLE_FOOTNOTES, true);
+/// The result of rendering the content with Markdown.
+pub struct Rendered {
+   pub(crate) content: String,
+   pub(crate) metadata: Option<Metadata>,
+}
 
+impl From<Rendered> for String {
+   fn from(value: Rendered) -> Self {
+      value.content
+   }
+}
+
+pub(super) fn render<S, F>(
+   src: S,
+   get_metadata: F,
+   options: Options,
+   syntax_set: &SyntaxSet,
+) -> Result<Rendered, String>
+where
+   S: AsRef<str>,
+   F: Fn(&str) -> Result<Metadata, String>,
+{
    let src_str = src.as_ref();
    let parser = Parser::new_ext(src_str, options);
 
@@ -53,8 +69,7 @@ pub(super) fn render<S: AsRef<str>>(
             State::Default => events.push(Event::Text(text)),
 
             State::MetadataBlock(MetadataBlockKind::YamlStyle) => {
-               let metadata: Metadata = serde_yaml::from_slice(text.as_bytes())
-                  .map_err(|e| format!("Could not parse metadata!\n\tError: {e}\n\t"))?;
+               let metadata = get_metadata(&text)?;
                state = State::DefaultWithMetaData(Box::new(metadata));
             }
 
@@ -177,8 +192,12 @@ pub(super) fn render<S: AsRef<str>>(
    }
 
    let mut html_output = String::with_capacity(src_str.len() * 2);
-
    html::push_html(&mut html_output, events.into_iter());
 
-   Ok(Rendered(html_output))
+   let metadata: Option<Metadata> = state.try_into()?;
+
+   Ok(Rendered {
+      content: html_output,
+      metadata,
+   })
 }

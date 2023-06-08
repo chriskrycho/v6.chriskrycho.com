@@ -9,6 +9,7 @@ use std::{
    path::{Path, PathBuf},
 };
 
+use pulldown_cmark::Options;
 use serde::{Deserialize, Serialize};
 use syntect::parsing::SyntaxSet;
 use uuid::Uuid;
@@ -56,6 +57,7 @@ impl Page {
       root_dir: &Path,
       syntax_set: &SyntaxSet,
       config: &Config,
+      options: Options,
    ) -> Result<Self, String> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
       // don't want to do it based on the source path (or if I do, *only* initially as
@@ -84,12 +86,12 @@ impl Page {
       //
       // (Moving to an actual database would let for much smarter approaches to merging
       // all of that kind of data.)
-      let Components { header, body } = Components::try_from(source.contents.as_ref())?;
-      let metadata = Metadata::new(&source.path, root_dir, header)?;
 
-      let preprocessed = Preprocessed::from_str(body, config, &metadata);
-      let rendered_as_html = markdown::render(preprocessed, syntax_set)?;
-      let contents = postprocess(rendered_as_html, config, &metadata);
+      let get_metadata = |input: &str| Metadata::new(&source.path, root_dir, input);
+
+      let rendered =
+         markdown::render(&source.contents, get_metadata, options, syntax_set)?;
+      let contents = postprocess(rendered, config);
 
       Ok(Page {
          id,
@@ -117,27 +119,6 @@ impl From<&Page> for lx_json_feed::FeedItem {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PageCollections(HashMap<Id, crate::collection::Id>);
 
-struct Preprocessed<'s>(&'s str);
-
-impl<'a> Preprocessed<'a> {
-   fn from_str(
-      text: &'a str,
-      _config: &Config,
-      _metadata: &Metadata,
-   ) -> Preprocessed<'a> {
-      // TODO: implement *actual* preprocessing using the data:
-      //
-      // - substitute all references from metadata
-      Preprocessed(text)
-   }
-}
-
-impl<'a> AsRef<str> for Preprocessed<'a> {
-   fn as_ref(&self) -> &str {
-      self.0
-   }
-}
-
 #[derive(Debug)]
 pub struct PostProcessed(String);
 
@@ -153,11 +134,7 @@ impl std::fmt::Display for PostProcessed {
    }
 }
 
-fn postprocess(
-   rendered: Rendered,
-   _config: &Config,
-   _metadata: &Metadata,
-) -> PostProcessed {
+fn postprocess(rendered: Rendered, _config: &Config) -> PostProcessed {
    // TODO: use the config and metadata to substitute the values
    PostProcessed(rendered.into())
 }

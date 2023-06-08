@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use normalize_path::NormalizePath;
+use pulldown_cmark::Options;
 use rayon::prelude::*;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, ClassStyle};
@@ -39,6 +40,10 @@ pub fn build(in_dir: &Path) -> Result<(), String> {
    std::fs::write(config.output.join("light.css"), light).expect("can write output yo!");
    std::fs::write(config.output.join("dark.css"), dark).expect("can write output yo!");
 
+   let mut options = Options::all();
+   options.set(Options::ENABLE_OLD_FOOTNOTES, false);
+   options.set(Options::ENABLE_FOOTNOTES, true);
+
    // NOTES:
    //
    // - It's not clear how much benefit I get from parallelizing the I/O here.
@@ -59,7 +64,7 @@ pub fn build(in_dir: &Path) -> Result<(), String> {
         })
         .map(|result| {
             result.and_then(|source| {
-                Page::new(&source, &in_dir.join("content"), &syntax_set, &config)
+                Page::new(&source, &in_dir.join("content"), &syntax_set, &config, options)
                     .map_err(|e| format!("{}: {}", source.path.display(), e))
             })
         })
