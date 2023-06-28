@@ -1,3 +1,5 @@
+// TODO: switch everything over to using thiserror instead of String!
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,3 +9,5 @@ pub enum LxError {
    #[error("Failed to generate completions")]
    CompletionError(std::io::Error),
 }
+
+pub(crate) type Result<T> = std::result::Result<T, String>;

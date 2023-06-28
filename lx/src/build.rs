@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use normalize_path::NormalizePath;
 use pulldown_cmark::Options;
-use rayon::prelude::*;
+// use rayon::prelude::*;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, ClassStyle};
 use syntect::parsing::SyntaxSet;
@@ -65,7 +65,8 @@ pub fn build(in_dir: &Path) -> Result<(), String> {
       .collect::<Result<Vec<Source>, String>>()?;
 
    let pages = contents
-      .into_par_iter()
+      // .into_par_iter()
+      .into_iter()
       .map(|source| {
          Page::new(
             &source,

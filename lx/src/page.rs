@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use syntect::parsing::SyntaxSet;
 use uuid::Uuid;
 
-use crate::markdown::alt::{render, Rendered};
+use crate::markdown::{render, Rendered};
 // use crate::markdown::{self, Rendered};
 
 use crate::config::Config;
