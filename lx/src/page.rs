@@ -1,9 +1,7 @@
-pub mod components;
 pub mod metadata;
 
 use std::{
    collections::HashMap,
-   convert::TryFrom,
    hash::Hash,
    os::unix::prelude::OsStrExt,
    path::{Path, PathBuf},
@@ -14,8 +12,8 @@ use serde::{Deserialize, Serialize};
 use syntect::parsing::SyntaxSet;
 use uuid::Uuid;
 
-use crate::markdown::{self, Rendered};
-use components::Components;
+use crate::markdown::alt::{render, Rendered};
+// use crate::markdown::{self, Rendered};
 
 use crate::config::Config;
 
@@ -48,7 +46,7 @@ pub struct Page {
    pub metadata: Metadata,
 
    /// The fully-rendered contents of the page.
-   pub contents: PostProcessed,
+   pub content: String,
 }
 
 impl Page {
@@ -89,14 +87,20 @@ impl Page {
 
       let get_metadata = |input: &str| Metadata::new(&source.path, root_dir, input);
 
-      let rendered =
-         markdown::render(&source.contents, get_metadata, options, syntax_set)?;
-      let contents = postprocess(rendered, config);
+      println!("Working on {}", source.path.display());
+      let Rendered { content, metadata } = render(
+         &source.contents,
+         get_metadata,
+         |text, _metadata| text.to_string(), // TODO: this can do something smarter later!
+         options,
+         syntax_set,
+      )?;
+      println!("Finished {}", source.path.display());
 
       Ok(Page {
          id,
          metadata,
-         contents,
+         content,
       })
    }
 
@@ -118,23 +122,3 @@ impl From<&Page> for lx_json_feed::FeedItem {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PageCollections(HashMap<Id, crate::collection::Id>);
-
-#[derive(Debug)]
-pub struct PostProcessed(String);
-
-impl AsRef<[u8]> for PostProcessed {
-   fn as_ref(&self) -> &[u8] {
-      self.0.as_ref()
-   }
-}
-
-impl std::fmt::Display for PostProcessed {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      write!(f, "{}", self.0)
-   }
-}
-
-fn postprocess(rendered: Rendered, _config: &Config) -> PostProcessed {
-   // TODO: use the config and metadata to substitute the values
-   PostProcessed(rendered.into())
-}

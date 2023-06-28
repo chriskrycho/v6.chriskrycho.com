@@ -7,38 +7,38 @@ use serde_derive::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct Metadata {
-   pub(super) title: Option<String>,
-   pub(super) subtitle: Option<String>,
-   pub(super) summary: Option<String>,
-   pub(super) qualifiers: Option<Qualifiers>,
-   pub(super) date: Option<DateTime<FixedOffset>>,
-   pub(super) updated: Option<DateTime<FixedOffset>>,
-   pub(super) permalink: Option<String>,
-   pub(super) thanks: Option<String>,
+   pub title: Option<String>,
+   pub subtitle: Option<String>,
+   pub summary: Option<String>,
+   pub qualifiers: Option<Qualifiers>,
+   pub date: Option<DateTime<FixedOffset>>,
+   pub updated: Option<DateTime<FixedOffset>>,
+   pub permalink: Option<String>,
+   pub thanks: Option<String>,
    #[serde(default)]
-   pub(super) tags: Vec<String>,
+   pub tags: Vec<String>,
    #[serde(default)]
-   pub(super) featured: bool,
-   pub(super) layout: Option<String>,
-   pub(super) book: Option<Book>,
-   pub(super) series: Option<Series>,
-   pub(super) subscribe: Option<Subscribe>,
+   pub featured: bool,
+   pub layout: Option<String>,
+   pub book: Option<Book>,
+   pub series: Option<Series>,
+   pub subscribe: Option<Subscribe>,
 }
 
 #[derive(Deserialize, Debug)]
-pub(super) struct Qualifiers {
+pub struct Qualifiers {
    audience: Option<String>,
    epistemic: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
-pub(super) struct Subscribe {
+pub struct Subscribe {
    atom: Option<String>,
    json: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
-pub(super) struct Book {
+pub struct Book {
    title: Option<String>,
    author: Option<String>,
    /// Year is a `String`, rather than something like a `u16`, because years
@@ -53,7 +53,7 @@ pub(super) struct Book {
 }
 
 #[derive(Deserialize, Debug)]
-pub(super) struct Review {
+pub struct Review {
    rating: Rating,
    summary: String,
 }
@@ -90,7 +90,7 @@ impl std::fmt::Display for Rating {
 }
 
 #[derive(Deserialize, Debug)]
-pub(super) struct Series {
+pub struct Series {
    // The name is optional: it could be supplied via the data file somewhere up
    // the tree.
    name: Option<String>,

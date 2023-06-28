@@ -52,61 +52,59 @@ pub fn build(in_dir: &Path) -> Result<(), String> {
    // - At a minimum, there's a necessary choke point of collecting all of the
    //   rendered files so do further iteration before writing things out, b/c
    //   it's actually not possible to know what to render *without* that.
-   content
-        .into_par_iter()
-        .map(|path| {
-            std::fs::read_to_string(&path)
-                .map(|contents| Source {
-                    path: path.clone(),
-                    contents,
-                })
-                .map_err(|e| format!("{}: {}", path.display(), e))
-        })
-        .map(|result| {
-            result.and_then(|source| {
-                Page::new(&source, &in_dir.join("content"), &syntax_set, &config, options)
-                    .map_err(|e| format!("{}: {}", source.path.display(), e))
-            })
-        })
-        .map(|result| {
-            result.and_then(|page| {
-                let path = page.path_from_root(&config.output).with_extension("html");
-                let containing_dir = path
-                    .parent()
-                    .ok_or_else(|| format!("{} should have a containing dir!", path.display()))?;
+   //
+   // This is, generally speaking, a better use case for `.async`, I think? But
+   // I really do not want or need that in this particular code base (at least,
+   // not yet!).
+   let contents = content
+      .into_iter()
+      .map(|path| match std::fs::read_to_string(&path) {
+         Ok(contents) => Ok(Source { path, contents }),
+         Err(e) => Err(format!("{}: {}", &path.display(), e)),
+      })
+      .collect::<Result<Vec<Source>, String>>()?;
 
-                std::fs::create_dir_all(containing_dir)
-                    .map_err(|e| format!("{}: {}", path.display(), e))?;
+   let pages = contents
+      .into_par_iter()
+      .map(|source| {
+         Page::new(
+            &source,
+            &in_dir.join("content"),
+            &syntax_set,
+            &config,
+            options,
+         )
+         .map_err(|e| format!("{}: {}", source.path.display(), e))
+      })
+      .collect::<Result<Vec<Page>, String>>()?;
 
-                // TODO: replace with a templating engine!
-                std::fs::write(
-                    &path,
-                    format!(
-                        r#"<html>
-                            <head>
-                                <link rel="stylesheet" href="/light.css" media="(prefers-color-scheme: light)" />
-                                <link rel="stylesheet" href="/dark.css" media="(prefers-color-scheme: dark)" />
-                            </head>
-                            <body>
-                                {body}
-                            </body>
-                        </html>"#,
-                        body = page.contents
-                    ),
-                )
-                .map_err(|e| format!("{}: {}", path.display(), e))
-            })
-        })
-        .fold(
-            || Ok(()),
-            |so_far, result| match (so_far, result) {
-                (Ok(_), Ok(_)) => Ok(()),
-                (Err(s), Ok(_)) => Err(s),
-                (Ok(_), Err(e)) => Err(e),
-                (Err(s), Err(e)) => Err(s + &e),
-            },
-        )
-        .collect()
+   pages.into_iter().try_for_each(|page| {
+      let path = page.path_from_root(&config.output).with_extension("html");
+      let containing_dir = path
+         .parent()
+         .ok_or_else(|| format!("{} should have a containing dir!", path.display()))?;
+
+      std::fs::create_dir_all(containing_dir)
+         .map_err(|e| format!("{}: {}", path.display(), e))?;
+
+      // TODO: replace with a templating engine!
+       std::fs::write(
+           &path,
+           format!(
+               r#"<html>
+                   <head>
+                       <link rel="stylesheet" href="/light.css" media="(prefers-color-scheme: light)" />
+                       <link rel="stylesheet" href="/dark.css" media="(prefers-color-scheme: dark)" />
+                   </head>
+                   <body>
+                       {body}
+                   </body>
+               </html>"#,
+               body = page.content
+           ),
+       )
+       .map_err(|e| format!("{}: {}", path.display(), e))
+   })
 }
 
 struct SiteFiles {

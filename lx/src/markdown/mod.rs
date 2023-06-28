@@ -1,3 +1,5 @@
+pub mod alt;
+
 use pulldown_cmark::{
    html, CodeBlockKind, Event, MetadataBlockKind, Options, Parser, Tag, TagEnd,
 };
@@ -14,7 +16,15 @@ enum HighlightingState<'a> {
 }
 
 // TODO: can I type-state-ify this? (Alternatively, drop it because I shove an enormous
-// amount of it into a DB?)
+// amount of it into a DB?) The big thing here is: I need to keep track of the metadata
+// state and the code highlighting state separately. I also need to decide (related to the
+// previous parenthetical!) whether I want to pull files from disk or not, and therefore
+// require metadata or not. In the case that I do not, I should not parse metadata! In the
+// case that I *do*, I must *require* metadata, which makes the state machine look
+// something like: `NotStarted` -> `ParsedMetadata(Metadata)` with an early return for the
+// failure case where it is not the first thing? That could simplify it to not even use
+// types: just pull the first item: it *must* be metadata. Alternatively, turn off
+// metadata parsing.
 enum State<'c> {
    Default,
    DefaultWithMetaData(Box<Metadata>),
@@ -22,15 +32,17 @@ enum State<'c> {
    CodeBlock(HighlightingState<'c>),
 }
 
-impl<'c> TryFrom<State<'c>> for Option<Metadata> {
+impl<'c> TryFrom<State<'c>> for Metadata {
    type Error = String;
 
    fn try_from(value: State<'c>) -> Result<Self, Self::Error> {
       match value {
-         State::Default => Ok(None),
-         State::DefaultWithMetaData(metadata) => Ok(Some(*metadata)),
-         State::MetadataBlock(_) => Err("Missing metadata while in block".into()),
-         State::CodeBlock(_) => Ok(None),
+         State::Default => Err("No metadata".into()),
+         State::DefaultWithMetaData(metadata) => Ok(*metadata),
+         State::MetadataBlock(_) => {
+            Err("Incomplete markdown: ended in metadata block".into())
+         }
+         State::CodeBlock(_) => Err("Incomplete Markdown: ended in code block!".into()),
       }
    }
 }
@@ -38,13 +50,7 @@ impl<'c> TryFrom<State<'c>> for Option<Metadata> {
 /// The result of rendering the content with Markdown.
 pub struct Rendered {
    pub(crate) content: String,
-   pub(crate) metadata: Option<Metadata>,
-}
-
-impl From<Rendered> for String {
-   fn from(value: Rendered) -> Self {
-      value.content
-   }
+   pub(crate) metadata: Metadata,
 }
 
 pub(super) fn render<S, F>(
@@ -187,17 +193,24 @@ where
             }
          },
 
+         Event::End(TagEnd::MetadataBlock(_kind)) => match state {
+            State::DefaultWithMetaData(metadata) => {
+               println!("Ending metadata block");
+               state = State::DefaultWithMetaData(metadata)
+            }
+            _ => {
+               unreachable!("Cannot end a metadata block when not in a metadata block")
+            }
+         },
+
          _ => events.push(event),
       }
    }
 
-   let mut html_output = String::with_capacity(src_str.len() * 2);
-   html::push_html(&mut html_output, events.into_iter());
+   let metadata: Metadata = state.try_into()?;
 
-   let metadata: Option<Metadata> = state.try_into()?;
+   let mut content = String::with_capacity(src_str.len() * 2);
+   html::push_html(&mut content, events.into_iter());
 
-   Ok(Rendered {
-      content: html_output,
-      metadata,
-   })
+   Ok(Rendered { content, metadata })
 }

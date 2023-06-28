@@ -10,8 +10,10 @@ description = "⚡️ My awesome tool for building my own website."
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["unicode", "derive"] }
 clap_complete = "4"
+diesel = { version = "2.1.0", features = ["sqlite"] }
 dirs = "5"
 glob = "0.3"
+indexmap = "2.0.0"
 json5 = "0.4"
 lazy_static = "1.4"
 lx-json-feed = { path = "./crates/json-feed" }

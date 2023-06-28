@@ -21,23 +21,23 @@ pub enum RequiredFields {
 #[derive(Debug)]
 pub struct Metadata {
    /// The date, title, or both (every item must have one or the other)
-   required: RequiredFields,
+   pub required: RequiredFields,
 
    /// The path to this piece of content.
    pub slug: String,
 
-   layout: String,
+   pub layout: String,
 
-   subtitle: Option<String>,
-   summary: Option<String>,
-   qualifiers: Option<Qualifiers>,
-   updated: Option<DateTime<FixedOffset>>,
-   thanks: Option<String>,
-   tags: Vec<String>,
-   featured: bool,
-   book: Option<Book>,
-   series: Option<Series>,
-   subscribe: Option<Subscribe>,
+   pub subtitle: Option<String>,
+   pub summary: Option<String>,
+   pub qualifiers: Option<Qualifiers>,
+   pub updated: Option<DateTime<FixedOffset>>,
+   pub thanks: Option<String>,
+   pub tags: Vec<String>,
+   pub featured: bool,
+   pub book: Option<Book>,
+   pub series: Option<Series>,
+   pub subscribe: Option<Subscribe>,
 }
 
 impl Metadata {
