@@ -87,7 +87,6 @@ impl Page {
 
       let get_metadata = |input: &str| Metadata::new(&source.path, root_dir, input);
 
-      println!("Working on {}", source.path.display());
       let Rendered { content, metadata } = render(
          &source.contents,
          get_metadata,
@@ -95,7 +94,6 @@ impl Page {
          options,
          syntax_set,
       )?;
-      println!("Finished {}", source.path.display());
 
       Ok(Page {
          id,
