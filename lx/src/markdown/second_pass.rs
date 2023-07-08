@@ -147,7 +147,6 @@ impl<'e> From<SecondPass<'_, 'e, '_>> for Vec<pulldown_cmark::Event<'e>> {
          {
             footnote_events.push(Html(format!(r#"<li id="{index}">"#).into()));
 
-            // TODO: handle location of link in final paragraph
             let backref = Html(
                format!(
                   r##"<a href="#{backref}" class="fn-backref">↩</a>"##,

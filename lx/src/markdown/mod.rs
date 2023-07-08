@@ -87,11 +87,6 @@ pub fn render(
 
    let (metadata, first_pass_events, footnote_definitions) = first_pass.finalize()?;
 
-   // TODO:
-   //
-   // - rewrite `text`
-   // - syntax highlight code block content
-   // - emit the right event for footnotes
    let mut second_pass = SecondPass::new(&metadata, footnote_definitions, syntax_set);
    for event in first_pass_events {
       second_pass.event(event, &rewrite)?;
