@@ -12,10 +12,8 @@ use serde::{Deserialize, Serialize};
 use syntect::parsing::SyntaxSet;
 use uuid::Uuid;
 
-use crate::markdown::{render, Rendered};
-// use crate::markdown::{self, Rendered};
-
 use crate::config::Config;
+use crate::markdown::{render, Rendered};
 
 use self::metadata::Metadata;
 

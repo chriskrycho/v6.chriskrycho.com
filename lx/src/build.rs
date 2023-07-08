@@ -44,18 +44,6 @@ pub fn build(in_dir: &Path) -> Result<(), String> {
    options.set(Options::ENABLE_OLD_FOOTNOTES, false);
    options.set(Options::ENABLE_FOOTNOTES, true);
 
-   // NOTES:
-   //
-   // - It's not clear how much benefit I get from parallelizing the I/O here.
-   // - The main benefit of parallelization is taking the data on disk, once it
-   //   is all read in, and processing all of the files.
-   // - At a minimum, there's a necessary choke point of collecting all of the
-   //   rendered files so do further iteration before writing things out, b/c
-   //   it's actually not possible to know what to render *without* that.
-   //
-   // This is, generally speaking, a better use case for `.async`, I think? But
-   // I really do not want or need that in this particular code base (at least,
-   // not yet!).
    let contents = content
       .into_iter()
       .map(|path| match std::fs::read_to_string(&path) {
@@ -117,29 +105,22 @@ fn get_files_to_load(in_dir: &Path) -> SiteFiles {
    let dir_for_glob = content_dir.display();
 
    SiteFiles {
-      configs: get_files(format!("{}/**/config.lx.yaml", dir_for_glob)),
-      content: get_files(format!("{}/**/*.md", dir_for_glob)),
+      configs: get_files(&format!("{}/**/config.lx.yaml", dir_for_glob)),
+      content: get_files(&format!("{}/**/*.md", dir_for_glob)),
    }
 }
 
-fn get_files<S: AsRef<str>>(glob_src: S) -> Vec<PathBuf> {
-   let src = glob_src.as_ref();
-   let (ok_files, err_files): (Vec<PathBuf>, Vec<String>) = glob::glob(src)
-      .unwrap_or_else(|_| panic!("bad glob: '{}'", src))
-      .fold((vec![], vec![]), |(mut good, mut bad), result| {
+fn get_files(glob_src: &str) -> Vec<PathBuf> {
+   glob::glob(glob_src)
+      .unwrap_or_else(|_| panic!("bad glob: '{}'", glob_src))
+      .fold(Vec::new(), |mut good, result| {
          match result {
             Ok(path) => good.push(path),
-            Err(e) => bad.push(e.to_string()),
+            Err(e) => eprintln!("glob problem (globlem?): '{}'", e),
          };
 
-         (good, bad)
-      });
-
-   for err in err_files {
-      eprintln!("problem with {}", err);
-   }
-
-   ok_files
+         good
+      })
 }
 
 fn load_syntaxes() -> SyntaxSet {
