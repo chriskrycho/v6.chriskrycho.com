@@ -2,6 +2,11 @@ use chrono::{DateTime, FixedOffset};
 
 use super::serial::{self, Book, Qualifiers, Series, Subscribe};
 
+// NOTE: this is currently quite naïve and in fact *wrong* as a result: what I
+// will actually need is a *tree*, where each point in the tree has two pieces
+// of info: the path to that point, and the Metadata for that point. The path
+// may want to be just the name of that point in the tree. (I *think* I need
+// that, anyway!)
 pub(crate) struct Cascade {
    stack: Vec<serial::Metadata>,
 }
@@ -18,10 +23,6 @@ impl Cascade {
 
    pub(crate) fn layout(&self) -> Option<String> {
       self.find_map(|m| m.layout.clone())
-   }
-
-   pub(crate) fn subtitle(&self) -> Option<String> {
-      self.find_map(|m| m.subtitle.clone())
    }
 
    pub(crate) fn summary(&self) -> Option<String> {
