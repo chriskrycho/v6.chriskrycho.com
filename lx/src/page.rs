@@ -114,24 +114,6 @@ impl Page {
          source.path.as_os_str().as_bytes(),
       ));
 
-      // TODO: the Markdown renderer can now handle metadata blocks. One option here is:
-      // push *all* of this handling into the Markdown iterator. Using the event iterator
-      // directly lets me drive the emit in a couple nice ways:
-      //
-      // 1. I can do custom handling for different kinds of notes; I could, for example,
-      //    make a custom "inline note" syntax like `[^-a]` where the `-` is sufficient to
-      //    tell me "leave it in place".
-      // 2. I can do custom handling for the actual content, doing a smart replacement
-      //    using available metadata *in a single pass*.
-      //
-      // A note there: getting the ordering right matters! `content` can have access to
-      // configuration data (_a la_ the "data cascade" common in many SSGs) and the
-      // content of any item can have access to the metadata, if any, as long as the shape
-      // of the iteration is fold-like where the metadata is "captured".
-      //
-      // (Moving to an actual database would let for much smarter approaches to merging
-      // all of that kind of data.)
-
       // TODO: get this from upstream!
       let cascade = Cascade::new();
 
