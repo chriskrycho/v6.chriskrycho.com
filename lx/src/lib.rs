@@ -3,9 +3,9 @@
 pub mod build;
 pub mod collection;
 pub mod config;
-pub mod errors;
 pub mod feed;
 pub mod markdown;
+pub mod metadata;
 pub mod page;
 
 pub use build::build;

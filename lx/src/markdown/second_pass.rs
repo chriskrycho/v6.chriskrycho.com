@@ -2,8 +2,7 @@ use pulldown_cmark::{CodeBlockKind, CowStr, Tag, TagEnd};
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
 
-use crate::errors::Result;
-use crate::page::metadata::Metadata;
+use crate::metadata::Metadata;
 
 use super::first_pass;
 use super::FootnoteDefinitions;
@@ -22,29 +21,43 @@ pub(super) struct SecondPass<'m, 'e, 's> {
    emitted_definitions: Vec<(CowStr<'e>, Vec<pulldown_cmark::Event<'e>>)>,
 }
 
-impl<'m, 'e, 's> SecondPass<'m, 'e, 's> {
-   pub(super) fn new(
-      metadata: &'m Metadata,
-      footnote_definitions: FootnoteDefinitions<'e>,
-      syntax_set: &'s SyntaxSet,
-   ) -> SecondPass<'m, 'e, 's> {
-      SecondPass {
-         metadata,
-         footnote_definitions,
-         syntax_set,
-         code_block: None,
-         events: vec![],
-         emitted_definitions: vec![],
+#[derive(Debug)]
+pub enum SecondPassError {
+   FinishedNonStartedCodeBlock,
+   UnhandledFootnoteReference(String),
+   BadSyntaxLine(syntect::Error),
+}
+
+impl std::fmt::Display for SecondPassError {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      match self {
+         SecondPassError::FinishedNonStartedCodeBlock => {
+            write!(f, "cannot finish a code block we never started")
+         }
+         SecondPassError::UnhandledFootnoteReference(name) => write!(f,  "all footnote references are handled in the first pass but {name} is provided to the second pass"),
+         SecondPassError::BadSyntaxLine(_) => write!(f, "syntax highlighting failure"),
       }
    }
+}
 
+impl std::error::Error for SecondPassError {
+   fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+      match self {
+         SecondPassError::FinishedNonStartedCodeBlock => None,
+         SecondPassError::UnhandledFootnoteReference(_) => None,
+         SecondPassError::BadSyntaxLine(original) => original.source(),
+      }
+   }
+}
+
+impl<'m, 'e, 's> SecondPass<'m, 'e, 's> {
    /// Returns `Some(String)` when it could successfully emit code but there was something
    /// unexpected about it, e.g. a footnote with a missing definition.
-   pub(super) fn event(
+   fn handle(
       &mut self,
       event: first_pass::Event<'e>,
       rewrite: &impl Fn(&str, &Metadata) -> String,
-   ) -> Result<Option<String>> {
+   ) -> Result<Option<String>, SecondPassError> {
       use pulldown_cmark::Event::*;
 
       match event {
@@ -74,13 +87,13 @@ impl<'m, 'e, 's> SecondPass<'m, 'e, 's> {
                   self.events.append(&mut code_block.end());
                   Ok(None)
                }
-               None => Err(String::from("Cannot finish a code block we never started")),
+               None => Err(SecondPassError::FinishedNonStartedCodeBlock),
             },
 
             // If we find a footnote reference here, something has gone wrong: we should
             // have handled them all during `first_pass`.
-            FootnoteReference(name) => Err(format!(
-               "All footnote references are handled in the first pass but {name} is provided to the second pass"
+            FootnoteReference(name) => Err(SecondPassError::UnhandledFootnoteReference(
+               name.to_string(),
             )),
 
             // Everything else can just be emitted exactly as is.
@@ -124,28 +137,28 @@ fn footnote_backref_name(index: usize) -> String {
    format!("fnref{index}")
 }
 
-impl<'e> From<SecondPass<'_, 'e, '_>> for Vec<pulldown_cmark::Event<'e>> {
-   fn from(value: SecondPass<'_, 'e, '_>) -> Vec<pulldown_cmark::Event<'e>> {
-      let SecondPass {
-         mut events,
-         emitted_definitions,
-         ..
-      } = value;
+impl<'e> std::iter::IntoIterator for State<'_, 'e, '_> {
+   type Item = pulldown_cmark::Event<'e>;
+   type IntoIter = std::vec::IntoIter<pulldown_cmark::Event<'e>>;
 
+   fn into_iter(self) -> Self::IntoIter {
       use pulldown_cmark::Event::*;
 
-      let mut footnote_events = vec![
-         Rule,
-         Html(r#"<section class="footnotes"><ol class="footnotes-list">"#.into()),
-      ];
+      let mut events = self.events;
 
-      if !emitted_definitions.is_empty() {
-         for (index, _, mut definition_events) in emitted_definitions
+      if !self.emitted_definitions.is_empty() {
+         events.push(Rule);
+         events.push(Html(
+            r#"<section class="footnotes"><ol class="footnotes-list">"#.into(),
+         ));
+
+         for (index, _, mut definition_events) in self
+            .emitted_definitions
             .into_iter()
             .enumerate()
             .map(|(index, (name, evts))| (index + 1, name, evts))
          {
-            footnote_events.push(Html(format!(r#"<li id="{index}">"#).into()));
+            events.push(Html(format!(r#"<li id="{index}">"#).into()));
 
             let backref = Html(
                format!(
@@ -159,20 +172,19 @@ impl<'e> From<SecondPass<'_, 'e, '_>> for Vec<pulldown_cmark::Event<'e>> {
                let p = definition_events.pop().unwrap();
                definition_events.push(backref);
                definition_events.push(p);
-               footnote_events.append(&mut definition_events);
+               events.append(&mut definition_events);
             } else {
-               footnote_events.append(&mut definition_events);
-               footnote_events.push(backref);
+               events.append(&mut definition_events);
+               events.push(backref);
             }
 
-            footnote_events.push(End(TagEnd::Item));
+            events.push(End(TagEnd::Item));
          }
 
-         events.append(&mut footnote_events);
          events.push(Html("</ol></section>".into()));
       }
 
-      events
+      events.into_iter()
    }
 }
 
@@ -228,7 +240,7 @@ impl<'c, 's> CodeBlock<'c, 's> {
    ///
    /// Note that it does *not* emit events while highlighting a line. Instead, it stores
    /// internal state which produces a single fully-rendered HTML event when complete.
-   fn highlight(&mut self, text: &CowStr<'c>) -> Result<()> {
+   fn highlight(&mut self, text: &CowStr<'c>) -> Result<(), SecondPassError> {
       match self.highlighting {
          Highlighting::RequiresFirstLineParse => {
             match self.syntax_set.find_syntax_by_first_line(text) {
@@ -249,7 +261,7 @@ impl<'c, 's> CodeBlock<'c, 's> {
                   );
                   generator
                      .parse_html_for_line_which_includes_newline(text)
-                     .map_err(|e| format!("{e}"))?;
+                     .map_err(|e| SecondPassError::BadSyntaxLine(e))?;
                   self.highlighting = Highlighting::KnownSyntax(generator);
                   self.events.push(event);
                   Ok(())
@@ -275,7 +287,7 @@ impl<'c, 's> CodeBlock<'c, 's> {
          Highlighting::KnownSyntax(ref mut generator) => {
             generator
                .parse_html_for_line_which_includes_newline(text.as_ref())
-               .map_err(|e| format!("{e}"))?;
+               .map_err(|e| SecondPassError::BadSyntaxLine(e))?;
 
             // ...and therefore produces no events!
             Ok(())

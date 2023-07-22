@@ -2,7 +2,6 @@
 
 use clap::Parser;
 use cli::Cli;
-use lx::errors::LxError;
 
 mod cli;
 
@@ -19,7 +18,7 @@ fn main() -> Result<(), String> {
    }
 }
 
-fn ui() -> Result<(), LxError> {
+fn ui() -> Result<(), String> {
    todo!()
 }
 

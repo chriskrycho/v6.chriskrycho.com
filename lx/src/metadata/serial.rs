@@ -15,29 +15,27 @@ pub(crate) struct Metadata {
    pub updated: Option<DateTime<FixedOffset>>,
    pub permalink: Option<String>,
    pub thanks: Option<String>,
-   #[serde(default)]
-   pub tags: Vec<String>,
-   #[serde(default)]
-   pub featured: bool,
+   pub tags: Option<Vec<String>>,
+   pub featured: Option<bool>,
    pub layout: Option<String>,
    pub book: Option<Book>,
    pub series: Option<Series>,
    pub subscribe: Option<Subscribe>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Qualifiers {
    audience: Option<String>,
    epistemic: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Subscribe {
    atom: Option<String>,
    json: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Book {
    title: Option<String>,
    author: Option<String>,
@@ -52,7 +50,7 @@ pub struct Book {
    review: Option<Review>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Review {
    rating: Rating,
    summary: String,
@@ -62,7 +60,7 @@ pub struct Review {
 // but in fact it should be derived from the same text as its `Display`
 // implementation below. (A later enhancement: converting "****" etc. to it or
 // something cool like that.)
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 enum Rating {
    #[serde(rename = "Not recommended")]
    NotRecommended,
@@ -89,7 +87,7 @@ impl std::fmt::Display for Rating {
    }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Series {
    // The name is optional: it could be supplied via the data file somewhere up
    // the tree.

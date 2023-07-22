@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
+use thiserror::Error;
+
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{generate_to, shells::Fish};
-
-use lx::errors::LxError;
 
 #[derive(Parser, Debug)]
 #[clap(
@@ -18,14 +18,23 @@ pub struct Cli {
    pub command: Command,
 }
 
+#[derive(Error, Debug)]
+pub(crate) enum CliError {
+   #[error("Somehow you don't have a home dir. lolwut")]
+   NoHomeDir,
+
+   #[error("Failed to generate completions")]
+   CompletionError(std::io::Error),
+}
+
 impl Cli {
-   pub(crate) fn completions(&mut self) -> Result<(), LxError> {
-      let mut config_dir = dirs::home_dir().ok_or_else(|| LxError::NoHomeDir)?;
+   pub(crate) fn completions(&mut self) -> Result<(), CliError> {
+      let mut config_dir = dirs::home_dir().ok_or_else(|| CliError::NoHomeDir)?;
       config_dir.extend([".config", "fish", "completions"]);
       let mut cmd = Self::command();
       generate_to(Fish, &mut cmd, "lx", config_dir)
          .map(|_| ())
-         .map_err(LxError::CompletionError)
+         .map_err(CliError::CompletionError)
    }
 }
 

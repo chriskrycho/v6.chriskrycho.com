@@ -18,10 +18,12 @@ use pulldown_cmark::{
 };
 use syntect::parsing::SyntaxSet;
 
-use crate::errors::Result;
-use crate::page::metadata::Metadata;
+use crate::metadata::Metadata;
+use crate::page::MetadataParseError;
+
 use first_pass::FirstPass;
 use second_pass::SecondPass;
+use self::second_pass::SecondPassError;
 
 pub struct Rendered {
    pub metadata: Metadata,
@@ -33,13 +35,54 @@ pub struct Rendered {
 /// forbidden by both `pulldown_cmark` itself *and* the event handling.
 type FootnoteDefinitions<'e> = HashMap<CowStr<'e>, Vec<Event<'e>>>;
 
+#[derive(Debug)]
+pub enum RenderError {
+   BadMetadataKind,
+   MetadataParseError(MetadataParseError),
+   FirstPass(String),
+   SecondPass(SecondPassError),
+}
+
+impl std::fmt::Display for RenderError {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      match self {
+         Self::MetadataParseError(e) => {
+            write!(f, "failed to parse metadata: {e}")
+         }
+
+         RenderError::BadMetadataKind => write!(f, "No TOML support!"),
+
+         Self::FirstPass(e) => {
+            write!(f, "failed to render Markdown: {e}")
+         }
+
+         RenderError::SecondPass(e) => write!(f, "failed to render Markdown: {e}"),
+      }
+   }
+}
+
+impl std::error::Error for RenderError {
+   fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+      match self {
+         RenderError::MetadataParseError(err) => err.source(),
+
+         // TODO: once *that* has an error, pipe it back through
+         RenderError::FirstPass(_) => None,
+
+         RenderError::BadMetadataKind => None,
+
+         RenderError::SecondPass(e) => e.source(),
+      }
+   }
+}
+
 pub fn render(
    src: impl AsRef<str>,
-   get_metadata: impl Fn(&str) -> Result<Metadata>,
+   get_metadata: impl Fn(&str) -> Result<Metadata, MetadataParseError>,
    rewrite: impl Fn(&str, &Metadata) -> String,
    options: Options,
    syntax_set: &SyntaxSet,
-) -> Result<Rendered> {
+) -> Result<Rendered, RenderError> {
    let src_str = src.as_ref();
    let parser = Parser::new_ext(src_str, options);
 
@@ -64,12 +107,13 @@ pub fn render(
          Event::Text(ref text) => match first_pass {
             FirstPass::ParsingMetadata(parsing) => match parsing.kind() {
                MetadataBlockKind::YamlStyle => {
-                  let metadata = get_metadata(text)?;
+                  let metadata =
+                     get_metadata(text).map_err(RenderError::MetadataParseError)?;
                   first_pass = FirstPass::ParsedMetadata(parsing.parsed(metadata));
                }
 
                MetadataBlockKind::PlusesStyle => {
-                  return Err("No TOML support!".to_string())
+                  return Err(RenderError::BadMetadataKind)
                }
             },
 
@@ -99,10 +143,12 @@ pub fn render(
    Ok(Rendered { content, metadata })
 }
 
-fn bad_state<T, S, C>(state: &S, context: &C) -> Result<T>
+fn bad_state<T, S, C>(state: &S, context: &C) -> Result<T, RenderError>
 where
    S: Debug,
    C: Debug,
 {
-   Err(format!("{state:?} is invalid in {context:?}"))
+   Err(RenderError::FirstPass(format!(
+      "{state:?} is invalid in {context:?}"
+   )))
 }

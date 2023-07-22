@@ -1,11 +1,12 @@
+// TODO: error handling!
+
 use std::{collections::HashMap, fmt::Debug};
 
 use pulldown_cmark::{CowStr, Event as CmarkEvent, MetadataBlockKind, Tag, TagEnd};
 
-use crate::errors::Result;
-use crate::page::metadata::Metadata;
+use crate::metadata::Metadata;
 
-use super::{bad_state, FootnoteDefinitions};
+use super::{bad_state, FootnoteDefinitions, RenderError};
 
 #[derive(Debug)]
 pub(super) struct State<S: ParseState> {
@@ -33,7 +34,7 @@ impl<'e> FirstPass<'e> {
 
    pub(super) fn finalize(
       self,
-   ) -> Result<(Metadata, Vec<Event<'e>>, FootnoteDefinitions<'e>)> {
+   ) -> Result<(Metadata, Vec<Event<'e>>, FootnoteDefinitions<'e>), RenderError> {
       match self {
          FirstPass::Content(content) => Ok((
             content.data.metadata,
@@ -123,10 +124,12 @@ pub(super) struct Content<'e> {
 
 impl<'e> ParseState for Content<'e> {}
 
+// TODO: error handling for these that is smarter than `String`, including cause
+
 impl<'e> State<Content<'e>> {
    /// "Handling" events consists, at this stage, of just distinguishing between
    /// footnote references, footnote definitions, and everything else.
-   pub(super) fn handle(&mut self, event: CmarkEvent<'e>) -> Result<()> {
+   pub(super) fn handle(&mut self, event: CmarkEvent<'e>) -> Result<(), RenderError> {
       match event {
          CmarkEvent::Start(Tag::FootnoteDefinition(name)) => self.start_footnote(name),
          CmarkEvent::End(TagEnd::FootnoteDefinition) => self.end_footnote(),
@@ -151,7 +154,7 @@ impl<'e> State<Content<'e>> {
       }
    }
 
-   fn start_footnote(&mut self, name: CowStr<'e>) -> Result<()> {
+   fn start_footnote(&mut self, name: CowStr<'e>) -> Result<(), RenderError> {
       match self.data.current_footnote {
          Some((ref current, _)) => bad_state(
             &format!("starting footnote {name}"),
@@ -164,7 +167,7 @@ impl<'e> State<Content<'e>> {
       }
    }
 
-   fn end_footnote(&mut self) -> Result<()> {
+   fn end_footnote(&mut self) -> Result<(), RenderError> {
       match self.data.current_footnote.take() {
          Some((current_name, events)) => {
             // `.insert` returns the existing definitions if there are any, so `Some`
@@ -174,10 +177,10 @@ impl<'e> State<Content<'e>> {
                .footnote_definitions
                .insert(current_name.clone(), events)
             {
-               Some(events) => Err(format!(
+               Some(events) => Err(RenderError::FirstPass(format!(
                   "creating duplicate footnote {current_name}: {:?}",
                   events
-               )),
+               ))),
                None => Ok(()),
             }
          }
