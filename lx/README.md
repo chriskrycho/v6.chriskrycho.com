@@ -20,10 +20,10 @@ It is an explicit non-goal to be an exact drop-in replacement for any other gene
 
 ## Roadmap
 
-- [ ] Render Markdown
+- [x] Render Markdown
 
-    - [ ] with [pulldown-cmark]
-    - [ ] with [Syntect] for syntax highlighting
+    - [x] with [pulldown-cmark]
+    - [x] with [Syntect] for syntax highlighting
 
 - [ ] Templating
 
@@ -44,7 +44,7 @@ It is an explicit non-goal to be an exact drop-in replacement for any other gene
     - [ ] SCSS integration
 
 
-- [ ] Embrace parallelism!
+- [ ] Embrace parallelism and concurrency!
 
     - [ ] Via threading, e.g. with Rayon
     - [ ] Via `async`/`.await`?
