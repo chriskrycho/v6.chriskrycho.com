@@ -7,26 +7,44 @@ rust-version = "1.70.0"
 description = "⚡️ My awesome tool for building my own website."
 
 [dependencies]
-chrono = { version = "0.4", features = ["serde"] }
-clap = { version = "4", features = ["unicode", "derive"] }
 clap_complete = "4"
-diesel = { version = "2.1.0", features = ["sqlite"] }
 dirs = "5"
 glob = "0.3"
 indexmap = "2.0.0"
 json5 = "0.4"
 lazy_static = "1.4"
-lx-json-feed = { path = "./crates/json-feed" }
 normalize-path = "0.2"
-pulldown-cmark = { git = "https://github.com/raphlinus/pulldown-cmark.git", default-features = false, features = ["simd", "html"] }
 rayon = "1"
 regex = "1"
 serde = "1"
 serde_derive = "1"
 serde_yaml = "0.9"
 slug = "0.1"
-syntect = { version = "5", default-features = false, features = ["default-fancy"] }
 tera = "1"
 thiserror = "1"
-uuid = {version = "1", features = ["serde", "v5"]}
 yaml-rust = "0.4"
+
+[dependencies.chrono]
+version = "0.4"
+features = ["serde"]
+
+[dependencies.clap]
+version = "4"
+features = ["unicode", "derive"]
+
+[dependencies.lx-json-feed]
+path = "./crates/json-feed"
+
+[dependencies.pulldown-cmark]
+git = "https://github.com/raphlinus/pulldown-cmark.git"
+default-features = false
+features = ["simd", "html"]
+
+[dependencies.syntect]
+version = "5"
+default-features = false
+features = ["default-fancy"]
+
+[dependencies.uuid]
+version = "1"
+features = ["serde", "v5"]
