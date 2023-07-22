@@ -160,6 +160,88 @@ fn footnote_backref_name(index: usize) -> String {
    format!("fnref{index}")
 }
 
+struct Iter<'a, 'e> {
+   events: &'a [pulldown_cmark::Event<'e>],
+   event_index: usize,
+   footnote_events: Vec<pulldown_cmark::Event<'e>>,
+   footnote_event_index: usize,
+}
+
+impl<'a, 'e: 'a> State<'_, 'e, '_> {
+   fn iter(&'a self) -> Iter<'a, 'e> {
+      use pulldown_cmark::Event::*;
+      let mut footnote_events = vec![];
+      if !self.emitted_definitions.is_empty() {
+         footnote_events.push(Rule);
+         footnote_events.push(Html(
+            r#"<section class="footnotes"><ol class="footnotes-list">"#.into(),
+         ));
+
+         for (index, _, definition_events) in self
+            .emitted_definitions
+            .iter()
+            .enumerate()
+            .map(|(index, (name, evts))| (index + 1, name, evts))
+         {
+            let item_open = Html(format!(r#"<li id="{index}">"#).into());
+            footnote_events.push(item_open);
+
+            let backref = Html(
+               format!(
+                  r##"<a href="#{backref}" class="fn-backref">↩</a>"##,
+                  backref = footnote_backref_name(index)
+               )
+               .into(),
+            );
+
+            if let Some(End(TagEnd::Paragraph)) = definition_events.last() {
+               let mut fixed_definition_events = definition_events.clone();
+               let p = fixed_definition_events.pop().unwrap();
+               fixed_definition_events.push(backref);
+               fixed_definition_events.push(p);
+               for event in fixed_definition_events {
+                  footnote_events.push(event);
+               }
+            } else {
+               for event in definition_events {
+                  footnote_events.push(event.clone());
+               }
+               footnote_events.push(backref);
+            }
+
+            footnote_events.push(End(TagEnd::Item));
+         }
+
+         footnote_events.push(Html("</ol></section>".into()));
+      }
+
+      Iter {
+         events: &self.events,
+         event_index: 0,
+         footnote_events,
+         footnote_event_index: 0,
+      }
+   }
+}
+
+impl<'a, 'e: 'a> std::iter::Iterator for Iter<'a, 'e> {
+   type Item = pulldown_cmark::Event<'e>;
+
+   fn next(&mut self) -> Option<Self::Item> {
+      if self.event_index < self.events.len() {
+         let item = self.events[self.event_index].clone();
+         self.event_index += 1;
+         Some(item)
+      } else if self.footnote_event_index < self.footnote_events.len() {
+         let item = self.footnote_events[self.footnote_event_index].clone();
+         self.footnote_event_index += 1;
+         Some(item)
+      } else {
+         None
+      }
+   }
+}
+
 impl<'e> std::iter::IntoIterator for State<'_, 'e, '_> {
    type Item = pulldown_cmark::Event<'e>;
    type IntoIter = std::vec::IntoIter<pulldown_cmark::Event<'e>>;
