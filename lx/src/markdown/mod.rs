@@ -22,7 +22,8 @@ use crate::metadata::Metadata;
 use crate::page::MetadataParseError;
 
 use first_pass::FirstPass;
-use second_pass::SecondPass;
+use second_pass::second_pass;
+
 use self::second_pass::SecondPassError;
 
 pub struct Rendered {
@@ -131,14 +132,17 @@ pub fn render(
 
    let (metadata, first_pass_events, footnote_definitions) = first_pass.finalize()?;
 
-   let mut second_pass = SecondPass::new(&metadata, footnote_definitions, syntax_set);
-   for event in first_pass_events {
-      second_pass.event(event, &rewrite)?;
-   }
-   let events = Vec::<Event>::from(second_pass);
+   let events = second_pass(
+      &metadata,
+      footnote_definitions,
+      syntax_set,
+      first_pass_events,
+      &rewrite,
+   )
+   .map_err(RenderError::SecondPass)?;
 
    let mut content = String::with_capacity(src_str.len() * 2);
-   html::push_html(&mut content, events.into_iter());
+   html::push_html(&mut content, events);
 
    Ok(Rendered { content, metadata })
 }

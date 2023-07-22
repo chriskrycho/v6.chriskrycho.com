@@ -12,7 +12,7 @@ use super::FootnoteDefinitions;
 /// 1. Applying syntax highlighting.
 /// 2. Properly emitting footnotes.
 /// 3. Performing any template-language-type rewriting of text nodes.
-pub(super) struct SecondPass<'m, 'e, 's> {
+struct State<'m, 'e, 's> {
    metadata: &'m Metadata,
    footnote_definitions: FootnoteDefinitions<'e>,
    syntax_set: &'s SyntaxSet,
@@ -50,7 +50,30 @@ impl std::error::Error for SecondPassError {
    }
 }
 
-impl<'m, 'e, 's> SecondPass<'m, 'e, 's> {
+pub(super) fn second_pass<'e>(
+   metadata: &Metadata,
+   footnote_definitions: FootnoteDefinitions<'e>,
+   syntax_set: &SyntaxSet,
+   events: Vec<first_pass::Event<'e>>,
+   rewrite: &impl Fn(&str, &Metadata) -> String,
+) -> Result<impl Iterator<Item = pulldown_cmark::Event<'e>>, SecondPassError> {
+   let mut state = State {
+      metadata,
+      footnote_definitions,
+      syntax_set,
+      code_block: None,
+      events: vec![],
+      emitted_definitions: vec![],
+   };
+
+   for event in events {
+      state.handle(event, rewrite)?;
+   }
+
+   Ok(state.into_iter())
+}
+
+impl<'m, 'e, 's> State<'m, 'e, 's> {
    /// Returns `Some(String)` when it could successfully emit code but there was something
    /// unexpected about it, e.g. a footnote with a missing definition.
    fn handle(
