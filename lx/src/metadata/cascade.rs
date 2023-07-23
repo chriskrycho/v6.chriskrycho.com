@@ -23,7 +23,7 @@ impl Cascade {
       }
    }
 
-   pub(crate) fn insert<P: AsRef<Path>>(
+   pub(crate) fn add_at<P: AsRef<Path>>(
       &mut self,
       path: P,
       value: serial::Metadata,
@@ -97,7 +97,7 @@ mod tests {
    #[test]
    fn direct_lookup_finds_entry() {
       let mut cascade = Cascade::new();
-      cascade.insert(
+      cascade.add_at(
          "basic-path",
          Metadata {
             layout: Some("index.hbs".into()),
@@ -111,7 +111,7 @@ mod tests {
    #[test]
    fn nested_lookup_finds_entry() {
       let mut cascade = Cascade::new();
-      cascade.insert(
+      cascade.add_at(
          "nested",
          Metadata {
             layout: Some("index.hbs".into()),
@@ -125,7 +125,7 @@ mod tests {
    #[test]
    fn direct_nesting_takes_last() {
       let mut cascade = Cascade::new();
-      cascade.insert(
+      cascade.add_at(
          "nested/path",
          Metadata {
             thanks: Some("To cool people".into()),
@@ -133,7 +133,7 @@ mod tests {
          },
       );
 
-      cascade.insert(
+      cascade.add_at(
          "nested",
          Metadata {
             thanks: Some("To lame people".into()),
@@ -153,7 +153,7 @@ mod tests {
    #[test]
    fn no_matching_path_is_none() {
       let mut cascade = Cascade::new();
-      cascade.insert(
+      cascade.add_at(
          "some/path",
          Metadata {
             thanks: Some("to cool people".into()),
@@ -166,7 +166,7 @@ mod tests {
    #[test]
    fn no_matching_entry_is_none() {
       let mut cascade = Cascade::new();
-      cascade.insert(
+      cascade.add_at(
          "path",
          Metadata {
             thanks: Some("to cool people".into()),
