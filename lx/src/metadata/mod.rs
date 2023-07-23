@@ -155,6 +155,18 @@ impl Metadata {
             .to_string()
       });
 
+      let relative_path =
+         source
+            .path
+            .strip_prefix(root_dir)
+            .map_err(|e| BadMetadata::BadPermalink {
+               reason: format!(
+                  "Could not strip prefix from root dir {}",
+                  root_dir.display()
+               ),
+               cause: Some(e),
+            })?;
+
       let slug = match permalink {
          Some(p) => p,
          None => {
@@ -174,27 +186,15 @@ impl Metadata {
                   cause: None,
                })?;
 
-            source
-               .path
-               .strip_prefix(root_dir)
-               .map_err(|e| BadMetadata::BadPermalink {
+            relative_path
+               .parent()
+               .map(|containing_dir| containing_dir.join(slugify(src_for_slug)))
+               .ok_or_else(|| BadMetadata::BadPermalink {
                   reason: format!(
-                     "Could not strip prefix from root dir {}",
-                     root_dir.display()
+                     "could not construct containing dir in '{}'",
+                     relative_path.display()
                   ),
-                  cause: Some(e),
-               })
-               .and_then(|local_path| {
-                  local_path
-                     .parent()
-                     .map(|containing_dir| containing_dir.join(slugify(src_for_slug)))
-                     .ok_or_else(|| BadMetadata::BadPermalink {
-                        reason: format!(
-                           "could not construct containing dir in '{}'",
-                           local_path.display()
-                        ),
-                        cause: None,
-                     })
+                  cause: None,
                })?
                .to_string_lossy()
                .to_string()
@@ -207,17 +207,20 @@ impl Metadata {
          subtitle: item.subtitle,
          layout: item
             .layout
-            .or(cascade.layout())
+            .or(cascade.layout(relative_path))
             .unwrap_or(String::from("base.html")), // TODO: not this!
-         summary: item.summary.or(cascade.summary()),
-         qualifiers: item.qualifiers.or(cascade.qualifiers()),
-         updated: item.updated.or(cascade.updated()),
-         thanks: item.thanks.or(cascade.thanks()),
-         tags: item.tags.or(cascade.tags()).unwrap_or_default(),
-         featured: item.featured.or(cascade.featured()).unwrap_or_default(),
-         book: item.book.or(cascade.book()),
-         series: item.series.or(cascade.series()),
-         subscribe: item.subscribe.or(cascade.subscribe()),
+         summary: item.summary.or(cascade.summary(relative_path)),
+         qualifiers: item.qualifiers.or(cascade.qualifiers(relative_path)),
+         updated: item.updated.or(cascade.updated(relative_path)),
+         thanks: item.thanks.or(cascade.thanks(relative_path)),
+         tags: item
+            .tags
+            .or(cascade.tags(relative_path))
+            .unwrap_or_default(),
+         featured: item.featured.unwrap_or_default(),
+         book: item.book.or(cascade.book(relative_path)),
+         series: item.series.or(cascade.series(relative_path)),
+         subscribe: item.subscribe.or(cascade.subscribe(relative_path)),
       })
    }
 }
