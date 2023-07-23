@@ -8,10 +8,11 @@ use std::{
 use pulldown_cmark::Options;
 use serde::{Deserialize, Serialize};
 use syntect::parsing::SyntaxSet;
+use thiserror::Error;
 use uuid::Uuid;
 
-use crate::markdown::{render, RenderError, Rendered};
 use crate::metadata::Metadata;
+use crate::markdown::{render, MetadataParseError, RenderError, Rendered};
 use crate::{config::Config, metadata::cascade::Cascade, metadata::serial};
 
 /// Source data for a file: where it came from, and its original contents.
@@ -37,6 +38,7 @@ pub struct Id(Uuid);
 pub struct Page {
    pub id: Id,
 
+   // TODO: this should be `ResolvedMetadata`
    /// The fully-parsed metadata associated with the page.
    pub metadata: Metadata,
 
@@ -44,56 +46,13 @@ pub struct Page {
    pub content: String,
 }
 
-// TODO: move to metadata module? And/or extract to Page error types.
-pub struct MetadataParseError {
-   unparseable: String,
-   cause: Box<dyn std::error::Error>,
-}
+#[derive(Error, Debug)]
+pub enum Error {
+   #[error("could not parse metadata")]
+   Metadata { source: MetadataParseError },
 
-impl std::error::Error for MetadataParseError {
-   fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-      self.cause.source()
-   }
-}
-
-impl std::fmt::Display for MetadataParseError {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      write!(f, "could not parse YAML into Metadata")
-   }
-}
-
-impl std::fmt::Debug for MetadataParseError {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      write!(
-         f,
-         "could not parse YAML into Metadata: '{}'",
-         self.unparseable
-      )
-   }
-}
-
-#[derive(Debug)]
-pub enum PageError {
-   Metadata(MetadataParseError),
-   Render(RenderError),
-}
-
-impl std::fmt::Display for PageError {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      match self {
-         PageError::Metadata(_) => write!(f, "error parsing metadata"),
-         PageError::Render(_) => write!(f, "error rendering Markdown content"),
-      }
-   }
-}
-
-impl std::error::Error for PageError {
-   fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-      match self {
-         PageError::Metadata(original) => original.source(),
-         PageError::Render(original) => original.source(),
-      }
-   }
+   #[error("error rendering Markdown content")]
+   Render { source: RenderError },
 }
 
 impl Page {
@@ -103,7 +62,7 @@ impl Page {
       syntax_set: &SyntaxSet,
       config: &Config,
       options: Options,
-   ) -> Result<Self, PageError> {
+   ) -> Result<Self, Error> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
       // don't want to do it based on the source path (or if I do, *only* initially as
       // a way of generating it to start). It'll go in the database, so more likely I'll
@@ -127,9 +86,9 @@ impl Page {
                   },
                )
             }
-            Err(e) => Err(MetadataParseError {
+            Err(e) => Err(MetadataParseError::Yaml {
                unparseable: input.to_string(),
-               cause: Box::new(e),
+               source: e,
             }),
          };
 
@@ -140,7 +99,7 @@ impl Page {
          options,
          syntax_set,
       )
-      .map_err(PageError::Render)?;
+      .map_err(|e| Error::Render { source: e })?;
 
       Ok(Page {
          id,

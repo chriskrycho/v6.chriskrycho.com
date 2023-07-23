@@ -23,5 +23,5 @@ fn ui() -> Result<(), String> {
 }
 
 fn publish(in_dir: &std::path::Path) -> Result<(), String> {
-   lx::build::build(in_dir)
+   lx::build::build(in_dir).map_err(|e| format!("{e}"))
 }

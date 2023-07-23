@@ -7,6 +7,7 @@ use chrono::{DateTime, FixedOffset};
 use pulldown_cmark::{Options, Parser};
 use serial::{Book, Qualifiers, Series, Subscribe};
 use slug::slugify;
+use thiserror::Error;
 
 use crate::config::Config;
 use crate::page::Source;
@@ -50,31 +51,14 @@ pub struct Metadata {
 
 pub struct Rendered(String);
 
-#[derive(Debug)]
-pub struct MetadataRenderErr {
-   original: String,
-}
-
-impl std::error::Error for MetadataRenderErr {
-   fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-      todo!()
-   }
-}
-
-impl std::fmt::Display for MetadataRenderErr {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      write!(f, "could not parse metadata string: '{}'", self.original)
-   }
-}
-
 impl Rendered {
    // TODO: I can think about whether I want a customizable path here for how to
    // render given items (i.e. with wrapping `<p>` etc.) later -- or not!
-   fn try_render(src: &str, options: Options) -> Result<Rendered, MetadataRenderErr> {
+   fn try_render(src: &str, options: Options) -> Rendered {
       let events = Parser::new_ext(src, options);
       let mut s = String::with_capacity(src.len() * 2);
       pulldown_cmark::html::push_html(&mut s, events);
-      Ok(Rendered(s))
+      Rendered(s)
    }
 }
 
@@ -101,36 +85,16 @@ pub struct FinalizedMetadata {
    pub subscribe: Option<Subscribe>,
 }
 
-#[derive(Debug)]
-pub enum BadMetadata {
+#[derive(Error, Debug)]
+pub enum Error {
+   #[error("missing both date and time")]
    MissingRequiredField,
+
+   #[error("bad permalink: '{reason}'")]
    BadPermalink {
       reason: String,
-      cause: Option<StripPrefixError>,
+      source: Option<StripPrefixError>,
    },
-}
-
-impl std::fmt::Display for BadMetadata {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      match self {
-         BadMetadata::MissingRequiredField => write!(f, "missing both date and time"),
-         BadMetadata::BadPermalink { reason, cause: _ } => {
-            write!(f, "bad permalink: {reason}")
-         }
-      }
-   }
-}
-
-impl std::error::Error for BadMetadata {
-   fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-      match self {
-         BadMetadata::BadPermalink {
-            cause: Some(original),
-            ..
-         } => original.source(),
-         _ => None,
-      }
-   }
 }
 
 impl Metadata {
@@ -140,12 +104,12 @@ impl Metadata {
       root_dir: &Path,
       cascade: &Cascade,
       config: &Config,
-   ) -> Result<Self, BadMetadata> {
+   ) -> Result<Self, Error> {
       let required = (match (item.title, item.date) {
          (Some(title), Some(date)) => Ok(RequiredFields::Both { title, date }),
          (None, Some(date)) => Ok(RequiredFields::Date(date)),
          (Some(title), None) => Ok(RequiredFields::Title(title)),
-         (None, None) => Err(BadMetadata::MissingRequiredField),
+         (None, None) => Err(Error::MissingRequiredField),
       })?;
 
       let permalink = item.permalink.map(|permalink| {
@@ -159,12 +123,12 @@ impl Metadata {
          source
             .path
             .strip_prefix(root_dir)
-            .map_err(|e| BadMetadata::BadPermalink {
+            .map_err(|e| Error::BadPermalink {
                reason: format!(
                   "Could not strip prefix from root dir {}",
                   root_dir.display()
                ),
-               cause: Some(e),
+               source: Some(e),
             })?;
 
       let slug = match permalink {
@@ -173,28 +137,28 @@ impl Metadata {
             let src_for_slug = source
                .path
                .file_stem()
-               .ok_or_else(|| BadMetadata::BadPermalink {
+               .ok_or_else(|| Error::BadPermalink {
                   reason: format!("missing file stem on '{}'?!?", source.path.display()),
-                  cause: None,
+                  source: None,
                })?
                .to_str()
-               .ok_or_else(|| BadMetadata::BadPermalink {
+               .ok_or_else(|| Error::BadPermalink {
                   reason: format!(
                      "Could not get `str` for '{}'?!?",
                      source.path.display()
                   ),
-                  cause: None,
+                  source: None,
                })?;
 
             relative_path
                .parent()
                .map(|containing_dir| containing_dir.join(slugify(src_for_slug)))
-               .ok_or_else(|| BadMetadata::BadPermalink {
+               .ok_or_else(|| Error::BadPermalink {
                   reason: format!(
                      "could not construct containing dir in '{}'",
                      relative_path.display()
                   ),
-                  cause: None,
+                  source: None,
                })?
                .to_string_lossy()
                .to_string()

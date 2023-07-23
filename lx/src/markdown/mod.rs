@@ -17,6 +17,7 @@ use pulldown_cmark::{
    html, CowStr, Event, MetadataBlockKind, Options, Parser, Tag, TagEnd,
 };
 use syntect::parsing::SyntaxSet;
+use thiserror::Error;
 
 use crate::metadata::Metadata;
 use crate::page::MetadataParseError;
@@ -24,7 +25,7 @@ use crate::page::MetadataParseError;
 use first_pass::FirstPass;
 use second_pass::second_pass;
 
-use self::second_pass::SecondPassError;
+use self::second_pass::Error;
 
 pub struct Rendered {
    pub metadata: Metadata,
@@ -36,45 +37,36 @@ pub struct Rendered {
 /// forbidden by both `pulldown_cmark` itself *and* the event handling.
 type FootnoteDefinitions<'e> = HashMap<CowStr<'e>, Vec<Event<'e>>>;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum RenderError {
-   BadMetadataKind,
+   #[error("tried to use TOML for metadata")]
+   UsedToml,
+
+   #[error("failed to parse metadata")]
    MetadataParseError(MetadataParseError),
+
+   #[error("could not preprocess Markdown")]
    FirstPass(String),
-   SecondPass(SecondPassError),
+
+   #[error("could not render Markdown")]
+   SecondPass(Error),
 }
 
-impl std::fmt::Display for RenderError {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      match self {
-         Self::MetadataParseError(e) => {
-            write!(f, "failed to parse metadata: {e}")
-         }
+// TODO: move this... somewhere else.
+#[derive(Error, Debug)]
+#[error("could not parse metadata")]
+pub enum MetadataParseError {
+   #[error("invalid metadata: {invalid}")]
+   Metadata {
+      invalid: String,
+      source: metadata::Error,
+   },
 
-         RenderError::BadMetadataKind => write!(f, "No TOML support!"),
-
-         Self::FirstPass(e) => {
-            write!(f, "failed to render Markdown: {e}")
-         }
-
-         RenderError::SecondPass(e) => write!(f, "failed to render Markdown: {e}"),
-      }
-   }
-}
-
-impl std::error::Error for RenderError {
-   fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-      match self {
-         RenderError::MetadataParseError(err) => err.source(),
-
-         // TODO: once *that* has an error, pipe it back through
-         RenderError::FirstPass(_) => None,
-
-         RenderError::BadMetadataKind => None,
-
-         RenderError::SecondPass(e) => e.source(),
-      }
-   }
+   #[error("could not parse YAML metadata: {unparseable}")]
+   Yaml {
+      unparseable: String,
+      source: serde_yaml::Error,
+   },
 }
 
 pub fn render(
@@ -113,9 +105,7 @@ pub fn render(
                   first_pass = FirstPass::ParsedMetadata(parsing.parsed(metadata));
                }
 
-               MetadataBlockKind::PlusesStyle => {
-                  return Err(RenderError::BadMetadataKind)
-               }
+               MetadataBlockKind::PlusesStyle => return Err(RenderError::UsedToml),
             },
 
             FirstPass::Content(ref mut content) => content.handle(event)?,

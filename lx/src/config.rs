@@ -2,6 +2,7 @@ mod email;
 
 use normalize_path::NormalizePath;
 use std::path::{Path, PathBuf};
+use thiserror::Error;
 
 use serde_derive::Deserialize;
 
@@ -18,22 +19,39 @@ pub struct Config {
    pub output: PathBuf,
 }
 
+#[derive(Error, Debug)]
+pub enum Error {
+   #[error("could not read file '{path}'")]
+   BadFile {
+      path: PathBuf,
+      source: std::io::Error,
+   },
+
+   #[error("could not parse {path} as JSON5")]
+   JSON5ParseError { path: PathBuf, source: json5::Error },
+}
+
 impl Config {
-   pub fn from_file(path: &Path) -> Result<Config, String> {
-      let data = std::fs::read_to_string(path).map_err(|e| {
-         format!(
-            "could not read '{path}'\n{e}",
-            path = &path.to_string_lossy(),
-         )
+   pub fn from_file(path: &Path) -> Result<Config, Error> {
+      let data = std::fs::read_to_string(path).map_err(|e| Error::BadFile {
+         path: path.to_owned(),
+         source: e,
       })?;
 
-      let mut config: Config = json5::from_str(&data).map_err(|e| {
-         format!("could not parse '{path}':\n{e}", path = &path.display())
-      })?;
+      let mut config: Config =
+         json5::from_str(&data).map_err(|e| Error::JSON5ParseError {
+            path: path.to_owned(),
+            source: e,
+         })?;
 
       config.output = path
          .parent()
-         .ok_or_else(|| String::from("config file will have a parent dir"))?
+         .unwrap_or_else(|| {
+            panic!(
+               "config file at {path} will have a parent dir",
+               path = path.display()
+            )
+         })
          .join(&config.output)
          .normalize();
 

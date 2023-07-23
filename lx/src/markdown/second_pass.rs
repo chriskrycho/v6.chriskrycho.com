@@ -1,6 +1,7 @@
 use pulldown_cmark::{CodeBlockKind, CowStr, Tag, TagEnd};
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
+use thiserror::Error;
 
 use crate::metadata::Metadata;
 
@@ -21,33 +22,16 @@ struct State<'m, 'e, 's> {
    emitted_definitions: Vec<(CowStr<'e>, Vec<pulldown_cmark::Event<'e>>)>,
 }
 
-#[derive(Debug)]
-pub enum SecondPassError {
+#[derive(Error, Debug)]
+pub enum Error {
+   #[error("cannot finish a code block we never started")]
    FinishedNonStartedCodeBlock,
+
+   #[error("all footnote references are handled in the first pass but {0} is provided to the second pass")]
    UnhandledFootnoteReference(String),
-   BadSyntaxLine(syntect::Error),
-}
 
-impl std::fmt::Display for SecondPassError {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      match self {
-         SecondPassError::FinishedNonStartedCodeBlock => {
-            write!(f, "cannot finish a code block we never started")
-         }
-         SecondPassError::UnhandledFootnoteReference(name) => write!(f,  "all footnote references are handled in the first pass but {name} is provided to the second pass"),
-         SecondPassError::BadSyntaxLine(_) => write!(f, "syntax highlighting failure"),
-      }
-   }
-}
-
-impl std::error::Error for SecondPassError {
-   fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-      match self {
-         SecondPassError::FinishedNonStartedCodeBlock => None,
-         SecondPassError::UnhandledFootnoteReference(_) => None,
-         SecondPassError::BadSyntaxLine(original) => original.source(),
-      }
-   }
+   #[error("syntax highlighting failure")]
+   BadSyntaxLine { source: syntect::Error },
 }
 
 pub(super) fn second_pass<'e>(
@@ -56,7 +40,7 @@ pub(super) fn second_pass<'e>(
    syntax_set: &SyntaxSet,
    events: Vec<first_pass::Event<'e>>,
    rewrite: &impl Fn(&str, &Metadata) -> String,
-) -> Result<impl Iterator<Item = pulldown_cmark::Event<'e>>, SecondPassError> {
+) -> Result<impl Iterator<Item = pulldown_cmark::Event<'e>>, Error> {
    let mut state = State {
       metadata,
       footnote_definitions,
@@ -80,7 +64,7 @@ impl<'m, 'e, 's> State<'m, 'e, 's> {
       &mut self,
       event: first_pass::Event<'e>,
       rewrite: &impl Fn(&str, &Metadata) -> String,
-   ) -> Result<Option<String>, SecondPassError> {
+   ) -> Result<Option<String>, Error> {
       use pulldown_cmark::Event::*;
 
       match event {
@@ -110,14 +94,14 @@ impl<'m, 'e, 's> State<'m, 'e, 's> {
                   self.events.append(&mut code_block.end());
                   Ok(None)
                }
-               None => Err(SecondPassError::FinishedNonStartedCodeBlock),
+               None => Err(Error::FinishedNonStartedCodeBlock),
             },
 
             // If we find a footnote reference here, something has gone wrong: we should
             // have handled them all during `first_pass`.
-            FootnoteReference(name) => Err(SecondPassError::UnhandledFootnoteReference(
-               name.to_string(),
-            )),
+            FootnoteReference(name) => {
+               Err(Error::UnhandledFootnoteReference(name.to_string()))
+            }
 
             // Everything else can just be emitted exactly as is.
             _ => {
@@ -345,7 +329,7 @@ impl<'c, 's> CodeBlock<'c, 's> {
    ///
    /// Note that it does *not* emit events while highlighting a line. Instead, it stores
    /// internal state which produces a single fully-rendered HTML event when complete.
-   fn highlight(&mut self, text: &CowStr<'c>) -> Result<(), SecondPassError> {
+   fn highlight(&mut self, text: &CowStr<'c>) -> Result<(), Error> {
       match self.highlighting {
          Highlighting::RequiresFirstLineParse => {
             match self.syntax_set.find_syntax_by_first_line(text) {
@@ -366,7 +350,7 @@ impl<'c, 's> CodeBlock<'c, 's> {
                   );
                   generator
                      .parse_html_for_line_which_includes_newline(text)
-                     .map_err(|e| SecondPassError::BadSyntaxLine(e))?;
+                     .map_err(|e| Error::BadSyntaxLine { source: e })?;
                   self.highlighting = Highlighting::KnownSyntax(generator);
                   self.events.push(event);
                   Ok(())
@@ -392,7 +376,7 @@ impl<'c, 's> CodeBlock<'c, 's> {
          Highlighting::KnownSyntax(ref mut generator) => {
             generator
                .parse_html_for_line_which_includes_newline(text.as_ref())
-               .map_err(|e| SecondPassError::BadSyntaxLine(e))?;
+               .map_err(|e| Error::BadSyntaxLine { source: e })?;
 
             // ...and therefore produces no events!
             Ok(())

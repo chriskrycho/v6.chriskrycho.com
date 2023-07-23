@@ -4,6 +4,7 @@ use std::{
 };
 
 use chrono::{DateTime, FixedOffset};
+use thiserror::Error;
 
 use super::serial::{self, Book, Qualifiers, Series, Subscribe};
 
@@ -14,6 +15,18 @@ use super::serial::{self, Book, Qualifiers, Series, Subscribe};
 // that, anyway!)
    inner: HashMap<PathBuf, serial::Metadata>,
 pub struct Cascade {
+}
+
+#[derive(Debug, Error)]
+pub enum CascadeLoadError {
+   #[error("failed to read file '{}'", .file.display())]
+   OpenFile {
+      source: std::io::Error,
+      file: PathBuf,
+   },
+
+   #[error("could not parse metadata")]
+   ParseMetadata(Box<dyn std::error::Error>),
 }
 
 impl Cascade {
