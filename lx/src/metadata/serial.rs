@@ -6,7 +6,7 @@ use chrono::{DateTime, FixedOffset};
 use serde_derive::Deserialize;
 
 #[derive(Deserialize, Debug, Default)]
-pub(crate) struct Metadata {
+pub struct ItemMetadata {
    pub title: Option<String>,
    pub subtitle: Option<String>,
    pub summary: Option<String>,

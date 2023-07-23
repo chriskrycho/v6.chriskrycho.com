@@ -12,18 +12,18 @@ use super::serial::{self, Book, Qualifiers, Series, Subscribe};
 // of info: the path to that point, and the Metadata for that point. The path
 // may want to be just the name of that point in the tree. (I *think* I need
 // that, anyway!)
-pub(crate) struct Cascade {
    inner: HashMap<PathBuf, serial::Metadata>,
+pub struct Cascade {
 }
 
 impl Cascade {
-   pub(crate) fn new() -> Self {
+   pub fn new() -> Self {
       Self {
          inner: HashMap::new(),
       }
    }
 
-   pub(crate) fn add_at<P: AsRef<Path>>(
+   pub fn add_at<P: AsRef<Path>>(
       &mut self,
       path: P,
       value: serial::Metadata,
@@ -37,39 +37,39 @@ impl Cascade {
       self
    }
 
-   pub(crate) fn layout<P: AsRef<Path>>(&self, p: P) -> Option<String> {
+   pub fn layout<P: AsRef<Path>>(&self, p: P) -> Option<String> {
       self.find_map(p.as_ref(), &|m| m.layout.clone())
    }
 
-   pub(crate) fn summary<P: AsRef<Path>>(&self, p: P) -> Option<String> {
+   pub fn summary<P: AsRef<Path>>(&self, p: P) -> Option<String> {
       self.find_map(p.as_ref(), &|m| m.summary.clone())
    }
 
-   pub(crate) fn qualifiers<P: AsRef<Path>>(&self, p: P) -> Option<Qualifiers> {
+   pub fn qualifiers<P: AsRef<Path>>(&self, p: P) -> Option<Qualifiers> {
       self.find_map(p.as_ref(), &|m| m.qualifiers.clone())
    }
 
-   pub(crate) fn updated<P: AsRef<Path>>(&self, p: P) -> Option<DateTime<FixedOffset>> {
+   pub fn updated<P: AsRef<Path>>(&self, p: P) -> Option<DateTime<FixedOffset>> {
       self.find_map(p.as_ref(), &|m| m.updated)
    }
 
-   pub(crate) fn thanks<P: AsRef<Path>>(&self, p: P) -> Option<String> {
+   pub fn thanks<P: AsRef<Path>>(&self, p: P) -> Option<String> {
       self.find_map(p.as_ref(), &|m| m.thanks.clone())
    }
 
-   pub(crate) fn tags<P: AsRef<Path>>(&self, p: P) -> Option<Vec<String>> {
+   pub fn tags<P: AsRef<Path>>(&self, p: P) -> Option<Vec<String>> {
       self.find_map(p.as_ref(), &|m| m.tags.clone())
    }
 
-   pub(crate) fn subscribe<P: AsRef<Path>>(&self, p: P) -> Option<Subscribe> {
+   pub fn subscribe<P: AsRef<Path>>(&self, p: P) -> Option<Subscribe> {
       self.find_map(p.as_ref(), &|m| m.subscribe.clone())
    }
 
-   pub(crate) fn book<P: AsRef<Path>>(&self, p: P) -> Option<Book> {
+   pub fn book<P: AsRef<Path>>(&self, p: P) -> Option<Book> {
       self.find_map(p.as_ref(), &|m| m.book.clone())
    }
 
-   pub(crate) fn series<P: AsRef<Path>>(&self, p: P) -> Option<Series> {
+   pub fn series<P: AsRef<Path>>(&self, p: P) -> Option<Series> {
       self.find_map(p.as_ref(), &|m| m.series.clone())
    }
 }

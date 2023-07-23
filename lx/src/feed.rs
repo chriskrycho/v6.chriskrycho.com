@@ -7,7 +7,7 @@ use lx_json_feed::{AuthorOptions, JSONFeed};
 use crate::{config::Config, page::Page};
 
 /// Required resources for a `Feed`.
-pub(crate) struct Feed<'a> {
+pub struct Feed<'a> {
    /// Every feed has its own title.
    title: String,
 
@@ -22,7 +22,7 @@ pub(crate) struct Feed<'a> {
 }
 
 impl<'a> Feed<'a> {
-   pub(crate) fn _new(
+   pub fn _new(
       title: String,
       site_config: &'a Config,
       items: &'a [Page],

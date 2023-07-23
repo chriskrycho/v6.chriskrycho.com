@@ -19,7 +19,7 @@ pub struct Cli {
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum CliError {
+pub enum CliError {
    #[error("Somehow you don't have a home dir. lolwut")]
    NoHomeDir,
 
@@ -28,7 +28,7 @@ pub(crate) enum CliError {
 }
 
 impl Cli {
-   pub(crate) fn completions(&mut self) -> Result<(), CliError> {
+   pub fn completions(&mut self) -> Result<(), CliError> {
       let mut config_dir = dirs::home_dir().ok_or_else(|| CliError::NoHomeDir)?;
       config_dir.extend([".config", "fish", "completions"]);
       let mut cmd = Self::command();
