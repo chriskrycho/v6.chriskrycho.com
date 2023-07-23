@@ -1,5 +1,5 @@
-pub(crate) mod cascade;
-pub(crate) mod serial;
+pub mod cascade;
+pub mod serial;
 
 use std::path::{Path, StripPrefixError};
 
@@ -27,14 +27,19 @@ pub enum RequiredFields {
 /// Metadata after combining the header config with all items in data hierarchy,
 /// including the root config.
 #[derive(Debug)]
-pub struct Metadata {
+pub struct Resolved {
    /// The date, title, or both (every item must have one or the other)
    pub required: RequiredFields,
 
    /// The path to this piece of content.
    pub slug: String,
 
-   // TODO: should this be optional?
+   // TODO: should this be optional? I think the answer is "Yes": but it depends
+   // on how I understand the nature of this Metadata type. Is it what I have
+   // gestured at below as "resolved metadata" for an item? If so, then this
+   // probably should be *required*. If it's the un-parsed data, then the main
+   // notable bit is that it's the same as `serial::Metadata` *other than*
+   // allowing additional fields (`slug` and `required` above).
    pub layout: String,
 
    pub subtitle: Option<String>,
@@ -97,9 +102,9 @@ pub enum Error {
    },
 }
 
-impl Metadata {
-   pub(super) fn merged(
-      item: serial::Metadata,
+impl Resolved {
+   pub(super) fn new(
+      item: serial::ItemMetadata,
       source: &Source,
       root_dir: &Path,
       cascade: &Cascade,
@@ -165,7 +170,7 @@ impl Metadata {
          }
       };
 
-      Ok(Metadata {
+      Ok(Resolved {
          required,
          slug,
          subtitle: item.subtitle,

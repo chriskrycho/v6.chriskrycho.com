@@ -23,6 +23,19 @@ pub struct ItemMetadata {
    pub subscribe: Option<Subscribe>,
 }
 
+#[derive(Deserialize, Debug, Default)]
+pub struct AmbientMetadata {
+   pub qualifiers: Option<Qualifiers>,
+   pub permalink: Option<String>,
+   pub thanks: Option<String>,
+   pub tags: Option<Vec<String>>,
+   pub featured: Option<bool>,
+   pub layout: Option<String>,
+   pub book: Option<Book>,
+   pub series: Option<Series>,
+   pub subscribe: Option<Subscribe>,
+}
+
 #[derive(Clone, Deserialize, Debug)]
 pub struct Qualifiers {
    audience: Option<String>,

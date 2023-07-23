@@ -11,8 +11,8 @@ use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::metadata::Metadata;
 use crate::markdown::{render, MetadataParseError, RenderError, Rendered};
+use crate::metadata::Resolved;
 use crate::{config::Config, metadata::cascade::Cascade, metadata::serial};
 
 /// Source data for a file: where it came from, and its original contents.
@@ -40,7 +40,7 @@ pub struct Page {
 
    // TODO: this should be `ResolvedMetadata`
    /// The fully-parsed metadata associated with the page.
-   pub metadata: Metadata,
+   pub metadata: Resolved,
 
    /// The fully-rendered contents of the page.
    pub content: String,
@@ -77,12 +77,12 @@ impl Page {
       let cascade = Cascade::new();
 
       let get_metadata =
-         |input: &str| match serde_yaml::from_str::<serial::Metadata>(input) {
+         |input: &str| match serde_yaml::from_str::<serial::ItemMetadata>(input) {
             Ok(from_content) => {
-               Metadata::merged(from_content, source, root_dir, &cascade, config).map_err(
-                  |e| MetadataParseError {
-                     unparseable: input.to_string(),
-                     cause: Box::new(e),
+               Resolved::new(from_content, source, root_dir, &cascade, config).map_err(
+                  |e| MetadataParseError::Metadata {
+                     invalid: input.to_string(),
+                     source: e,
                   },
                )
             }

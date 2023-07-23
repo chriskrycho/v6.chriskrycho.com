@@ -13,8 +13,8 @@ use super::serial::{self, Book, Qualifiers, Series, Subscribe};
 // of info: the path to that point, and the Metadata for that point. The path
 // may want to be just the name of that point in the tree. (I *think* I need
 // that, anyway!)
-   inner: HashMap<PathBuf, serial::Metadata>,
 pub struct Cascade {
+   inner: HashMap<PathBuf, serial::ItemMetadata>,
 }
 
 #[derive(Debug, Error)]
@@ -36,10 +36,35 @@ impl Cascade {
       }
    }
 
+   pub fn load(
+      &mut self,
+      paths: &[PathBuf],
+   ) -> Result<&mut Self, CascadeLoadError> {
+      for path in paths {
+         let fd = std::fs::File::open(path).map_err(|e| CascadeLoadError::OpenFile {
+            source: e,
+            file: path.clone(),
+         })?;
+
+         let metadata: serial::ItemMetadata = serde_yaml::from_reader(&fd)
+            .map_err(|e| CascadeLoadError::ParseMetadata(Box::new(e)))?;
+
+         // Panic instead of returning a `Result` because this means there is
+         // a real bug in our path construction (not something missing on disk).
+         let context_dir = path
+            .parent()
+            .unwrap_or_else(|| panic!("missing parent of path {}", path.display()));
+
+         self.add_at(context_dir, metadata);
+      }
+
+      Ok(self)
+   }
+
    pub fn add_at<P: AsRef<Path>>(
       &mut self,
       path: P,
-      value: serial::Metadata,
+      value: serial::ItemMetadata,
    ) -> &mut Self {
       let key = path.as_ref().display();
       if let Some(existing) = self.inner.insert(path.as_ref().to_owned(), value) {
@@ -90,7 +115,7 @@ impl Cascade {
 impl Cascade {
    fn find_map<T, F>(&self, path: &Path, f: &F) -> Option<T>
    where
-      F: Fn(&serial::Metadata) -> Option<T>,
+      F: Fn(&serial::ItemMetadata) -> Option<T>,
    {
       let path = path.to_owned();
       self
@@ -103,7 +128,7 @@ impl Cascade {
 
 #[cfg(test)]
 mod tests {
-   use crate::metadata::serial::Metadata;
+   use crate::metadata::serial::ItemMetadata;
 
    use super::*;
 
@@ -112,7 +137,7 @@ mod tests {
       let mut cascade = Cascade::new();
       cascade.add_at(
          "basic-path",
-         Metadata {
+         ItemMetadata {
             layout: Some("index.hbs".into()),
             ..Default::default()
          },
@@ -126,7 +151,7 @@ mod tests {
       let mut cascade = Cascade::new();
       cascade.add_at(
          "nested",
-         Metadata {
+         ItemMetadata {
             layout: Some("index.hbs".into()),
             ..Default::default()
          },
@@ -140,7 +165,7 @@ mod tests {
       let mut cascade = Cascade::new();
       cascade.add_at(
          "nested/path",
-         Metadata {
+         ItemMetadata {
             thanks: Some("To cool people".into()),
             ..Default::default()
          },
@@ -148,7 +173,7 @@ mod tests {
 
       cascade.add_at(
          "nested",
-         Metadata {
+         ItemMetadata {
             thanks: Some("To lame people".into()),
             ..Default::default()
          },
@@ -168,7 +193,7 @@ mod tests {
       let mut cascade = Cascade::new();
       cascade.add_at(
          "some/path",
-         Metadata {
+         ItemMetadata {
             thanks: Some("to cool people".into()),
             ..Default::default()
          },
@@ -181,7 +206,7 @@ mod tests {
       let mut cascade = Cascade::new();
       cascade.add_at(
          "path",
-         Metadata {
+         ItemMetadata {
             thanks: Some("to cool people".into()),
             ..Default::default()
          },
