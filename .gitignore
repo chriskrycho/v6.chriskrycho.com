@@ -31,3 +31,8 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Binaries
+## Note: special handling here for Jujutsu for the moment! This ignores the
+## binary file for syntaxes, but I forcibly override that for Git!
+*.bin
