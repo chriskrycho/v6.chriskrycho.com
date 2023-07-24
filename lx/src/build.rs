@@ -136,7 +136,6 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
       let path = page.path_from_root(&config.output).with_extension("html");
       let containing_dir = path
          .parent()
-         // TODO: should this panic or `-> Result`?
          .unwrap_or_else(|| panic!("{} should have a containing dir!", path.display()));
 
       std::fs::create_dir_all(containing_dir)
