@@ -19,7 +19,7 @@ use pulldown_cmark::{
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
-use crate::metadata::{self, Resolved};
+use crate::metadata;
 
 use first_pass::FirstPass;
 use second_pass::second_pass;
@@ -27,7 +27,7 @@ use second_pass::second_pass;
 use self::second_pass::Error;
 
 pub struct Rendered {
-   pub metadata: Resolved,
+   pub metadata: metadata::Resolved,
    pub content: String,
 }
 
@@ -70,8 +70,8 @@ pub enum MetadataParseError {
 
 pub fn render(
    src: impl AsRef<str>,
-   get_metadata: impl Fn(&str) -> Result<Resolved, MetadataParseError>,
-   rewrite: impl Fn(&str, &Resolved) -> String,
+   get_metadata: impl Fn(&str) -> Result<metadata::Resolved, MetadataParseError>,
+   rewrite: impl Fn(&str, &metadata::Resolved) -> String,
    options: Options,
    syntax_set: &SyntaxSet,
 ) -> Result<Rendered, RenderError> {

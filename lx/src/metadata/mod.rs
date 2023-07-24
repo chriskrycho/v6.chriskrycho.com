@@ -42,42 +42,6 @@ pub struct Resolved {
    // allowing additional fields (`slug` and `required` above).
    pub layout: String,
 
-   pub subtitle: Option<String>,
-   pub summary: Option<String>,
-   pub qualifiers: Option<Qualifiers>,
-   pub updated: Option<DateTime<FixedOffset>>,
-   pub thanks: Option<String>,
-   pub tags: Vec<String>,
-   pub featured: bool,
-   pub book: Option<Book>,
-   pub series: Option<Series>,
-   pub subscribe: Option<Subscribe>,
-}
-
-pub struct Rendered(String);
-
-impl Rendered {
-   // TODO: I can think about whether I want a customizable path here for how to
-   // render given items (i.e. with wrapping `<p>` etc.) later -- or not!
-   fn try_render(src: &str, options: Options) -> Rendered {
-      let events = Parser::new_ext(src, options);
-      let mut s = String::with_capacity(src.len() * 2);
-      pulldown_cmark::html::push_html(&mut s, events);
-      Rendered(s)
-   }
-}
-
-pub struct FinalizedMetadata {
-   /// The date, title, or both (every item must have one or the other)
-   pub required: RequiredFields,
-
-   /// The path to this piece of content.
-   pub slug: String,
-
-   // TODO: should this be optional?
-   // TODO: should it also be not-a-string once finalized?
-   pub layout: String,
-
    pub subtitle: Option<Rendered>,
    pub summary: Option<Rendered>,
    pub qualifiers: Option<Qualifiers>,
@@ -88,6 +52,16 @@ pub struct FinalizedMetadata {
    pub book: Option<Book>,
    pub series: Option<Series>,
    pub subscribe: Option<Subscribe>,
+}
+
+#[derive(Debug)]
+pub struct Rendered(String);
+
+fn rendered(src: &str, options: Options) -> Rendered {
+   let events = Parser::new_ext(src, options);
+   let mut s = String::with_capacity(src.len() * 2);
+   pulldown_cmark::html::push_html(&mut s, events);
+   Rendered(s)
 }
 
 #[derive(Error, Debug)]
@@ -109,6 +83,7 @@ impl Resolved {
       root_dir: &Path,
       cascade: &Cascade,
       config: &Config,
+      options: Options,
    ) -> Result<Self, Error> {
       let required = (match (item.title, item.date) {
          (Some(title), Some(date)) => Ok(RequiredFields::Both { title, date }),
@@ -170,18 +145,20 @@ impl Resolved {
          }
       };
 
+      let render = |s: String| rendered(&s, options);
+
       Ok(Resolved {
          required,
          slug,
-         subtitle: item.subtitle,
+         subtitle: item.subtitle.map(render),
          layout: item
             .layout
             .or(cascade.layout(relative_path))
             .unwrap_or(String::from("base.html")), // TODO: not this!
-         summary: item.summary.or(cascade.summary(relative_path)),
+         summary: item.summary.or(cascade.summary(relative_path)).map(render),
          qualifiers: item.qualifiers.or(cascade.qualifiers(relative_path)),
          updated: item.updated.or(cascade.updated(relative_path)),
-         thanks: item.thanks.or(cascade.thanks(relative_path)),
+         thanks: item.thanks.or(cascade.thanks(relative_path)).map(render),
          tags: item
             .tags
             .or(cascade.tags(relative_path))

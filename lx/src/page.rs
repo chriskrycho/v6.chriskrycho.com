@@ -38,7 +38,6 @@ pub struct Id(Uuid);
 pub struct Page {
    pub id: Id,
 
-   // TODO: this should be `ResolvedMetadata`
    /// The fully-parsed metadata associated with the page.
    pub metadata: Resolved,
 
@@ -79,12 +78,11 @@ impl Page {
       let get_metadata =
          |input: &str| match serde_yaml::from_str::<serial::ItemMetadata>(input) {
             Ok(from_content) => {
-               Resolved::new(from_content, source, root_dir, &cascade, config).map_err(
-                  |e| MetadataParseError::Metadata {
+               Resolved::new(from_content, source, root_dir, &cascade, config, options)
+                  .map_err(|e| MetadataParseError::Metadata {
                      invalid: input.to_string(),
                      source: e,
-                  },
-               )
+                  })
             }
             Err(e) => Err(MetadataParseError::Yaml {
                unparseable: input.to_string(),
