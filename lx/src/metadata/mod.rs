@@ -82,7 +82,7 @@ impl Resolved {
       source: &Source,
       root_dir: &Path,
       cascade: &Cascade,
-      config: &Config,
+      default_template_name: String,
       options: Options,
    ) -> Result<Self, Error> {
       let required = (match (item.title, item.date) {
@@ -154,7 +154,7 @@ impl Resolved {
          layout: item
             .layout
             .or(cascade.layout(relative_path))
-            .unwrap_or(String::from("base.html")), // TODO: not this!
+            .unwrap_or(default_template_name),
          summary: item.summary.or(cascade.summary(relative_path)).map(render),
          qualifiers: item.qualifiers.or(cascade.qualifiers(relative_path)),
          updated: item.updated.or(cascade.updated(relative_path)),

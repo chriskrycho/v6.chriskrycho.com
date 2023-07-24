@@ -59,7 +59,6 @@ impl Page {
       source: &Source,
       root_dir: &Path,
       syntax_set: &SyntaxSet,
-      config: &Config,
       options: Options,
    ) -> Result<Self, Error> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
@@ -77,13 +76,18 @@ impl Page {
 
       let get_metadata =
          |input: &str| match serde_yaml::from_str::<serial::ItemMetadata>(input) {
-            Ok(from_content) => {
-               Resolved::new(from_content, source, root_dir, &cascade, config, options)
-                  .map_err(|e| MetadataParseError::Metadata {
-                     invalid: input.to_string(),
-                     source: e,
-                  })
-            }
+            Ok(from_content) => Resolved::new(
+               from_content,
+               source,
+               root_dir,
+               &cascade,
+               String::from("base.html"), // TODO: not this
+               options,
+            )
+            .map_err(|e| MetadataParseError::Metadata {
+               invalid: input.to_string(),
+               source: e,
+            }),
             Err(e) => Err(MetadataParseError::Yaml {
                unparseable: input.to_string(),
                source: e,

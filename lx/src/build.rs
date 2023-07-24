@@ -110,7 +110,6 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
             &source,
             &in_dir.join("content"),
             &syntax_set,
-            &config,
             options,
          ) {
             Ok(page) => {
