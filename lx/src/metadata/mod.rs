@@ -1,18 +1,27 @@
 pub mod cascade;
 pub mod serial;
 
-use std::path::{Path, StripPrefixError};
+use std::path::Path;
 
-use chrono::{DateTime, FixedOffset};
-use pulldown_cmark::{Options, Parser};
-use serial::{Book, Qualifiers, Series, Subscribe};
+use chrono::DateTime;
+use chrono::FixedOffset;
 use slug::slugify;
 use thiserror::Error;
 
-use crate::config::Config;
-use crate::page::Source;
+use crate::page;
 
 use self::cascade::Cascade;
+use self::serial::*;
+
+#[derive(Debug)]
+pub struct Rendered(String);
+
+fn rendered(src: &str, options: pulldown_cmark::Options) -> Rendered {
+   let events = pulldown_cmark::Parser::new_ext(src, options);
+   let mut s = String::with_capacity(src.len() * 2);
+   pulldown_cmark::html::push_html(&mut s, events);
+   Rendered(s)
+}
 
 #[derive(Debug)]
 pub enum RequiredFields {
@@ -24,10 +33,22 @@ pub enum RequiredFields {
    },
 }
 
-/// Metadata after combining the header config with all items in data hierarchy,
-/// including the root config.
+#[derive(Error, Debug)]
+pub enum Error {
+   #[error("missing both date and time")]
+   MissingRequiredField,
+
+   #[error("bad permalink: '{reason}'")]
+   BadPermalink {
+      reason: String,
+      source: Option<std::path::StripPrefixError>,
+   },
+}
+
+/// Fully resolved metadata after combining the header config with all items in data
+/// hierarchy, including the root config and the data cascade.
 #[derive(Debug)]
-pub struct Resolved {
+pub struct Metadata {
    /// The date, title, or both (every item must have one or the other)
    pub required: RequiredFields,
 
@@ -54,36 +75,14 @@ pub struct Resolved {
    pub subscribe: Option<Subscribe>,
 }
 
-#[derive(Debug)]
-pub struct Rendered(String);
-
-fn rendered(src: &str, options: Options) -> Rendered {
-   let events = Parser::new_ext(src, options);
-   let mut s = String::with_capacity(src.len() * 2);
-   pulldown_cmark::html::push_html(&mut s, events);
-   Rendered(s)
-}
-
-#[derive(Error, Debug)]
-pub enum Error {
-   #[error("missing both date and time")]
-   MissingRequiredField,
-
-   #[error("bad permalink: '{reason}'")]
-   BadPermalink {
-      reason: String,
-      source: Option<StripPrefixError>,
-   },
-}
-
-impl Resolved {
+impl Metadata {
    pub(super) fn new(
       item: serial::ItemMetadata,
-      source: &Source,
+      source: &page::Source,
       root_dir: &Path,
       cascade: &Cascade,
       default_template_name: String,
-      options: Options,
+      options: pulldown_cmark::Options,
    ) -> Result<Self, Error> {
       let required = (match (item.title, item.date) {
          (Some(title), Some(date)) => Ok(RequiredFields::Both { title, date }),
@@ -147,7 +146,7 @@ impl Resolved {
 
       let render = |s: String| rendered(&s, options);
 
-      Ok(Resolved {
+      Ok(Metadata {
          required,
          slug,
          subtitle: item.subtitle.map(render),

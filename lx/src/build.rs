@@ -57,12 +57,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
 
    let syntax_set = load_syntaxes();
 
-   let SiteFiles {
-      // TODO: generate collections/taxonomies/whatever from configs
-      configs: _configs,
-      content,
-      data,
-   } = get_files_to_load(&in_dir);
+   let site_files = get_files_to_load(&in_dir);
    let ThemeSet { themes } = ThemeSet::load_defaults();
 
    // TODO: generate these as a one-and-done with the themes I *actually* want,
@@ -87,7 +82,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
 
    let mut sources = Vec::<Source>::new();
    let mut errors = Vec::<ContentError>::new();
-   for path in content {
+   for path in site_files.content {
       match std::fs::read_to_string(&path) {
          Ok(contents) => sources.push(Source { path, contents }),
          Err(e) => errors.push(ContentError { source: e, path }),
@@ -100,7 +95,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
 
    let mut cascade = Cascade::new();
    let cascade = cascade
-      .load(&data)
+      .load(&site_files.data)
       .map_err(|e| BuildError::Cascade { source: e })?;
 
    let (pages, errors) = sources
@@ -112,7 +107,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
             &in_dir.join("content"),
             &syntax_set,
             options,
-            &cascade,
+            cascade,
          ) {
             Ok(page) => {
                good.push(page);
@@ -167,6 +162,7 @@ struct SiteFiles {
    configs: Vec<PathBuf>,
    content: Vec<PathBuf>,
    data: Vec<PathBuf>,
+   templates: Vec<PathBuf>,
 }
 
 fn get_files_to_load(in_dir: &Path) -> SiteFiles {
@@ -177,6 +173,7 @@ fn get_files_to_load(in_dir: &Path) -> SiteFiles {
       configs: get_files(&format!("{}/**/config.lx.yaml", dir_for_glob)),
       content: get_files(&format!("{}/**/*.md", dir_for_glob)),
       data: get_files(&format!("{}/**/*.data.yaml", dir_for_glob)),
+      templates: get_files(&format!("{}/**/*.tera", dir_for_glob)),
    }
 }
 

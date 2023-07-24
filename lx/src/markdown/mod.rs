@@ -19,7 +19,7 @@ use pulldown_cmark::{
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
-use crate::metadata;
+use crate::metadata::{self, Metadata};
 
 use first_pass::FirstPass;
 use second_pass::second_pass;
@@ -27,7 +27,7 @@ use second_pass::second_pass;
 use self::second_pass::Error;
 
 pub struct Rendered {
-   pub metadata: metadata::Resolved,
+   pub metadata: Metadata,
    pub content: String,
 }
 
@@ -70,9 +70,25 @@ pub enum MetadataParseError {
 
 pub fn render(
    src: impl AsRef<str>,
-   get_metadata: impl Fn(&str) -> Result<metadata::Resolved, MetadataParseError>,
-   rewrite: impl Fn(&str, &metadata::Resolved) -> String,
+   // TODO: rework get_metadata and rewrite to eliminate the coupling with the metadata
+   // module. Note that the difficulty there is that, as designed now, the second pass
+   // needs access to metadata to do the rewrites! I think it likely needs something like
+   // this:
+   //
+   //     get_rewrite: impl Fn(&str) -> Result<(impl Fn(&str) -> String), ???>
+   //
+   // That would be a function which takes in the metadata source string and returns a
+   // function (if it successfully parses the metadata) which itself can in turn generate
+   // output using the given text and the parsed metadata, using a templating engine.
+   // (Note that it doesn't actually *have* to just be functions; it can be a struct with
+   // that carried along... but then you end up with Verbs in the Kingdom of Nouns, and
+   // who needs `Rewriter.rewrite()`?!?
+   get_metadata: impl Fn(&str) -> Result<Metadata, MetadataParseError>,
+   rewrite: impl Fn(&str, &Metadata) -> String,
    options: Options,
+   // NOTE: it might be possible to do the same kind of extraction for syntax
+   // highlighting described for metadata as above, but I do not think it is
+   // actually *important* to do so?
    syntax_set: &SyntaxSet,
 ) -> Result<Rendered, RenderError> {
    let src_str = src.as_ref();

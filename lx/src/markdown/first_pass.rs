@@ -4,7 +4,7 @@ use std::{collections::HashMap, fmt::Debug};
 
 use pulldown_cmark::{CowStr, Event as CmarkEvent, MetadataBlockKind, Tag, TagEnd};
 
-use crate::metadata::Resolved;
+use crate::metadata::Metadata;
 
 use super::{bad_state, FootnoteDefinitions, RenderError};
 
@@ -34,7 +34,7 @@ impl<'e> FirstPass<'e> {
 
    pub(super) fn finalize(
       self,
-   ) -> Result<(Resolved, Vec<Event<'e>>, FootnoteDefinitions<'e>), RenderError> {
+   ) -> Result<(Metadata, Vec<Event<'e>>, FootnoteDefinitions<'e>), RenderError> {
       match self {
          FirstPass::Content(content) => Ok((
             content.data.metadata,
@@ -81,7 +81,7 @@ pub(super) struct ParsingMetadata(MetadataBlockKind);
 impl ParseState for ParsingMetadata {}
 
 impl State<ParsingMetadata> {
-   pub(super) fn parsed(self, metadata: Resolved) -> State<ParsedMetadata> {
+   pub(super) fn parsed(self, metadata: Metadata) -> State<ParsedMetadata> {
       State {
          data: Box::new(ParsedMetadata(metadata)),
       }
@@ -95,7 +95,7 @@ impl State<ParsingMetadata> {
 /// Step 3 in the state machine: we have finished processing metadata, but have not yet
 /// received the 'end the metadata block' event.
 #[derive(Debug)]
-pub(super) struct ParsedMetadata(Resolved);
+pub(super) struct ParsedMetadata(Metadata);
 
 impl ParseState for ParsedMetadata {}
 
@@ -116,7 +116,7 @@ impl State<ParsedMetadata> {
 /// we can iterate the rest of the events.
 #[derive(Debug)]
 pub(super) struct Content<'e> {
-   metadata: Resolved,
+   metadata: Metadata,
    events: Vec<Event<'e>>,
    current_footnote: Option<(CowStr<'e>, Vec<CmarkEvent<'e>>)>,
    footnote_definitions: FootnoteDefinitions<'e>,

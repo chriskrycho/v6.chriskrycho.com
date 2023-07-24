@@ -3,7 +3,7 @@ use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
-use crate::metadata::Resolved;
+use crate::metadata::Metadata;
 
 use super::first_pass;
 use super::FootnoteDefinitions;
@@ -14,7 +14,7 @@ use super::FootnoteDefinitions;
 /// 2. Properly emitting footnotes.
 /// 3. Performing any template-language-type rewriting of text nodes.
 struct State<'m, 'e, 's> {
-   metadata: &'m Resolved,
+   metadata: &'m Metadata,
    footnote_definitions: FootnoteDefinitions<'e>,
    syntax_set: &'s SyntaxSet,
    code_block: Option<CodeBlock<'e, 's>>,
@@ -35,11 +35,11 @@ pub enum Error {
 }
 
 pub(super) fn second_pass<'e>(
-   metadata: &Resolved,
+   metadata: &Metadata,
    footnote_definitions: FootnoteDefinitions<'e>,
    syntax_set: &SyntaxSet,
    events: Vec<first_pass::Event<'e>>,
-   rewrite: &impl Fn(&str, &Resolved) -> String,
+   rewrite: &impl Fn(&str, &Metadata) -> String,
 ) -> Result<impl Iterator<Item = pulldown_cmark::Event<'e>>, Error> {
    let mut state = State {
       metadata,
@@ -63,7 +63,7 @@ impl<'m, 'e, 's> State<'m, 'e, 's> {
    fn handle(
       &mut self,
       event: first_pass::Event<'e>,
-      rewrite: &impl Fn(&str, &Resolved) -> String,
+      rewrite: &impl Fn(&str, &Metadata) -> String,
    ) -> Result<Option<String>, Error> {
       use pulldown_cmark::Event::*;
 
