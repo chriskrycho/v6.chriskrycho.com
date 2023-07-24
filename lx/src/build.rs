@@ -94,7 +94,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
       }
    }
 
-   if errors.len() > 0 {
+   if !errors.is_empty() {
       return Err(BuildError::Content(errors));
    }
 
@@ -126,7 +126,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
       .flatten()
       .collect::<(Vec<Page>, Vec<page::Error>)>();
 
-   if errors.len() > 0 {
+   if !errors.is_empty() {
       return Err(BuildError::Page(errors));
    }
 
