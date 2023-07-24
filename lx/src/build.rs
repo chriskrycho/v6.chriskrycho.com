@@ -98,7 +98,8 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
       return Err(BuildError::Content(errors));
    }
 
-   let mut cascade = Cascade::new()
+   let mut cascade = Cascade::new();
+   let cascade = cascade
       .load(&data)
       .map_err(|e| BuildError::Cascade { source: e })?;
 
@@ -111,6 +112,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
             &in_dir.join("content"),
             &syntax_set,
             options,
+            &cascade,
          ) {
             Ok(page) => {
                good.push(page);

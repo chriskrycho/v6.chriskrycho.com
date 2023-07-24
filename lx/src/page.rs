@@ -60,6 +60,7 @@ impl Page {
       root_dir: &Path,
       syntax_set: &SyntaxSet,
       options: Options,
+      cascade: &Cascade,
    ) -> Result<Self, Error> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
       // don't want to do it based on the source path (or if I do, *only* initially as
@@ -70,9 +71,6 @@ impl Page {
          &Uuid::NAMESPACE_OID,
          source.path.as_os_str().as_bytes(),
       ));
-
-      // TODO: get this from upstream!
-      let cascade = Cascade::new();
 
       let get_metadata =
          |input: &str| match serde_yaml::from_str::<serial::ItemMetadata>(input) {
