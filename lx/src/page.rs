@@ -72,12 +72,13 @@ pub enum Error {
 }
 
 impl Page {
-   pub fn new(
+   pub fn build(
       source: &Source,
       root_dir: &Path,
       syntax_set: &SyntaxSet,
       options: Options,
       cascade: &Cascade,
+      rewrite: &impl Fn(&str, &Metadata) -> String,
    ) -> Result<Self, Error> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
       // don't want to do it based on the source path (or if I do, *only* initially as
@@ -105,11 +106,12 @@ impl Page {
             .map_err(Error::from)
          })?;
 
-      // TODO: use tera and metadata!
-      let rewrite = |text: &str| text.to_string();
-
-      let rendered = markdown::render(prepared.to_render, rewrite, syntax_set)
-         .map_err(|e| Error::Render { source: e })?;
+      let rendered = markdown::render(
+         prepared.to_render,
+         |text: &str| rewrite(text, &metadata),
+         syntax_set,
+      )
+      .map_err(|e| Error::Render { source: e })?;
 
       Ok(Page {
          id,

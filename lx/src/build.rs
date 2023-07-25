@@ -10,6 +10,7 @@ use thiserror::Error;
 
 use crate::config::{self, Config};
 use crate::metadata::cascade::{Cascade, CascadeLoadError};
+use crate::metadata::Metadata;
 use crate::page::{self, Page, Source};
 
 #[derive(Error, Debug)]
@@ -98,16 +99,20 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
       .load(&site_files.data)
       .map_err(|e| BuildError::Cascade { source: e })?;
 
+   // TODO: use Tera *here*.
+   let rewrite = |text: &str, _metadata: &Metadata| text.to_string();
+
    let (pages, errors) = sources
       .into_par_iter()
       .fold(
          || (Vec::new(), Vec::new()),
-         |(mut good, mut bad), source| match Page::new(
+         |(mut good, mut bad), source| match Page::build(
             &source,
             &in_dir.join("content"),
             &syntax_set,
             options,
             cascade,
+            &rewrite,
          ) {
             Ok(page) => {
                good.push(page);
