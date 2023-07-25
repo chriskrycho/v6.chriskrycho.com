@@ -32,7 +32,7 @@ pub enum PrepareError {
    #[error("tried to use TOML for metadata")]
    UsedToml,
 
-   #[error("failed to extract metadata")]
+   #[error("failed to extract metadata section")]
    MetadataExtraction,
 
    #[error("could not prepare Markdown: {state} is invalid in {context}")]
@@ -64,6 +64,8 @@ pub fn prepare(src: &str, options: Options) -> Result<Prepared<'_>, PrepareError
 
    let mut first_pass = first_pass::FirstPass::new();
 
+   // TODO: rewrite all these `bad_prepare_state` calls into actual specific errors from
+   // the enum above!
    for event in parser {
       match event {
          Event::Start(Tag::MetadataBlock(kind)) => match first_pass {
@@ -114,7 +116,7 @@ pub fn prepare(src: &str, options: Options) -> Result<Prepared<'_>, PrepareError
 }
 
 #[derive(Error, Debug)]
-#[error("could not render Markdown")]
+#[error("could not render Markdown content")]
 pub struct RenderError {
    #[from]
    source: second_pass::Error,

@@ -55,7 +55,7 @@ pub enum Error {
       source: markdown::PrepareError,
    },
 
-   #[error("could not parse metadata")]
+   #[error(transparent)]
    MetadataParsing {
       #[from]
       source: serial::ItemParseError,
@@ -67,8 +67,11 @@ pub enum Error {
       source: metadata::Error,
    },
 
-   #[error("could not render Markdown content")]
-   Render { source: RenderError },
+   #[error(transparent)]
+   Render {
+      #[from]
+      source: RenderError,
+   },
 }
 
 impl Page {
@@ -111,7 +114,7 @@ impl Page {
          |text: &str| rewrite(text, &metadata),
          syntax_set,
       )
-      .map_err(|e| Error::Render { source: e })?;
+      .map_err(Error::from)?;
 
       Ok(Page {
          id,
