@@ -5,6 +5,7 @@ use std::path::Path;
 
 use chrono::DateTime;
 use chrono::FixedOffset;
+use serde_derive::Serialize;
 use slug::slugify;
 use thiserror::Error;
 
@@ -13,7 +14,7 @@ use crate::page;
 use self::cascade::Cascade;
 use self::serial::*;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Rendered(String);
 
 fn rendered(src: &str, options: pulldown_cmark::Options) -> Rendered {
@@ -23,7 +24,7 @@ fn rendered(src: &str, options: pulldown_cmark::Options) -> Rendered {
    Rendered(s)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum RequiredFields {
    Title(String),
    Date(DateTime<FixedOffset>),
@@ -47,7 +48,7 @@ pub enum Error {
 
 /// Fully resolved metadata after combining the header config with all items in data
 /// hierarchy, including the root config and the data cascade.
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Metadata {
    /// The date, title, or both (every item must have one or the other)
    pub required: RequiredFields,

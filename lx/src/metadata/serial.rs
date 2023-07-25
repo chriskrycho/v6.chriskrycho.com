@@ -3,7 +3,7 @@
 //! support in data files.
 
 use chrono::{DateTime, FixedOffset};
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Deserialize, Debug, Default)]
@@ -53,19 +53,19 @@ pub struct AmbientMetadata {
    pub subscribe: Option<Subscribe>,
 }
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Qualifiers {
    audience: Option<String>,
    epistemic: Option<String>,
 }
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Subscribe {
    atom: Option<String>,
    json: Option<String>,
 }
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Book {
    title: Option<String>,
    author: Option<String>,
@@ -80,7 +80,7 @@ pub struct Book {
    review: Option<Review>,
 }
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Review {
    rating: Rating,
    summary: String,
@@ -90,7 +90,7 @@ pub struct Review {
 // but in fact it should be derived from the same text as its `Display`
 // implementation below. (A later enhancement: converting "****" etc. to it or
 // something cool like that.)
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 enum Rating {
    #[serde(rename = "Not recommended")]
    NotRecommended,
