@@ -4,6 +4,7 @@
 
 use chrono::{DateTime, FixedOffset};
 use serde_derive::Deserialize;
+use thiserror::Error;
 
 #[derive(Deserialize, Debug, Default)]
 pub struct ItemMetadata {
@@ -21,6 +22,22 @@ pub struct ItemMetadata {
    pub book: Option<Book>,
    pub series: Option<Series>,
    pub subscribe: Option<Subscribe>,
+}
+
+#[derive(Error, Debug)]
+#[error("could not parse YAML metadata: {unparseable}")]
+pub struct ItemParseError {
+   unparseable: String,
+   source: serde_yaml::Error,
+}
+
+impl ItemMetadata {
+   pub fn try_parse(src: &str) -> Result<ItemMetadata, ItemParseError> {
+      serde_yaml::from_str(src).map_err(|e| ItemParseError {
+         unparseable: src.to_string(),
+         source: e,
+      })
+   }
 }
 
 #[derive(Deserialize, Debug, Default)]

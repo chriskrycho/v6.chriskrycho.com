@@ -19,17 +19,8 @@ use pulldown_cmark::{
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
-use crate::metadata::{self, Metadata};
-
 use first_pass::FirstPass;
 use second_pass::second_pass;
-
-use self::second_pass::Error;
-
-pub struct Rendered {
-   pub metadata: Metadata,
-   pub content: String,
-}
 
 /// A footnote definition can have any arbitrary sequence of `pulldown_cmark::Event`s
 /// in it, excepting other footnotes definitions. However, that scenario *should* be
@@ -37,62 +28,39 @@ pub struct Rendered {
 type FootnoteDefinitions<'e> = HashMap<CowStr<'e>, Vec<Event<'e>>>;
 
 #[derive(Error, Debug)]
-pub enum RenderError {
+pub enum PrepareError {
    #[error("tried to use TOML for metadata")]
    UsedToml,
 
-   #[error("failed to parse metadata")]
-   MetadataParseError(MetadataParseError),
+   #[error("failed to extract metadata")]
+   MetadataExtraction,
 
-   #[error("could not preprocess Markdown")]
-   FirstPass(String),
+   #[error("could not prepare Markdown: {state} is invalid in {context}")]
+   State { state: String, context: String },
 
-   #[error("could not render Markdown")]
-   SecondPass(Error),
-}
-
-// TODO: move this... somewhere else.
-#[derive(Error, Debug)]
-#[error("could not parse metadata")]
-pub enum MetadataParseError {
-   #[error("invalid metadata: {invalid}")]
-   Metadata {
-      invalid: String,
-      source: metadata::Error,
-   },
-
-   #[error("could not parse YAML metadata: {unparseable}")]
-   Yaml {
-      unparseable: String,
-      source: serde_yaml::Error,
+   #[error("could not prepare Markdown content section")]
+   Content {
+      #[from]
+      source: first_pass::Error,
    },
 }
 
-pub fn render(
-   src: impl AsRef<str>,
-   // TODO: rework get_metadata and rewrite to eliminate the coupling with the metadata
-   // module. Note that the difficulty there is that, as designed now, the second pass
-   // needs access to metadata to do the rewrites! I think it likely needs something like
-   // this:
-   //
-   //     get_rewrite: impl Fn(&str) -> Result<(impl Fn(&str) -> String), ???>
-   //
-   // That would be a function which takes in the metadata source string and returns a
-   // function (if it successfully parses the metadata) which itself can in turn generate
-   // output using the given text and the parsed metadata, using a templating engine.
-   // (Note that it doesn't actually *have* to just be functions; it can be a struct with
-   // that carried along... but then you end up with Verbs in the Kingdom of Nouns, and
-   // who needs `Rewriter.rewrite()`?!?
-   get_metadata: impl Fn(&str) -> Result<Metadata, MetadataParseError>,
-   rewrite: impl Fn(&str, &Metadata) -> String,
-   options: Options,
-   // NOTE: it might be possible to do the same kind of extraction for syntax
-   // highlighting described for metadata as above, but I do not think it is
-   // actually *important* to do so?
-   syntax_set: &SyntaxSet,
-) -> Result<Rendered, RenderError> {
-   let src_str = src.as_ref();
-   let parser = Parser::new_ext(src_str, options);
+// The structure here lets the caller have access to the extracted metadata
+// string (we do not need the parsed or rendered metadata) during the
+// preparation pass, but only provides the `ToRender` type opaquely, so that it
+// can only be used as the type-safe requirement for calling `render`.
+pub struct Prepared<'e> {
+   pub metadata_src: String,
+   pub to_render: ToRender<'e>,
+}
+
+pub struct ToRender<'e> {
+   first_pass_events: Vec<first_pass::Event<'e>>,
+   footnote_definitions: FootnoteDefinitions<'e>,
+}
+
+pub fn prepare(src: &str, options: Options) -> Result<Prepared<'_>, PrepareError> {
+   let parser = Parser::new_ext(src, options);
 
    let mut first_pass = first_pass::FirstPass::new();
 
@@ -100,64 +68,98 @@ pub fn render(
       match event {
          Event::Start(Tag::MetadataBlock(kind)) => match first_pass {
             FirstPass::Initial(initial) => {
-               first_pass = FirstPass::ParsingMetadata(initial.parsing_metadata(kind))
+               first_pass = FirstPass::ExtractingMetadata(initial.parsing_metadata(kind))
             }
-            _ => return bad_state(&event, &first_pass),
+            _ => return bad_prepare_state(&event, &first_pass),
          },
 
          Event::End(TagEnd::MetadataBlock(_)) => match first_pass {
-            FirstPass::ParsedMetadata(metadata) => {
+            FirstPass::ExtractedMetadata(metadata) => {
                first_pass = FirstPass::Content(metadata.start_content())
             }
-            _ => return bad_state(&event, &first_pass),
+            _ => return bad_prepare_state(&event, &first_pass),
          },
 
          Event::Text(ref text) => match first_pass {
-            FirstPass::ParsingMetadata(parsing) => match parsing.kind() {
+            FirstPass::ExtractingMetadata(parsing) => match parsing.kind() {
                MetadataBlockKind::YamlStyle => {
-                  let metadata =
-                     get_metadata(text).map_err(RenderError::MetadataParseError)?;
-                  first_pass = FirstPass::ParsedMetadata(parsing.parsed(metadata));
+                  first_pass = FirstPass::ExtractedMetadata(parsing.parsed(text.clone()));
                }
 
-               MetadataBlockKind::PlusesStyle => return Err(RenderError::UsedToml),
+               MetadataBlockKind::PlusesStyle => return Err(PrepareError::UsedToml),
             },
 
-            FirstPass::Content(ref mut content) => content.handle(event)?,
+            FirstPass::Content(ref mut content) => {
+               content.handle(event).map_err(PrepareError::from)?
+            }
 
-            _ => return bad_state(&event, &first_pass),
+            _ => return bad_prepare_state(&event, &first_pass),
          },
 
          _ => match first_pass {
             FirstPass::Content(ref mut content) => content.handle(event)?,
-            _ => return bad_state(&event, &first_pass),
+            _ => return bad_prepare_state(&event, &first_pass),
          },
       }
    }
 
    let (metadata, first_pass_events, footnote_definitions) = first_pass.finalize()?;
+   Ok(Prepared {
+      metadata_src: metadata.to_string(),
+      to_render: ToRender {
+         first_pass_events,
+         footnote_definitions,
+      },
+   })
+}
+
+#[derive(Error, Debug)]
+#[error("could not render Markdown")]
+pub struct RenderError {
+   #[from]
+   source: second_pass::Error,
+}
+
+/// The result of successfully rendering content: HTML. It can be extracted via
+/// the `.html()` method.
+pub struct Rendered(String);
+
+impl Rendered {
+   pub fn html(self) -> String {
+      self.0
+   }
+}
+
+pub fn render(
+   to_render: ToRender,
+   rewrite: impl Fn(&str) -> String,
+   syntax_set: &SyntaxSet,
+) -> Result<Rendered, RenderError> {
+   let ToRender {
+      first_pass_events,
+      footnote_definitions,
+   } = to_render;
 
    let events = second_pass(
-      &metadata,
       footnote_definitions,
       syntax_set,
       first_pass_events,
       &rewrite,
    )
-   .map_err(RenderError::SecondPass)?;
+   .map_err(RenderError::from)?;
 
-   let mut content = String::with_capacity(src_str.len() * 2);
+   let mut content = String::new();
    html::push_html(&mut content, events);
 
-   Ok(Rendered { content, metadata })
+   Ok(Rendered(content))
 }
 
-fn bad_state<T, S, C>(state: &S, context: &C) -> Result<T, RenderError>
-where
-   S: Debug,
-   C: Debug,
-{
-   Err(RenderError::FirstPass(format!(
-      "{state:?} is invalid in {context:?}"
-   )))
+fn bad_prepare_state<T>(
+   state: &impl Debug,
+   context: &impl Debug,
+) -> Result<T, PrepareError> {
+   Err(PrepareError::State {
+      state: format!("{state:?}"),
+      context: format!("{context:?}"),
+   })
 }

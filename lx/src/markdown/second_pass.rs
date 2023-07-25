@@ -3,8 +3,6 @@ use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
-use crate::metadata::Metadata;
-
 use super::first_pass;
 use super::FootnoteDefinitions;
 
@@ -13,8 +11,7 @@ use super::FootnoteDefinitions;
 /// 1. Applying syntax highlighting.
 /// 2. Properly emitting footnotes.
 /// 3. Performing any template-language-type rewriting of text nodes.
-struct State<'m, 'e, 's> {
-   metadata: &'m Metadata,
+struct State<'e, 's> {
    footnote_definitions: FootnoteDefinitions<'e>,
    syntax_set: &'s SyntaxSet,
    code_block: Option<CodeBlock<'e, 's>>,
@@ -35,14 +32,12 @@ pub enum Error {
 }
 
 pub(super) fn second_pass<'e>(
-   metadata: &Metadata,
    footnote_definitions: FootnoteDefinitions<'e>,
    syntax_set: &SyntaxSet,
    events: Vec<first_pass::Event<'e>>,
-   rewrite: &impl Fn(&str, &Metadata) -> String,
+   rewrite: &impl Fn(&str) -> String,
 ) -> Result<impl Iterator<Item = pulldown_cmark::Event<'e>>, Error> {
    let mut state = State {
-      metadata,
       footnote_definitions,
       syntax_set,
       code_block: None,
@@ -51,19 +46,23 @@ pub(super) fn second_pass<'e>(
    };
 
    for event in events {
-      state.handle(event, rewrite)?;
+      // If I ever extract/generalize this, I will want to use some kind of log level
+      // handling instead of just always emitting the error.
+      if let Some(warning) = state.handle(event, rewrite)? {
+         eprintln!("{warning}");
+      }
    }
 
    Ok(state.into_iter())
 }
 
-impl<'m, 'e, 's> State<'m, 'e, 's> {
+impl<'e, 's> State<'e, 's> {
    /// Returns `Some(String)` when it could successfully emit code but there was something
    /// unexpected about it, e.g. a footnote with a missing definition.
    fn handle(
       &mut self,
       event: first_pass::Event<'e>,
-      rewrite: &impl Fn(&str, &Metadata) -> String,
+      rewrite: &impl Fn(&str) -> String,
    ) -> Result<Option<String>, Error> {
       use pulldown_cmark::Event::*;
 
@@ -77,7 +76,7 @@ impl<'m, 'e, 's> State<'m, 'e, 's> {
                      Ok(None)
                   }
                   None => {
-                     let text = rewrite(text.as_ref(), self.metadata);
+                     let text = rewrite(text.as_ref());
                      self.events.push(Text(text.into()));
                      Ok(None)
                   }
@@ -151,7 +150,7 @@ struct Iter<'a, 'e> {
    footnote_event_index: usize,
 }
 
-impl<'a, 'e: 'a> State<'_, 'e, '_> {
+impl<'a, 'e: 'a> State<'e, '_> {
    fn iter(&'a self) -> Iter<'a, 'e> {
       use pulldown_cmark::Event::*;
       let mut footnote_events = vec![];
@@ -226,7 +225,7 @@ impl<'a, 'e: 'a> std::iter::Iterator for Iter<'a, 'e> {
    }
 }
 
-impl<'e> std::iter::IntoIterator for State<'_, 'e, '_> {
+impl<'e> std::iter::IntoIterator for State<'e, '_> {
    type Item = pulldown_cmark::Event<'e>;
    type IntoIter = std::vec::IntoIter<pulldown_cmark::Event<'e>>;
 

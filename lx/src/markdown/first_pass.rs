@@ -1,12 +1,9 @@
-// TODO: error handling!
-
 use std::{collections::HashMap, fmt::Debug};
 
 use pulldown_cmark::{CowStr, Event as CmarkEvent, MetadataBlockKind, Tag, TagEnd};
+use thiserror::Error;
 
-use crate::metadata::Metadata;
-
-use super::{bad_state, FootnoteDefinitions, RenderError};
+use super::FootnoteDefinitions;
 
 #[derive(Debug)]
 pub(super) struct State<S: ParseState> {
@@ -22,8 +19,8 @@ pub(super) enum Event<'e> {
 #[derive(Debug)]
 pub(super) enum FirstPass<'e> {
    Initial(State<Initial>),
-   ParsingMetadata(State<ParsingMetadata>),
-   ParsedMetadata(State<ParsedMetadata>),
+   ExtractingMetadata(State<ExtractingMetadata>),
+   ExtractedMetadata(State<ExtractedMetadata<'e>>),
    Content(State<Content<'e>>),
 }
 
@@ -34,14 +31,16 @@ impl<'e> FirstPass<'e> {
 
    pub(super) fn finalize(
       self,
-   ) -> Result<(Metadata, Vec<Event<'e>>, FootnoteDefinitions<'e>), RenderError> {
+   ) -> Result<(CowStr<'e>, Vec<Event<'e>>, FootnoteDefinitions<'e>), Error> {
       match self {
          FirstPass::Content(content) => Ok((
             content.data.metadata,
             content.data.events,
             content.data.footnote_definitions,
          )),
-         _ => bad_state(&self, &"finalizing"),
+         _ => Err(Error::Finalizing {
+            state: format!("{self:?}"),
+         }),
       }
    }
 }
@@ -67,23 +66,23 @@ impl State<Initial> {
    pub(super) fn parsing_metadata(
       self,
       kind: MetadataBlockKind,
-   ) -> State<ParsingMetadata> {
+   ) -> State<ExtractingMetadata> {
       State {
-         data: Box::new(ParsingMetadata(kind)),
+         data: Box::new(ExtractingMetadata(kind)),
       }
    }
 }
 
 /// Step 2 in the state machine: we start processing metadata.
 #[derive(Debug)]
-pub(super) struct ParsingMetadata(MetadataBlockKind);
+pub(super) struct ExtractingMetadata(MetadataBlockKind);
 
-impl ParseState for ParsingMetadata {}
+impl ParseState for ExtractingMetadata {}
 
-impl State<ParsingMetadata> {
-   pub(super) fn parsed(self, metadata: Metadata) -> State<ParsedMetadata> {
+impl State<ExtractingMetadata> {
+   pub(super) fn parsed<'e>(self, text: CowStr<'e>) -> State<ExtractedMetadata<'e>> {
       State {
-         data: Box::new(ParsedMetadata(metadata)),
+         data: Box::new(ExtractedMetadata(text)),
       }
    }
 
@@ -92,15 +91,16 @@ impl State<ParsingMetadata> {
    }
 }
 
+// TODO: can this just reference the `CowStr<'e>`? Maaaaybe?
 /// Step 3 in the state machine: we have finished processing metadata, but have not yet
 /// received the 'end the metadata block' event.
 #[derive(Debug)]
-pub(super) struct ParsedMetadata(Metadata);
+pub(super) struct ExtractedMetadata<'e>(CowStr<'e>);
 
-impl ParseState for ParsedMetadata {}
+impl<'e> ParseState for ExtractedMetadata<'e> {}
 
-impl State<ParsedMetadata> {
-   pub(super) fn start_content<'e>(self) -> State<Content<'e>> {
+impl<'e> State<ExtractedMetadata<'e>> {
+   pub(super) fn start_content(self) -> State<Content<'e>> {
       State {
          data: Box::new(Content {
             metadata: self.data.0,
@@ -116,7 +116,7 @@ impl State<ParsedMetadata> {
 /// we can iterate the rest of the events.
 #[derive(Debug)]
 pub(super) struct Content<'e> {
-   metadata: Metadata,
+   metadata: CowStr<'e>,
    events: Vec<Event<'e>>,
    current_footnote: Option<(CowStr<'e>, Vec<CmarkEvent<'e>>)>,
    footnote_definitions: FootnoteDefinitions<'e>,
@@ -124,12 +124,10 @@ pub(super) struct Content<'e> {
 
 impl<'e> ParseState for Content<'e> {}
 
-// TODO: error handling for these that is smarter than `String`, including cause
-
 impl<'e> State<Content<'e>> {
    /// "Handling" events consists, at this stage, of just distinguishing between
    /// footnote references, footnote definitions, and everything else.
-   pub(super) fn handle(&mut self, event: CmarkEvent<'e>) -> Result<(), RenderError> {
+   pub(super) fn handle(&mut self, event: CmarkEvent<'e>) -> Result<(), Error> {
       match event {
          CmarkEvent::Start(Tag::FootnoteDefinition(name)) => self.start_footnote(name),
          CmarkEvent::End(TagEnd::FootnoteDefinition) => self.end_footnote(),
@@ -154,12 +152,12 @@ impl<'e> State<Content<'e>> {
       }
    }
 
-   fn start_footnote(&mut self, name: CowStr<'e>) -> Result<(), RenderError> {
+   fn start_footnote(&mut self, name: CowStr<'e>) -> Result<(), Error> {
       match self.data.current_footnote {
-         Some((ref current, _)) => bad_state(
-            &format!("starting footnote {name}"),
-            &format!("already in footnote {current}"),
-         ),
+         Some((ref current, _)) => Err(Error::AlreadyInFootnote {
+            current: current.to_string(),
+            new: name.to_string(),
+         }),
          None => {
             self.data.current_footnote = Some((name.clone(), vec![]));
             Ok(())
@@ -167,7 +165,7 @@ impl<'e> State<Content<'e>> {
       }
    }
 
-   fn end_footnote(&mut self) -> Result<(), RenderError> {
+   fn end_footnote(&mut self) -> Result<(), Error> {
       match self.data.current_footnote.take() {
          Some((current_name, events)) => {
             // `.insert` returns the existing definitions if there are any, so `Some`
@@ -177,22 +175,34 @@ impl<'e> State<Content<'e>> {
                .footnote_definitions
                .insert(current_name.clone(), events)
             {
-               Some(events) => Err(RenderError::FirstPass(format!(
-                  "creating duplicate footnote {current_name}: {:?}",
-                  events
-               ))),
+               Some(_events) => Err(Error::DuplicateFootnote(current_name.to_string())),
                None => Ok(()),
             }
          }
-         None => bad_state(&"ending footnote", &"not in footnote"),
+         None => Err(Error::EndFootnoteWhenNotInFootnote),
       }
    }
+}
+
+#[derive(Error, Debug)]
+pub enum Error {
+   #[error("starting footnote '{new}' but already in footnote {current}")]
+   AlreadyInFootnote { current: String, new: String },
+
+   #[error("creating duplicate footnote named {0}")]
+   DuplicateFootnote(String),
+
+   #[error("ending footnote when not in a footnote")]
+   EndFootnoteWhenNotInFootnote,
+
+   #[error("finalizing from an invalid state {state}")]
+   Finalizing { state: String },
 }
 
 mod private {
    pub(crate) trait Sealed {}
    impl Sealed for super::Initial {}
-   impl Sealed for super::ParsingMetadata {}
-   impl Sealed for super::ParsedMetadata {}
+   impl Sealed for super::ExtractingMetadata {}
+   impl<'e> Sealed for super::ExtractedMetadata<'e> {}
    impl<'e> Sealed for super::Content<'e> {}
 }

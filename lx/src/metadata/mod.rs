@@ -76,7 +76,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
-   pub(super) fn new(
+   pub(super) fn resolved(
       item: serial::ItemMetadata,
       source: &page::Source,
       root_dir: &Path,

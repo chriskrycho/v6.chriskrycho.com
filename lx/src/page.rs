@@ -11,10 +11,10 @@ use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::markdown::{render, MetadataParseError, RenderError, Rendered};
+use crate::markdown::{self, RenderError};
 use crate::{
    config::Config,
-   metadata::{cascade::Cascade, serial, Metadata},
+   metadata::{self, cascade::Cascade, serial, Metadata},
 };
 
 /// Source data for a file: where it came from, and its original contents.
@@ -49,10 +49,25 @@ pub struct Page {
 
 #[derive(Error, Debug)]
 pub enum Error {
-   #[error("could not parse metadata")]
-   Metadata { source: MetadataParseError },
+   #[error("could not prepare Markdown for parsing")]
+   Preparation {
+      #[from]
+      source: markdown::PrepareError,
+   },
 
-   #[error("error rendering Markdown content")]
+   #[error("could not parse metadata")]
+   MetadataParsing {
+      #[from]
+      source: serial::ItemParseError,
+   },
+
+   #[error("could not resolve metadata")]
+   MetadataResolution {
+      #[from]
+      source: metadata::Error,
+   },
+
+   #[error("could not render Markdown content")]
    Render { source: RenderError },
 }
 
@@ -74,41 +89,32 @@ impl Page {
          source.path.as_os_str().as_bytes(),
       ));
 
-      let get_metadata =
-         |input: &str| match serde_yaml::from_str::<serial::ItemMetadata>(input) {
-            Ok(from_content) => {
-               Metadata::new(
-                  from_content,
-                  source,
-                  root_dir,
-                  cascade,
-                  String::from("base.html"), // TODO: not this
-                  options,
-               )
-               .map_err(|e| MetadataParseError::Metadata {
-                  invalid: input.to_string(),
-                  source: e,
-               })
-            }
-            Err(e) => Err(MetadataParseError::Yaml {
-               unparseable: input.to_string(),
-               source: e,
-            }),
-         };
+      let prepared = markdown::prepare(&source.contents, options).map_err(Error::from)?;
 
-      let Rendered { content, metadata } = render(
-         &source.contents,
-         get_metadata,
-         |text, _metadata| text.to_string(), // TODO: this can do something smarter later!
-         options,
-         syntax_set,
-      )
-      .map_err(|e| Error::Render { source: e })?;
+      let metadata = serial::ItemMetadata::try_parse(&prepared.metadata_src)
+         .map_err(Error::from)
+         .and_then(|item_metadata| {
+            Metadata::resolved(
+               item_metadata,
+               source,
+               root_dir,
+               cascade,
+               String::from("base.html"), // TODO: not this
+               options,
+            )
+            .map_err(Error::from)
+         })?;
+
+      // TODO: use tera and metadata!
+      let rewrite = |text: &str| text.to_string();
+
+      let rendered = markdown::render(prepared.to_render, rewrite, syntax_set)
+         .map_err(|e| Error::Render { source: e })?;
 
       Ok(Page {
          id,
          metadata,
-         content,
+         content: rendered.html(),
       })
    }
 
