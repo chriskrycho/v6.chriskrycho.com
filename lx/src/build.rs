@@ -43,13 +43,6 @@ pub enum BuildError {
    },
 }
 
-#[derive(Error, Debug)]
-#[error("Could not load file {path}")]
-pub struct ContentError {
-   source: std::io::Error,
-   path: PathBuf,
-}
-
 pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    let in_dir = in_dir.normalize();
    let config_path = in_dir.join("_data/config.json5");
@@ -81,18 +74,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    options.set(Options::ENABLE_OLD_FOOTNOTES, false);
    options.set(Options::ENABLE_FOOTNOTES, true);
 
-   let mut sources = Vec::<Source>::new();
-   let mut errors = Vec::<ContentError>::new();
-   for path in site_files.content {
-      match std::fs::read_to_string(&path) {
-         Ok(contents) => sources.push(Source { path, contents }),
-         Err(e) => errors.push(ContentError { source: e, path }),
-      }
-   }
-
-   if !errors.is_empty() {
-      return Err(BuildError::Content(errors));
-   }
+   let sources = load_sources(&site_files)?;
 
    let mut cascade = Cascade::new();
    let cascade = cascade
@@ -161,6 +143,30 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
        )
        .map_err(|e| BuildError::WriteFileError { path: path.to_owned(), source: e })
    })
+}
+
+fn load_sources(site_files: &SiteFiles) -> Result<Vec<Source>, BuildError> {
+   let mut sources = Vec::<page::Source>::new();
+   let mut errors = Vec::<ContentError>::new();
+   for path in site_files.content {
+      match std::fs::read_to_string(&path) {
+         Ok(contents) => sources.push(Source { path, contents }),
+         Err(e) => errors.push(ContentError { source: e, path }),
+      }
+   }
+
+   if errors.is_empty() {
+      Ok(sources)
+   } else {
+      Err(BuildError::Content(errors))
+   }
+}
+
+#[derive(Error, Debug)]
+#[error("Could not load file {path}")]
+pub struct ContentError {
+   source: std::io::Error,
+   path: PathBuf,
 }
 
 struct SiteFiles {
