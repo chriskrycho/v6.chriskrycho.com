@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use normalize_path::NormalizePath;
 use pulldown_cmark::Options;
+use rayon::iter::Either;
 use rayon::prelude::*;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, ClassStyle};
@@ -10,7 +11,6 @@ use thiserror::Error;
 
 use crate::config::{self, Config};
 use crate::metadata::cascade::{Cascade, CascadeLoadError};
-use crate::metadata::Metadata;
 use crate::page::{self, Page, Source};
 use crate::templates;
 
@@ -39,6 +39,9 @@ pub enum BuildError {
 
    #[error("could not render one or more pages")]
    Page(Vec<page::Error>),
+
+   #[error("could not rewrite one more pages")]
+   RewritePage(Vec<tera::Error>),
 
    #[error("could not create output directory '{path}'")]
    CreateOutputDirectory {
@@ -91,47 +94,66 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
 
    let sources = load_sources(&site_files)?;
 
+   println!("loaded {count} pages", count = sources.len());
+
    let mut cascade = Cascade::new();
    let cascade = cascade
       .load(&site_files.data)
       .map_err(|e| BuildError::Cascade { source: e })?;
 
-   // TODO: use Tera *here*.
-   let rewrite = |text: &str, metadata: &Metadata| {
-      tera.render_str(text, metadata).map_err(|e| todo!())
-   };
-
-   let (pages, errors) = sources
-      .into_par_iter()
-      .fold(
-         || (Vec::new(), Vec::new()),
-         |(mut good, mut bad), source| match Page::build(
-            &source,
+   let (errors, pages): (Vec<_>, Vec<_>) = sources
+      .par_iter()
+      .map(|source| {
+         Page::build(
+            source,
             &in_dir.join("content"),
             &syntax_set,
             options,
             cascade,
-            &rewrite,
-         ) {
-            Ok(page) => {
-               good.push(page);
-               (good, bad)
-            }
-            Err(e) => {
-               bad.push(e);
-               (good, bad)
-            }
-         },
-      )
-      .flatten()
-      .collect::<(Vec<Page>, Vec<page::Error>)>();
+         )
+      })
+      .partition_map(Either::from);
 
    if !errors.is_empty() {
       return Err(BuildError::Page(errors));
    }
 
+   println!("processed {count} pages", count = pages.len());
+
+   // Postprocessing errors are different from hard errors. I probably do not
+   // want to publish to the real world with them in place (so I want to see
+   // them), but they do not, strictly speaking, constitute *errors* during a
+   // dev/writing mode: I still want to see the rest of the site build, and in
+   // fact want to see the
+   let (rewritten_pages, warnings): (Vec<_>, Vec<_>) = pages
+      .into_par_iter()
+      .map(|mut page| {
+         let context = tera::Context::from_serialize(&page.metadata)
+            .expect("Tera should be able to build Context from any Serialize type");
+         let mut tera = tera.clone();
+
+         match tera.render_str(&page.content, &context) {
+            Ok(s) => {
+               page.content = s;
+               (page, None)
+            }
+            Err(e) => {
+               let source = page.source.clone();
+               (page, Some((e, source)))
+            }
+         }
+      })
+      .collect();
+
+   // TODO: handle the warnings correctly for prod.
+   for (error, source) in warnings.into_iter().flatten() {
+      eprintln!("{}: {error}", source.path.display())
+   }
+
+   println!("postprocessed {count} pages", count = rewritten_pages.len());
+
    // TODO: replace with a templating engine!
-   pages.into_iter().try_for_each(|page| {
+   rewritten_pages.into_iter().try_for_each(|page| {
       let path = page.path_from_root(&config.output).with_extension("html");
       let containing_dir = path
          .parent()
@@ -162,13 +184,24 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    })
 }
 
+enum RewrittenPage {
+   Success(Page),
+   Failure(Page, tera::Error),
+}
+
 fn load_sources(site_files: &SiteFiles) -> Result<Vec<Source>, BuildError> {
    let mut sources = Vec::<page::Source>::new();
    let mut errors = Vec::<ContentError>::new();
-   for path in site_files.content {
-      match std::fs::read_to_string(&path) {
-         Ok(contents) => sources.push(Source { path, contents }),
-         Err(e) => errors.push(ContentError { source: e, path }),
+   for path in &site_files.content {
+      match std::fs::read_to_string(path) {
+         Ok(contents) => sources.push(Source {
+            path: path.to_owned(),
+            contents,
+         }),
+         Err(e) => errors.push(ContentError {
+            path: path.to_owned(),
+            source: e,
+         }),
       }
    }
 

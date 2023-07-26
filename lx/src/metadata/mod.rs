@@ -2,6 +2,8 @@ pub mod cascade;
 pub mod serial;
 
 use std::path::Path;
+use std::path::PathBuf;
+use std::path::StripPrefixError;
 
 use chrono::DateTime;
 use chrono::FixedOffset;
@@ -42,8 +44,17 @@ pub enum Error {
    #[error("bad permalink: '{reason}'")]
    BadPermalink {
       reason: String,
-      source: Option<std::path::StripPrefixError>,
+      source: Option<StripPrefixError>,
    },
+}
+
+impl Error {
+   fn bad_permalink(p: &Path, source: Option<StripPrefixError>) -> Error {
+      Error::BadPermalink {
+         reason: format!("could not get `str` for '{}'", p.display()),
+         source,
+      }
+   }
 }
 
 /// Fully resolved metadata after combining the header config with all items in data
@@ -54,7 +65,7 @@ pub struct Metadata {
    pub required: RequiredFields,
 
    /// The path to this piece of content.
-   pub slug: String,
+   pub slug: Slug,
 
    // TODO: should this be optional? I think the answer is "Yes": but it depends
    // on how I understand the nature of this Metadata type. Is it what I have
@@ -92,11 +103,11 @@ impl Metadata {
          (None, None) => Err(Error::MissingRequiredField),
       })?;
 
-      let permalink = item.permalink.map(|permalink| {
+      let permalink: Option<PathBuf> = item.permalink.map(|permalink| {
          permalink
             .trim_start_matches('/')
             .trim_end_matches('/')
-            .to_string()
+            .into()
       });
 
       let relative_path =
@@ -111,39 +122,7 @@ impl Metadata {
                source: Some(e),
             })?;
 
-      let slug = match permalink {
-         Some(p) => p,
-         None => {
-            let src_for_slug = source
-               .path
-               .file_stem()
-               .ok_or_else(|| Error::BadPermalink {
-                  reason: format!("missing file stem on '{}'?!?", source.path.display()),
-                  source: None,
-               })?
-               .to_str()
-               .ok_or_else(|| Error::BadPermalink {
-                  reason: format!(
-                     "Could not get `str` for '{}'?!?",
-                     source.path.display()
-                  ),
-                  source: None,
-               })?;
-
-            relative_path
-               .parent()
-               .map(|containing_dir| containing_dir.join(slugify(src_for_slug)))
-               .ok_or_else(|| Error::BadPermalink {
-                  reason: format!(
-                     "could not construct containing dir in '{}'",
-                     relative_path.display()
-                  ),
-                  source: None,
-               })?
-               .to_string_lossy()
-               .to_string()
-         }
-      };
+      let slug = Slug::new(permalink.as_ref(), relative_path, source)?;
 
       let render = |s: String| rendered(&s, options);
 
@@ -168,5 +147,63 @@ impl Metadata {
          series: item.series.or(cascade.series(relative_path)),
          subscribe: item.subscribe.or(cascade.subscribe(relative_path)),
       })
+   }
+}
+
+#[derive(Debug, Serialize)]
+pub struct Slug(String);
+
+impl AsRef<Path> for Slug {
+   fn as_ref(&self) -> &Path {
+      self.0.as_ref()
+   }
+}
+
+impl AsRef<str> for Slug {
+   fn as_ref(&self) -> &str {
+      self.0.as_ref()
+   }
+}
+
+impl Slug {
+   fn new(
+      permalink: Option<&PathBuf>,
+      relative_path: &Path,
+      source: &page::Source,
+   ) -> Result<Slug, Error> {
+      match permalink {
+         Some(p) => p
+            .to_str()
+            .map(|s| Slug(s.to_owned()))
+            .ok_or_else(|| Error::bad_permalink(&p, None)),
+
+         // This is wrong: it ends up including the whole relative path in at
+         // least some cases! Let's add tests!
+         None => {
+            let src_for_slug = source
+               .path
+               .file_stem()
+               .ok_or_else(|| Error::BadPermalink {
+                  reason: format!("missing file stem on '{}'?!?", source.path.display()),
+                  source: None,
+               })?
+               .to_str()
+               .ok_or_else(|| Error::bad_permalink(&source.path, None))?;
+
+            relative_path
+               .parent()
+               .map(|containing_dir| containing_dir.join(slugify(src_for_slug)))
+               .ok_or_else(|| Error::BadPermalink {
+                  reason: format!(
+                     "could not construct containing dir in '{}'",
+                     relative_path.display()
+                  ),
+                  source: None,
+               })?
+               .to_str()
+               .map(|s| Slug(s.to_owned()))
+               .ok_or_else(|| Error::bad_permalink(relative_path, None))
+         }
+      }
    }
 }

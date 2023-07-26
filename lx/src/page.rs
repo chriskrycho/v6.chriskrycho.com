@@ -18,6 +18,7 @@ use crate::{
 };
 
 /// Source data for a file: where it came from, and its original contents.
+#[derive(Clone, Debug)]
 pub struct Source {
    /// Original source location for the file.
    pub path: PathBuf,
@@ -45,6 +46,8 @@ pub struct Page {
 
    /// The fully-rendered contents of the page.
    pub content: String,
+
+   pub source: Source,
 }
 
 #[derive(Error, Debug)]
@@ -81,7 +84,6 @@ impl Page {
       syntax_set: &SyntaxSet,
       options: Options,
       cascade: &Cascade,
-      rewrite: &impl Fn(&str, &Metadata) -> Result<String, Box<dyn std::error::Error>>,
    ) -> Result<Self, Error> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
       // don't want to do it based on the source path (or if I do, *only* initially as
@@ -109,17 +111,14 @@ impl Page {
             .map_err(Error::from)
          })?;
 
-      let rendered = markdown::render(
-         prepared.to_render,
-         |text: &str| rewrite(text, &metadata),
-         syntax_set,
-      )
-      .map_err(Error::from)?;
+      let rendered =
+         markdown::render(prepared.to_render, syntax_set).map_err(Error::from)?;
 
       Ok(Page {
          id,
          metadata,
          content: rendered.html(),
+         source: source.clone(), // TODO: might be able to just take ownership?
       })
    }
 
@@ -129,7 +128,7 @@ impl Page {
 
    /// Given a config, generate the (canonicalized) URL for the page
    pub fn _url(&self, config: &Config) -> String {
-      String::from(config.url.trim_end_matches('/')) + "/" + &self.metadata.slug
+      String::from(config.url.trim_end_matches('/')) + "/" + self.metadata.slug.as_ref()
    }
 }
 

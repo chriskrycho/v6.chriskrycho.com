@@ -117,7 +117,7 @@ impl std::fmt::Display for Rating {
    }
 }
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Series {
    // The name is optional: it could be supplied via the data file somewhere up
    // the tree.

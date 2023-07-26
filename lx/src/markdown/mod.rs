@@ -134,7 +134,6 @@ impl Rendered {
 
 pub fn render(
    to_render: ToRender,
-   rewrite: impl Fn(&str) -> String,
    syntax_set: &SyntaxSet,
 ) -> Result<Rendered, RenderError> {
    let ToRender {
@@ -142,13 +141,8 @@ pub fn render(
       footnote_definitions,
    } = to_render;
 
-   let events = second_pass(
-      footnote_definitions,
-      syntax_set,
-      first_pass_events,
-      &rewrite,
-   )
-   .map_err(RenderError::from)?;
+   let events = second_pass(footnote_definitions, syntax_set, first_pass_events)
+      .map_err(RenderError::from)?;
 
    let mut content = String::new();
    html::push_html(&mut content, events);
