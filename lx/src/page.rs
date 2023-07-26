@@ -81,7 +81,7 @@ impl Page {
       syntax_set: &SyntaxSet,
       options: Options,
       cascade: &Cascade,
-      rewrite: &impl Fn(&str, &Metadata) -> String,
+      rewrite: &impl Fn(&str, &Metadata) -> Result<String, Box<dyn std::error::Error>>,
    ) -> Result<Self, Error> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
       // don't want to do it based on the source path (or if I do, *only* initially as

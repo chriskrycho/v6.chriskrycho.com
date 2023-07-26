@@ -7,5 +7,6 @@ pub mod feed;
 pub mod markdown;
 pub mod metadata;
 pub mod page;
+pub mod templates;
 
 pub use build::build;
