@@ -132,6 +132,8 @@ impl Page {
    }
 }
 
+// This is here because `lx_json_feed` is an "upstream" crate. It knows nothing
+// at all about `lx`.
 impl From<&Page> for lx_json_feed::FeedItem {
    fn from(_: &Page) -> Self {
       unimplemented!()
