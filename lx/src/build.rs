@@ -78,7 +78,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    let dark = css_for_theme_with_class_style(&themes["base16-ocean.dark"], style)
       .expect("Missing base16-ocean.dark theme");
 
-   let mut tera = templates::load(&site_files.templates).map_err(BuildError::from)?;
+   let tera = templates::load(&site_files.templates).map_err(BuildError::from)?;
 
    std::fs::create_dir_all(&config.output).expect("Can create output dir");
 

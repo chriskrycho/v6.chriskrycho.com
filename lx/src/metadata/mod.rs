@@ -175,7 +175,7 @@ impl Slug {
          Some(p) => p
             .to_str()
             .map(|s| Slug(s.to_owned()))
-            .ok_or_else(|| Error::bad_permalink(&p, None)),
+            .ok_or_else(|| Error::bad_permalink(p, None)),
 
          // This is wrong: it ends up including the whole relative path in at
          // least some cases! Let's add tests!

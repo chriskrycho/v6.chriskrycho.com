@@ -12,7 +12,7 @@ fn main() -> Result<(), String> {
 
    let mut cli = Cli::parse();
    match cli.command {
-      cli::Command::UI { web } => todo!(),
+      cli::Command::UI { web: _ } => todo!(),
       cli::Command::Publish { site_directory } => publish(&site_directory.unwrap_or(cwd)),
       cli::Command::Completions => cli.completions().map_err(|e| format!("blargle {e}")),
    }
