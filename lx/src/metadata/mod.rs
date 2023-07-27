@@ -16,69 +16,31 @@ use crate::page;
 use self::cascade::Cascade;
 use self::serial::*;
 
-#[derive(Debug, Serialize)]
-pub struct Rendered(String);
-
-fn rendered(src: &str, options: pulldown_cmark::Options) -> Rendered {
-   let events = pulldown_cmark::Parser::new_ext(src, options);
-   let mut s = String::with_capacity(src.len() * 2);
-   pulldown_cmark::html::push_html(&mut s, events);
-   Rendered(s)
-}
-
-#[derive(Debug, Serialize)]
-pub enum RequiredFields {
-   Title(String),
-   Date(DateTime<FixedOffset>),
-   Both {
-      title: String,
-      date: DateTime<FixedOffset>,
-   },
-}
-
-#[derive(Error, Debug)]
-pub enum Error {
-   #[error("missing both date and time")]
-   MissingRequiredField,
-
-   #[error("bad permalink: '{reason}'")]
-   BadPermalink {
-      reason: String,
-      source: Option<StripPrefixError>,
-   },
-}
-
-impl Error {
-   fn bad_permalink(p: &Path, source: Option<StripPrefixError>) -> Error {
-      Error::BadPermalink {
-         reason: format!("could not get `str` for '{}'", p.display()),
-         source,
-      }
-   }
-}
-
-/// Fully resolved metadata after combining the header config with all items in data
-/// hierarchy, including the root config and the data cascade.
+/// Fully resolved metadata for an item, after merging the data from the item's
+/// own header with all items in its data cascade.
+///
+/// **NOTE:** Although `title` and `date` are optional here, this is a function
+/// of the fact that my currently-chosen rendering engine, Tera, has no notion
+/// of pattern-matching in it, and therefore has no easy way to deal with a
+/// nested sum type. One or the other *is* required
 #[derive(Debug, Serialize)]
 pub struct Metadata {
-   /// The date, title, or both (every item must have one or the other)
-   pub required: RequiredFields,
+   /// The title of the item.
+   pub title: Option<String>,
+
+   /// The date the item was published.
+   pub date: Option<DateTime<FixedOffset>>,
 
    /// The path to this piece of content.
    pub slug: Slug,
 
-   // TODO: should this be optional? I think the answer is "Yes": but it depends
-   // on how I understand the nature of this Metadata type. Is it what I have
-   // gestured at below as "resolved metadata" for an item? If so, then this
-   // probably should be *required*. If it's the un-parsed data, then the main
-   // notable bit is that it's the same as `serial::Metadata` *other than*
-   // allowing additional fields (`slug` and `required` above).
+   /// Which layout should be used to render this?
    pub layout: String,
 
    pub subtitle: Option<Rendered>,
    pub summary: Option<Rendered>,
    pub qualifiers: Option<Qualifiers>,
-   pub updated: Option<DateTime<FixedOffset>>,
+   pub updated: Vec<Update>,
    pub thanks: Option<Rendered>,
    pub tags: Vec<String>,
    pub featured: bool,
@@ -89,20 +51,13 @@ pub struct Metadata {
 
 impl Metadata {
    pub(super) fn resolved(
-      item: serial::ItemMetadata,
+      item: serial::Item,
       source: &page::Source,
       root_dir: &Path,
       cascade: &Cascade,
       default_template_name: String,
       options: pulldown_cmark::Options,
    ) -> Result<Self, Error> {
-      let required = (match (item.title, item.date) {
-         (Some(title), Some(date)) => Ok(RequiredFields::Both { title, date }),
-         (None, Some(date)) => Ok(RequiredFields::Date(date)),
-         (Some(title), None) => Ok(RequiredFields::Title(title)),
-         (None, None) => Err(Error::MissingRequiredField),
-      })?;
-
       let permalink: Option<PathBuf> = item.permalink.map(|permalink| {
          permalink
             .trim_start_matches('/')
@@ -110,7 +65,7 @@ impl Metadata {
             .into()
       });
 
-      let relative_path =
+      let path_from_root =
          source
             .path
             .strip_prefix(root_dir)
@@ -122,32 +77,66 @@ impl Metadata {
                source: Some(e),
             })?;
 
-      let slug = Slug::new(permalink.as_ref(), relative_path, source)?;
+      let render = |s: String| Rendered::as_markdown(&s, options);
 
-      let render = |s: String| rendered(&s, options);
+      let updated = item.updated.into_iter().try_fold(
+         Vec::new(),
+         |mut acc, serial::Update { at, changes }| match at {
+            Some(at) => {
+               acc.push(Update { at, changes });
+               Ok(acc)
+            }
+            None => Error::bad_field(FieldError::Update),
+         },
+      )?;
 
-      Ok(Metadata {
-         required,
-         slug,
+      if matches!((&item.title, &item.date), (None, None)) {
+         return Err(Error::MissingRequiredField);
+      }
+
+      let metadata = Metadata {
+         title: item.title,
+         date: item.date,
+         slug: Slug::new(permalink.as_ref(), source)?,
          subtitle: item.subtitle.map(render),
          layout: item
             .layout
-            .or(cascade.layout(relative_path))
+            .or(cascade.layout(path_from_root))
             .unwrap_or(default_template_name),
-         summary: item.summary.or(cascade.summary(relative_path)).map(render),
-         qualifiers: item.qualifiers.or(cascade.qualifiers(relative_path)),
-         updated: item.updated.or(cascade.updated(relative_path)),
-         thanks: item.thanks.or(cascade.thanks(relative_path)).map(render),
+         summary: item.summary.map(render),
+         qualifiers: item.qualifiers.or(cascade.qualifiers(path_from_root)),
+         updated,
+         thanks: item.thanks.or(cascade.thanks(path_from_root)).map(render),
          tags: item
             .tags
-            .or(cascade.tags(relative_path))
+            .or(cascade.tags(path_from_root))
             .unwrap_or_default(),
          featured: item.featured.unwrap_or_default(),
-         book: item.book.or(cascade.book(relative_path)),
-         series: item.series.or(cascade.series(relative_path)),
-         subscribe: item.subscribe.or(cascade.subscribe(relative_path)),
-      })
+         book: item.book.or(cascade.book(path_from_root)),
+         series: item.series.or(cascade.series(path_from_root)),
+         subscribe: cascade.subscribe(path_from_root),
+      };
+
+      Ok(metadata)
    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct Rendered(String);
+
+impl Rendered {
+   fn as_markdown(src: &str, options: pulldown_cmark::Options) -> Rendered {
+      let events = pulldown_cmark::Parser::new_ext(src, options);
+      let mut s = String::with_capacity(src.len() * 2);
+      pulldown_cmark::html::push_html(&mut s, events);
+      Rendered(s)
+   }
+}
+
+#[derive(Debug, Serialize)]
+pub struct Update {
+   at: DateTime<FixedOffset>,
+   changes: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -166,44 +155,129 @@ impl AsRef<str> for Slug {
 }
 
 impl Slug {
-   fn new(
-      permalink: Option<&PathBuf>,
-      relative_path: &Path,
-      source: &page::Source,
-   ) -> Result<Slug, Error> {
+   /// Attempt to build a slug given:
+   ///
+   /// - the item permalink, if any
+   /// - the path to the item
+   ///
+   /// # Errors
+   ///
+   /// This function will return an error if .
+   fn new(permalink: Option<&PathBuf>, source: &page::Source) -> Result<Slug, Error> {
       match permalink {
          Some(p) => p
             .to_str()
-            .map(|s| Slug(s.to_owned()))
-            .ok_or_else(|| Error::bad_permalink(p, None)),
+            .ok_or_else(|| Error::bad_permalink(p, None))
+            .map(|s| Slug(s.to_owned())),
 
-         // This is wrong: it ends up including the whole relative path in at
-         // least some cases! Let's add tests!
-         None => {
-            let src_for_slug = source
-               .path
-               .file_stem()
-               .ok_or_else(|| Error::BadPermalink {
-                  reason: format!("missing file stem on '{}'?!?", source.path.display()),
-                  source: None,
-               })?
-               .to_str()
-               .ok_or_else(|| Error::bad_permalink(&source.path, None))?;
-
-            relative_path
-               .parent()
-               .map(|containing_dir| containing_dir.join(slugify(src_for_slug)))
-               .ok_or_else(|| Error::BadPermalink {
-                  reason: format!(
-                     "could not construct containing dir in '{}'",
-                     relative_path.display()
-                  ),
-                  source: None,
-               })?
-               .to_str()
-               .map(|s| Slug(s.to_owned()))
-               .ok_or_else(|| Error::bad_permalink(relative_path, None))
-         }
+         None => source
+            .path
+            .file_stem()
+            .ok_or_else(|| Error::BadPermalink {
+               reason: format!("missing file stem on '{}'?!?", source.path.display()),
+               source: None,
+            })?
+            .to_str()
+            .ok_or_else(|| Error::bad_permalink(&source.path, None))
+            .map(|s| Slug(slugify(s))),
       }
+   }
+}
+
+#[derive(Error, Debug)]
+pub enum Error {
+   #[error("missing both date and time")]
+   MissingRequiredField,
+
+   #[error("bad field data")]
+   BadField {
+      #[from]
+      source: FieldError,
+   },
+
+   #[error("bad permalink: '{reason}'")]
+   BadPermalink {
+      reason: String,
+      source: Option<StripPrefixError>,
+   },
+}
+
+impl Error {
+   fn bad_permalink(p: &Path, source: Option<StripPrefixError>) -> Error {
+      Error::BadPermalink {
+         reason: format!("could not get `str` for '{}'", p.display()),
+         source,
+      }
+   }
+
+   fn bad_field<T>(source: FieldError) -> Result<T, Error> {
+      Err(Error::BadField { source })
+   }
+}
+
+#[derive(Error, Debug)]
+pub enum FieldError {
+   #[error("missing `updated.at` field")]
+   Update,
+}
+
+#[cfg(test)]
+mod tests {
+   use super::*;
+
+   #[test]
+   fn slug_from_explicit_permalink() {
+      let permalink = PathBuf::from("Hello There");
+      let permalink = Some(&permalink);
+      let source = page::Source {
+         path: PathBuf::default(),
+         contents: String::new(),
+      };
+
+      assert_eq!(
+         &Slug::new(permalink, &source).unwrap().0,
+         "Hello There",
+         "The provided permalink is always respected"
+      );
+   }
+
+   #[test]
+   fn slug_from_simple_relative_path_with_simple_title() {
+      let source = page::Source {
+         path: PathBuf::from("a/b/c/q.rs"),
+         contents: String::new(),
+      };
+
+      assert_eq!(&Slug::new(None, &source).unwrap().0, "q");
+   }
+
+   #[test]
+   fn slug_from_simple_relative_path_with_complicated_title() {
+      let source = page::Source {
+         path: PathBuf::from("a/b/c/Q R S.rs"),
+         contents: String::new(),
+      };
+
+      assert_eq!(&Slug::new(None, &source).unwrap().0, "q-r-s");
+   }
+
+   #[test]
+   fn slug_from_compelx_relative_path_with_simple_title() {
+      let source = page::Source {
+         path: PathBuf::from("a/B C/d/q.rs"),
+         contents: String::new(),
+      };
+
+      assert_eq!(&Slug::new(None, &source).unwrap().0, "q");
+   }
+
+   #[test]
+   fn slug_from_compelx_relative_path_with_complex_title() {
+      let source = page::Source {
+         path: PathBuf::from("a/B C/d/Q R S.rs"),
+         contents: String::new(),
+      };
+
+      assert_eq!(&Slug::new(None, &source).unwrap().0, "q-r-s");
    }
 }

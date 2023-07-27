@@ -97,7 +97,7 @@ impl Page {
 
       let prepared = markdown::prepare(&source.contents, options).map_err(Error::from)?;
 
-      let metadata = serial::ItemMetadata::try_parse(&prepared.metadata_src)
+      let metadata = serial::Item::try_parse(&prepared.metadata_src)
          .map_err(Error::from)
          .and_then(|item_metadata| {
             Metadata::resolved(

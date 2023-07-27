@@ -7,21 +7,22 @@ use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Deserialize, Debug, Default)]
-pub struct ItemMetadata {
+pub struct Item {
    pub title: Option<String>,
    pub subtitle: Option<String>,
    pub summary: Option<String>,
-   pub qualifiers: Option<Qualifiers>,
    pub date: Option<DateTime<FixedOffset>>,
-   pub updated: Option<DateTime<FixedOffset>>,
+   #[serde(default)]
+   pub updated: Vec<Update>,
    pub permalink: Option<String>,
+   pub qualifiers: Option<Qualifiers>,
+   // --- Begin section of fields also available in AmbientMetadata --- //
    pub thanks: Option<String>,
    pub tags: Option<Vec<String>>,
    pub featured: Option<bool>,
    pub layout: Option<String>,
    pub book: Option<Book>,
    pub series: Option<Series>,
-   pub subscribe: Option<Subscribe>,
 }
 
 #[derive(Error, Debug)]
@@ -31,8 +32,8 @@ pub struct ItemParseError {
    source: serde_yaml::Error,
 }
 
-impl ItemMetadata {
-   pub fn try_parse(src: &str) -> Result<ItemMetadata, ItemParseError> {
+impl Item {
+   pub fn try_parse(src: &str) -> Result<Item, ItemParseError> {
       serde_yaml::from_str(src).map_err(|e| ItemParseError {
          unparseable: src.to_string(),
          source: e,
@@ -40,10 +41,17 @@ impl ItemMetadata {
    }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Update {
+   pub(super) at: Option<DateTime<FixedOffset>>,
+   pub(super) changes: Option<String>,
+}
+
+/// Fields which are allowed to be present "ambiently" for a given item, i.e.
+/// from a `my-dir.lx.yaml` or some such colocated next to a file.
 #[derive(Deserialize, Debug, Default)]
-pub struct AmbientMetadata {
+pub struct Ambient {
    pub qualifiers: Option<Qualifiers>,
-   pub permalink: Option<String>,
    pub thanks: Option<String>,
    pub tags: Option<Vec<String>>,
    pub featured: Option<bool>,

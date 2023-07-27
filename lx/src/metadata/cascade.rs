@@ -3,10 +3,9 @@ use std::{
    path::{Path, PathBuf},
 };
 
-use chrono::{DateTime, FixedOffset};
 use thiserror::Error;
 
-use super::serial::{self, Book, Qualifiers, Series, Subscribe};
+use super::{serial::Ambient, Book, Qualifiers, Series, Subscribe};
 
 // NOTE: this is currently quite naïve and in fact *wrong* as a result: what I
 // will actually need is a *tree*, where each point in the tree has two pieces
@@ -14,7 +13,7 @@ use super::serial::{self, Book, Qualifiers, Series, Subscribe};
 // may want to be just the name of that point in the tree. (I *think* I need
 // that, anyway!)
 pub struct Cascade {
-   inner: HashMap<PathBuf, serial::ItemMetadata>,
+   inner: HashMap<PathBuf, Ambient>,
 }
 
 #[derive(Debug, Error)]
@@ -36,17 +35,14 @@ impl Cascade {
       }
    }
 
-   pub fn load(
-      &mut self,
-      paths: &[PathBuf],
-   ) -> Result<&mut Self, CascadeLoadError> {
+   pub fn load(&mut self, paths: &[PathBuf]) -> Result<&mut Self, CascadeLoadError> {
       for path in paths {
          let fd = std::fs::File::open(path).map_err(|e| CascadeLoadError::OpenFile {
             source: e,
             file: path.clone(),
          })?;
 
-         let metadata: serial::ItemMetadata = serde_yaml::from_reader(&fd)
+         let metadata: Ambient = serde_yaml::from_reader(&fd)
             .map_err(|e| CascadeLoadError::ParseMetadata(Box::new(e)))?;
 
          // Panic instead of returning a `Result` because this means there is
@@ -61,11 +57,7 @@ impl Cascade {
       Ok(self)
    }
 
-   pub fn add_at<P: AsRef<Path>>(
-      &mut self,
-      path: P,
-      value: serial::ItemMetadata,
-   ) -> &mut Self {
+   pub fn add_at<P: AsRef<Path>>(&mut self, path: P, value: Ambient) -> &mut Self {
       let key = path.as_ref().display();
       if let Some(existing) = self.inner.insert(path.as_ref().to_owned(), value) {
          panic!(
@@ -79,16 +71,8 @@ impl Cascade {
       self.find_map(p.as_ref(), &|m| m.layout.clone())
    }
 
-   pub fn summary<P: AsRef<Path>>(&self, p: P) -> Option<String> {
-      self.find_map(p.as_ref(), &|m| m.summary.clone())
-   }
-
    pub fn qualifiers<P: AsRef<Path>>(&self, p: P) -> Option<Qualifiers> {
       self.find_map(p.as_ref(), &|m| m.qualifiers.clone())
-   }
-
-   pub fn updated<P: AsRef<Path>>(&self, p: P) -> Option<DateTime<FixedOffset>> {
-      self.find_map(p.as_ref(), &|m| m.updated)
    }
 
    pub fn thanks<P: AsRef<Path>>(&self, p: P) -> Option<String> {
@@ -115,7 +99,7 @@ impl Cascade {
 impl Cascade {
    fn find_map<T, F>(&self, path: &Path, f: &F) -> Option<T>
    where
-      F: Fn(&serial::ItemMetadata) -> Option<T>,
+      F: Fn(&Ambient) -> Option<T>,
    {
       let path = path.to_owned();
       self
@@ -128,7 +112,7 @@ impl Cascade {
 
 #[cfg(test)]
 mod tests {
-   use crate::metadata::serial::ItemMetadata;
+   use crate::metadata::{Ambient, Item};
 
    use super::*;
 
@@ -137,7 +121,7 @@ mod tests {
       let mut cascade = Cascade::new();
       cascade.add_at(
          "basic-path",
-         ItemMetadata {
+         Ambient {
             layout: Some("index.hbs".into()),
             ..Default::default()
          },
@@ -151,7 +135,7 @@ mod tests {
       let mut cascade = Cascade::new();
       cascade.add_at(
          "nested",
-         ItemMetadata {
+         Ambient {
             layout: Some("index.hbs".into()),
             ..Default::default()
          },
@@ -165,7 +149,7 @@ mod tests {
       let mut cascade = Cascade::new();
       cascade.add_at(
          "nested/path",
-         ItemMetadata {
+         Ambient {
             thanks: Some("To cool people".into()),
             ..Default::default()
          },
@@ -173,7 +157,7 @@ mod tests {
 
       cascade.add_at(
          "nested",
-         ItemMetadata {
+         Ambient {
             thanks: Some("To lame people".into()),
             ..Default::default()
          },
@@ -193,7 +177,7 @@ mod tests {
       let mut cascade = Cascade::new();
       cascade.add_at(
          "some/path",
-         ItemMetadata {
+         Ambient {
             thanks: Some("to cool people".into()),
             ..Default::default()
          },
@@ -206,7 +190,7 @@ mod tests {
       let mut cascade = Cascade::new();
       cascade.add_at(
          "path",
-         ItemMetadata {
+         Ambient {
             thanks: Some("to cool people".into()),
             ..Default::default()
          },
