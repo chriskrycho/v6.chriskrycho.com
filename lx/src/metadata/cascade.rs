@@ -112,7 +112,7 @@ impl Cascade {
 
 #[cfg(test)]
 mod tests {
-   use crate::metadata::{Ambient, Item};
+   use crate::metadata::{Ambient};
 
    use super::*;
 

@@ -7,7 +7,8 @@ qualifiers:
   audience: >
     Software developers working with Ember Octane.
 date: 2020-10-06T10:55:00-0600
-updated: 2020-10-06T17:31:00-0600
+updated:
+  - at: 2020-10-06T17:31:00-0600
 tags:
   - JavaScript
   - Ember

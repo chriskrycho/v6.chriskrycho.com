@@ -4,7 +4,8 @@ title: >
 subtitle: >
     Fighting a horrible mood by making progress anyway. Not much. But enough.
 date: 2020-05-08T20:00:00-0600 
-updated: 2020-05-08T21:20:00-0600 
+updated:
+  - at: 2020-05-08T21:20:00-0600 
 summary: >
     I’m taking a week off… and spending it composing a piece in honor of the upcoming SpaceX crewed test flight—a historic moment. Today, I was borderline depressed, and I barely made progress. But make progress I did.
 tags:

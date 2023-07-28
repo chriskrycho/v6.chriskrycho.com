@@ -11,7 +11,8 @@ qualifiers:
     audience: other writers and thinkers-aloud with long-running public projects, or fans and followers of the same.
 summary: Reflections prompted by Michael Sacasas’ wrapping up a decade of blogging. Ending projects on the internet is harder—but no less good when done well.
 date: 2019-12-13T19:20:00-0600
-updated: 2020-07-26T12:20:00-0600
+updated:
+  - at: 2020-07-26T12:20:00-0600
 
 ---
 

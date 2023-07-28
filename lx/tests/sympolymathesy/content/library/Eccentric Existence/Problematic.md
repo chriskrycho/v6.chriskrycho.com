@@ -15,7 +15,8 @@ tags:
     - Eccentric Existence
     - reading notes
 date: 2020-01-26T19:00:00-0600
-updated: 2020-01-26T19:10:00-0600
+updated:
+  - at: 2020-01-26T19:10:00-0600
 
 ---
 

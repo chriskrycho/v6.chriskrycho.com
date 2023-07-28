@@ -69,7 +69,7 @@ impl<'a> TryFrom<Feed<'a>> for AtomFeed {
    type Error = Error;
 
    fn try_from(feed: Feed<'a>) -> Result<Self, Self::Error> {
-      let updated = feed.items.updated();
+      let _updated = feed.items.updated();
       // AtomFeed {
       //    title: feed.title,
       //    id: todo!("feed ID"),

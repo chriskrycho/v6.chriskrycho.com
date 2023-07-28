@@ -5,7 +5,8 @@ subtitle: >
 summary: >
   Eric Gregory: “This inquiry, which finds Augustinianism both within and against modernity, may be less dramatic than grand narratives of declension or progress.…”
 date: 2020-08-22T14:50:00-0600
-updated: 2020-08-23T13:56:00-0600
+updated:
+  - at: 2020-08-23T13:56:00-0600
 permalink: /library/the-mixed-moral-qualities-of-any-age/
 tags:
   - quotes

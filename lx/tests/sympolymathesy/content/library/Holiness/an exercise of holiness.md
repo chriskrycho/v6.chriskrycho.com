@@ -1,7 +1,8 @@
 ---
 title: an exercise of holiness
 date: 2020-12-01T08:00:00-0700
-updated: 2020-12-02T08:28:00-0700
+updated:
+  - at: 2020-12-02T08:28:00-0700
 summary: >
   John Webster: “…theological thinking about holiness is itself an exercise of holiness. Theology is an aspect of the sanctificaton of reason…”
 tags:

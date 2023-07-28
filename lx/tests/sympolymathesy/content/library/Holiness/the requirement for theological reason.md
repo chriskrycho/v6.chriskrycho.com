@@ -2,7 +2,8 @@
 title: >
   *the* requirement for theological reason
 date: 2020-12-20T07:30:00-0700
-updated: 2020-12-20T09:30:00-0700
+updated:
+  - at: 2020-12-20T09:30:00-0700
 summary: >
   John Webster: “[Theology’s] particular ministry is to help in the edification of the Church, building up the Church’s common life and so serving the confession of the gospel.…”
 tags:

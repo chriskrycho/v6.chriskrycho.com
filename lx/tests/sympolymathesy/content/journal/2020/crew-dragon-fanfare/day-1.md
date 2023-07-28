@@ -4,7 +4,8 @@ title: >
 subtitle: Sharing my work as it happens for this composition.
 feedId: "journal/work-in-progress-composition-for-crew-dragon-demo-2/"
 date: 2020-05-04T22:00:00-0600
-updated: 2020-05-05T16:55:00-0600
+updated:
+  - at: 2020-05-05T16:55:00-0600
 summary: >
     I’m taking a week off… and spending it composing a piece in honor of the upcoming SpaceX crewed test flight—a historic moment. In this post, the first day’s output!
 tags:

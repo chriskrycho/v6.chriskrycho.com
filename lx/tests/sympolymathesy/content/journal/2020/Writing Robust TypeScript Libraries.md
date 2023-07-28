@@ -9,7 +9,8 @@ qualifiers:
     Software developers working with (or interested in) TypeScript, particularly those who are shipping libraries for other developers to use.
 
 date: 2020-10-24T15:45:00-0600
-updated: 2020-12-16T08:15:00-0600
+updated:
+  - at: 2020-12-16T08:15:00-0600
 
 tags:
   - software development

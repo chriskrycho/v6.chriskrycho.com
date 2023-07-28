@@ -4,7 +4,8 @@ title: >
 subtitle: >
     A surprising amount of progress over the weekend—the muscles are coming back!
 date: 2020-05-24T22:25:00-0600
-updated: 2020-05-25T08:07:00-0600
+updated:
+  - at: 2020-05-25T08:07:00-0600
 summary: >
     Seeing if, this long weekend, I can finish composing a piece in honor of the upcoming SpaceX crewed test flight—a historic moment. I made really good progress today!
 tags:

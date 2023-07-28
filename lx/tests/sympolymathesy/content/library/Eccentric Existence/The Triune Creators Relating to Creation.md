@@ -1,7 +1,8 @@
 ---
 title: The Triune Creator’s Relating to Creation
 date: 2020-03-03T22:30:00-0700
-updated: 2020-08-22T20:54:11-0600
+updated:
+  - at: 2020-08-22T20:54:11-0600
 qualifiers:
     audience: >
         Theologically-orthodox Christians, or folks interested in things that theologically-orthodox Christians think.

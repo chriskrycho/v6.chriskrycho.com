@@ -22,7 +22,8 @@ tags:
     - reading
     - book reviews
 date: 2019-12-10T23:30:00-0600
-updated: 2020-08-20T06:45:04-0600
+updated:
+  - at: 2020-08-20T06:45:04-0600
 
 ---
 

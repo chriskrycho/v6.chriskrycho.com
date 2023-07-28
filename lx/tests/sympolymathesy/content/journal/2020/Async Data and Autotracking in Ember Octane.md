@@ -9,7 +9,8 @@ qualifiers:
     Software developers working with Ember Octane.
 
 date: 2020-08-28T15:15:00-0600
-updated: 2020-08-29T09:45:00-0600
+updated:
+  - at: 2020-08-29T09:45:00-0600
 
 tags:
   - JavaScript

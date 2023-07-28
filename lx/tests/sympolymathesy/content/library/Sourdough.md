@@ -2,7 +2,8 @@
 title: Sourdough
 subtitle: Easily the most *delightful* book I’ve read in years.
 date: 2020-06-21T09:30:00-0600
-updated: 2020-08-20T06:45:05-0600
+updated:
+  - at: 2020-08-20T06:45:05-0600
 qualifiers:
     audience: >
         Readers of sci-fi or contemporary fiction or humor or any of the above, but especially students of human nature and recent (COVID?) converts to baking.

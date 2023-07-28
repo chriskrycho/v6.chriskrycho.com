@@ -3,6 +3,7 @@
 pub mod build;
 pub mod collection;
 pub mod config;
+pub mod error;
 pub mod feed;
 pub mod markdown;
 pub mod metadata;

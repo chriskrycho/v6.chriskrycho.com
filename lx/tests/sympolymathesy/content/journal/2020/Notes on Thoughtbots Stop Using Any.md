@@ -8,7 +8,8 @@ qualifiers:
     Developers working with (or just curious about) TypeScript.
 
 date: 2020-10-31T18:42:00-0600
-updated: 2020-11-21T17:17:00-0600
+updated:
+  - at: 2020-11-21T17:17:00-0600
 
 tags:
   - TypeScript

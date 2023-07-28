@@ -3,7 +3,8 @@ title: the story of modern theology
 summary: >
     John Webster: “…calling into question some modern ideals of responsible intellectual activity may help us to begin work on a task which has so far scarcely been touched, namely telling the story of modern theology from the perspective of the culture of faith.”
 date: 2020-08-08T06:43:00-0600
-updated: 2020-08-22T20:54:27-0600
+updated:
+  - at: 2020-08-22T20:54:27-0600
 tags:
     - thinking
     - culture

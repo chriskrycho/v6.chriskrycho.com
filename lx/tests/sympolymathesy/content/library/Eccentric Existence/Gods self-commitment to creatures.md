@@ -1,7 +1,8 @@
 ---
 title: God’s self-commitment to creatures
 date: 2020-03-01T19:30:00-0700
-updated: 2020-08-22T20:54:10-0600
+updated:
+  - at: 2020-08-22T20:54:10-0600
 qualifiers:
     audience: >
         Theologically-orthodox Christians, or folks interested in things that theologically-orthodox Christians think.

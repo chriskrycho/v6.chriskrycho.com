@@ -3,7 +3,8 @@ title: Building the Slow Way
 subtitle: >
     Or, *part* of why <b><i>re</i>write</b> is taking a while: I’m in this for the long haul.
 date: 2020-06-07T20:50:00-0600
-updated: 2020-06-13T16:20:00-0600
+updated:
+  - at: 2020-06-13T16:20:00-0600
 qualifiers:
     epistemic: Talking myself through this, to be perfectly honest.
     audience: >

@@ -1,7 +1,8 @@
 ---
 title: The Real Aim of Utopias
 date: 2020-08-02T13:25:00-0600
-updated: 2020-08-22T20:54:26-0600
+updated:
+  - at: 2020-08-22T20:54:26-0600
 summary: >
     John Webster: “[The] real aim of utopias is not to give free rein to fantasy and certainly not to flee from assuming responsibility…”
 qualifiers:

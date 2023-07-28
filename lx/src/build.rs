@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::path::{Path, PathBuf};
 
 use normalize_path::NormalizePath;
@@ -10,6 +11,7 @@ use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
 use crate::config::{self, Config};
+use crate::error::{write_to_fmt, write_to_stderr};
 use crate::metadata::cascade::{Cascade, CascadeLoadError};
 use crate::page::{self, Page, Source};
 use crate::templates;
@@ -37,11 +39,11 @@ pub enum BuildError {
    #[error("could not load one or more site content sources")]
    Content(Vec<ContentError>),
 
-   #[error("could not render one or more pages")]
-   Page(Vec<page::Error>),
+   #[error(transparent)]
+   Page(PageErrors),
 
-   #[error("could not rewrite one more pages")]
-   RewritePage(Vec<tera::Error>),
+   #[error(transparent)]
+   RewritePage(RewriteErrors),
 
    #[error("could not create output directory '{path}'")]
    CreateOutputDirectory {
@@ -54,6 +56,38 @@ pub enum BuildError {
       path: PathBuf,
       source: std::io::Error,
    },
+}
+
+#[derive(Error, Debug)]
+pub struct PageErrors(Vec<(PathBuf, page::Error)>);
+
+impl std::fmt::Display for PageErrors {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      let errors = &self.0;
+      writeln!(f, "could not render {} pages", errors.len())?;
+      for (path, error) in errors {
+         writeln!(f, "{}:\n\t{error}", path.display())?;
+         write_to_fmt(f, error)?;
+      }
+
+      Ok(())
+   }
+}
+
+#[derive(Error, Debug)]
+pub struct RewriteErrors(Vec<(PathBuf, tera::Error)>);
+
+impl std::fmt::Display for RewriteErrors {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      let errors = &self.0;
+      writeln!(f, "could not rewrite {} pages", errors.len())?;
+      for (path, error) in errors {
+         writeln!(f, "{}:\n\t{error}", path.display())?;
+         write_to_fmt(f, error)?;
+      }
+
+      Ok(())
+   }
 }
 
 pub fn build(in_dir: &Path) -> Result<(), BuildError> {
@@ -112,11 +146,12 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
             options,
             cascade,
          )
+         .map_err(|e| (source.path.clone(), e))
       })
       .partition_map(Either::from);
 
    if !errors.is_empty() {
-      return Err(BuildError::Page(errors));
+      return Err(BuildError::Page(PageErrors(errors)));
    }
 
    println!("processed {count} pages", count = pages.len());
@@ -147,8 +182,12 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
       .collect();
 
    // TODO: handle the warnings correctly for prod.
+   if !warnings.is_empty() {
+      eprintln!("error post-processing {} pages", warnings.len());
+   }
    for (error, source) in warnings.into_iter().flatten() {
-      eprintln!("{}: {error}", source.path.display())
+      eprintln!("{}", source.path.display());
+      write_to_stderr(error);
    }
 
    println!("postprocessed {count} pages", count = rewritten_pages.len());

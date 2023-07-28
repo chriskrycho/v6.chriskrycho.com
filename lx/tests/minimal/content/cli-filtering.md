@@ -3,7 +3,8 @@ title: Follow-Up on Command-Line Finding and Filtering
 date: 2020-05-04T09:15:00-0600
 subtitle: >
     A simpler solution that doesn’t require <code>tr</code>… if you have GNU utils or other alternatives.
-updated: 2020-07-26T12:05:00-0600
+updated:
+  - at: 2020-07-26T12:05:00-0600
 summary: You can use a variant flag with GNU grep and ripgrep to filter with null characters.
 tags:
     - things I learned

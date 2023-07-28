@@ -3,7 +3,8 @@ title: Private Chat and DMs Are Good, Actually
 subtitle: >
   Don’t forget the lessons of physical offices when thinking about chat.
 date: 2020-11-30T08:00:00-0700
-updated: 2020-12-05T14:41:00-0700
+updated:
+  - at: 2020-12-05T14:41:00-0700
 summary: >
   Some leaders are tempted to treat private chat as a signal or even a cause of team dysfunction—but there is no such correlation, and indeed people need private chats for healthy social dynamics.
 qualifiers:

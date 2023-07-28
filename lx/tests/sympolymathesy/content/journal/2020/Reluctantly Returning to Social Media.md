@@ -3,7 +3,8 @@ title: Reluctantly Returning to Social Media
 subtitle: >
   I have to be on social media professionally… but I don't have to *live* there.
 date: 2020-12-05T11:15:00-0700
-updated: 2020-12-07T08:30:00-0700
+updated:
+  - at: 2020-12-07T08:30:00-0700
 summary: >
   I have to be on social media professionally… but I don't have to *live* there. So I’ve devised an approach that I hope will get me some of those benefits without destroying my soul.
 qualifiers:

@@ -20,7 +20,8 @@ qualifiers:
 summary: >
     2019 was a year of rest and recovery, for which I’m profoundly grateful. Here’s how it went down—from podcasting and writing to career changes and health and fitness.
 date: 2019-12-31T23:00:00-0600
-updated: 2020-01-03T12:05:00-0600
+updated:
+  - at: 2020-01-03T12:05:00-0600
 
 ---
 

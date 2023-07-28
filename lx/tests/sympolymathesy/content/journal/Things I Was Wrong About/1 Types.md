@@ -9,7 +9,8 @@ qualifiers:
   audience: >
     People who care about *actually* learning (in this case, software developers in particular). Also, my wife, who really enjoys hearing me say, “I was wrong.” 😂
 date: 2020-09-26T14:00:00-0600
-updated: 2020-09-28T08:35:00-0600
+updated:
+  - at: 2020-09-28T08:35:00-0600
 series:
   part: 1
 tags:

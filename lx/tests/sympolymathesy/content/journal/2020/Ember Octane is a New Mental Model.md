@@ -7,7 +7,8 @@ summary: >
 image: https://cdn.chriskrycho.com/file/chriskrycho-com/images/ember-octane.png
 
 date: 2020-12-07T10:15:00-0700
-updated: 2020-12-07T13:20:00-0700
+updated:
+  - at: 2020-12-07T13:20:00-0700
 
 qualifiers:
   audience: >

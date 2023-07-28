@@ -4,7 +4,8 @@ subtitle: I like the service. But I’m not using it.
 qualifiers:
     audience: folks who are thinking about social media and blogging and the IndieWeb movement.
 date: 2019-12-01T08:00:00-0600
-updated: 2019-12-01T19:05:00-0600
+updated:
+  - at: 2019-12-01T19:05:00-0600
 summary: >
     For the last few years, and particularly in the months since I left Twitter, I have been thinking about micro.blog. If you are going to be on a public social network at all. But it’s not for me.
 tags:

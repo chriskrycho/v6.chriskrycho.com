@@ -14,7 +14,8 @@ tags:
     - Zettelkasten
     - note-taking
 date: 2020-01-18T20:15:00-0600
-updated: 2020-01-25T14:55:00-0600
+updated:
+  - at: 2020-01-25T14:55:00-0600
 
 ---
 

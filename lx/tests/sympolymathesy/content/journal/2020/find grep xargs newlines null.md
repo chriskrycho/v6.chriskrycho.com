@@ -3,7 +3,8 @@ title: find, grep, xargs, and newlines and null
 subtitle: >
     Turns out `tr` is your friend for this kind of thing.
 date: 2020-05-03T13:00:00-0600
-updated: 2020-05-03T13:14:30-0600
+updated:
+  - at: 2020-05-03T13:14:30-0600
 summary: >
     If you want to find files, filter them on file name, and pipe the result into some other Unix command, use tr to substitute the null character for newlines.
 tags:

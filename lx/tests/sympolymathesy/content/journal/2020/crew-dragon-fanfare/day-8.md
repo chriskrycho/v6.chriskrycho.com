@@ -4,7 +4,8 @@ title: >
 subtitle: >
     SpaceX launched today, and I am launching the rough draft of “Fanfare for a New Era of American Spaceflight” to honor it!
 date: 2020-05-30T21:50:00-0600
-updated: 2020-05-31T05:54:00-0600
+updated:
+  - at: 2020-05-31T05:54:00-0600
 summary: >
     SpaceX launched today, and I am launching the rough draft of “Fanfare for a New Era of American Spaceflight” to honor it!
 tags:

@@ -9,7 +9,8 @@ qualifiers:
     People who want book recommendations from me, and/or people who are thinking about thinking and learning in general.
 
 date: 2020-08-29T17:40:00-0600
-updated: 2020-12-09T18:51:00-0600
+updated:
+  - at: 2020-12-09T18:51:00-0600
 
 tags:
   - reading

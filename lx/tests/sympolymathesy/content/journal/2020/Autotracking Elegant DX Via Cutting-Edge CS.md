@@ -10,7 +10,8 @@ qualifiers:
     Software engineers interested in reactivity models in general and in web <abbr title="user interface">UI</abbr> and JavaScript in particular.
 
 date: 2020-09-22T15:15:00-0600
-updated: 2020-11-22T21:10:00-0600
+updated:
+  - at: 2020-11-22T21:10:00-0600
 
 thanks: >
   [Chris Garrett](https://pzuraq.com) ([@pzuraq](https://github.com/pzuraq)) gave helpful feedback on a draft of this post, as well as helping me understand some of these mechanics better in the first place. [James C. Davis](https://github.com/jamescdavis) and [Nick Morgan](https://github.com/morganick) helped me fix some typos. (All mistakes are mine!)

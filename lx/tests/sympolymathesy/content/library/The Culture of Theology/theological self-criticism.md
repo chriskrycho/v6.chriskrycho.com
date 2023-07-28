@@ -1,7 +1,8 @@
 ---
 title: theological self-criticism
 date: 2020-08-13T06:45:00-0600
-updated: 2020-08-22T20:54:28-0600
+updated:
+  - at: 2020-08-22T20:54:28-0600
 summary: >
     John Webster: “In theological self-criticism, the church does not invent or submit to some new standard, higher than the word which is the basis of its common life.…”
 qualifiers:

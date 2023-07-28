@@ -20,7 +20,8 @@ book:
     link: https://www.alibris.com/Evolution-as-a-Religion-Strange-Hopes-and-Stranger-Fears-Mary-Midgley/book/2179950
     year: 1985, 2002
 date: 2020-08-13T21:30:00-0600
-updated: 2020-08-14T09:40:00-0600
+updated:
+  - at: 2020-08-14T09:40:00-0600
 
 ---
 

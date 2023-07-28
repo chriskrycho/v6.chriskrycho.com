@@ -21,7 +21,8 @@ tags:
   - Blake Crouch
   - book reviews
 date: 2019-12-31T16:00:00-0600
-updated: 2020-08-20T06:45:00-0600
+updated:
+  - at: 2020-08-20T06:45:00-0600
 
 ---
 
