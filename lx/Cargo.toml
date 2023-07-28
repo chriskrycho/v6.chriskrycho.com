@@ -24,6 +24,10 @@ tera = "1"
 thiserror = "1"
 yaml-rust = "0.4"
 
+[dependencies.atom_syndication]
+version = "0.12"
+features = ["with-serde"]
+
 [dependencies.chrono]
 version = "0.4"
 features = ["serde"]
