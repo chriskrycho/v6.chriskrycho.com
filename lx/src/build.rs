@@ -185,11 +185,6 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    })
 }
 
-enum RewrittenPage {
-   Success(Page),
-   Failure(Page, tera::Error),
-}
-
 fn load_sources(site_files: &SiteFiles) -> Result<Vec<Source>, BuildError> {
    let mut sources = Vec::<page::Source>::new();
    let mut errors = Vec::<ContentError>::new();
