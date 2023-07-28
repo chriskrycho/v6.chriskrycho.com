@@ -12,6 +12,9 @@ pub struct Item {
    pub subtitle: Option<String>,
    pub summary: Option<String>,
    pub date: Option<DateTime<FixedOffset>>,
+   /// When was the item first created? Useful for distinguishing between item creation
+   /// and item publication, when letting something bake in public for a while.
+   pub started: Option<DateTime<FixedOffset>>,
    #[serde(default)]
    pub updated: Vec<Update>,
    pub permalink: Option<String>,

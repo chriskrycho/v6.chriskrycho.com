@@ -1,7 +1,6 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
-use normalize_path::NormalizePath;
 use pulldown_cmark::Options;
 use rayon::iter::Either;
 use rayon::prelude::*;
@@ -18,6 +17,12 @@ use crate::templates;
 
 #[derive(Error, Debug)]
 pub enum BuildError {
+   #[error("invalid input directory")]
+   InvalidDir {
+      path: PathBuf,
+      source: std::io::Error,
+   },
+
    #[error(transparent)]
    LoadTemplates {
       #[from]
@@ -91,8 +96,16 @@ impl std::fmt::Display for RewriteErrors {
 }
 
 pub fn build(in_dir: &Path) -> Result<(), BuildError> {
-   let in_dir = in_dir.normalize();
-   let config_path = in_dir.join("_data/config.json5");
+   // TODO: require this to be passed in this way instead?
+   let in_dir = in_dir
+      .canonicalize()
+      .map_err(|source| BuildError::InvalidDir {
+         path: in_dir.to_owned(),
+         source,
+      })?;
+
+   let config_path = in_dir.join("_data/config.lx.yaml");
+   println!("{}, {}", in_dir.display(), config_path.display());
    let config =
       Config::from_file(&config_path).map_err(|e| BuildError::Config { source: e })?;
 
