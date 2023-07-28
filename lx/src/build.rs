@@ -145,6 +145,22 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
             &syntax_set,
             options,
             cascade,
+            &mut |text, metadata| {
+               let mut tera = tera.clone();
+               tera::Context::from_serialize(metadata)
+                  .and_then(|ctx| tera.render_str(text, &ctx))
+                  .unwrap_or_else(|e| {
+                     // NOTE: another way of handling this would be to collect these in a
+                     // per-par-iter vec and surface them later and either fail (in CI) or
+                     // just print all the problems (for local dev) as I have done in a
+                     // previous version of this. Using `crate::error::write_to_fmt` means
+                     // I can "pre-bake" the errors into the format I want here, and not
+                     // be worried about `Send + Sync` cause blow-ups when doing parallel
+                     // iteration across threads.
+                     write_to_stderr(e);
+                     text.to_string()
+                  })
+            },
          )
          .map_err(|e| (source.path.clone(), e))
       })
@@ -156,44 +172,8 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
 
    println!("processed {count} pages", count = pages.len());
 
-   // Postprocessing errors are different from hard errors. I probably do not
-   // want to publish to the real world with them in place (so I want to see
-   // them), but they do not, strictly speaking, constitute *errors* during a
-   // dev/writing mode: I still want to see the rest of the site build, and in
-   // fact want to see the
-   let (rewritten_pages, warnings): (Vec<_>, Vec<_>) = pages
-      .into_par_iter()
-      .map(|mut page| {
-         let context = tera::Context::from_serialize(&page.data)
-            .expect("Tera should be able to build Context from any Serialize type");
-         let mut tera = tera.clone();
-
-         match tera.render_str(&page.content, &context) {
-            Ok(s) => {
-               page.content = s;
-               (page, None)
-            }
-            Err(e) => {
-               let source = page.source.clone();
-               (page, Some((e, source)))
-            }
-         }
-      })
-      .collect();
-
-   // TODO: handle the warnings correctly for prod.
-   if !warnings.is_empty() {
-      eprintln!("error post-processing {} pages", warnings.len());
-   }
-   for (error, source) in warnings.into_iter().flatten() {
-      eprintln!("{}", source.path.display());
-      write_to_stderr(error);
-   }
-
-   println!("postprocessed {count} pages", count = rewritten_pages.len());
-
    // TODO: replace with a templating engine!
-   rewritten_pages.into_iter().try_for_each(|page| {
+   pages.into_iter().try_for_each(|page| {
       let path = page.path_from_root(&config.output).with_extension("html");
       let containing_dir = path
          .parent()

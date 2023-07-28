@@ -135,13 +135,14 @@ impl Rendered {
 pub fn render(
    to_render: ToRender,
    syntax_set: &SyntaxSet,
+   rewrite: &mut impl FnMut(&str) -> String,
 ) -> Result<Rendered, RenderError> {
    let ToRender {
       first_pass_events,
       footnote_definitions,
    } = to_render;
 
-   let events = second_pass(footnote_definitions, syntax_set, first_pass_events)
+   let events = second_pass(footnote_definitions, syntax_set, first_pass_events, rewrite)
       .map_err(RenderError::from)?;
 
    let mut content = String::new();

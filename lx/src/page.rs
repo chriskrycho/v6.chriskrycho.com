@@ -85,6 +85,7 @@ impl Page {
       syntax_set: &SyntaxSet,
       options: Options,
       cascade: &Cascade,
+      rewrite: &mut impl FnMut(&str, &Metadata) -> String,
    ) -> Result<Self, Error> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
       // don't want to do it based on the source path (or if I do, *only* initially as
@@ -112,8 +113,10 @@ impl Page {
             .map_err(Error::from)
          })?;
 
-      let rendered =
-         markdown::render(prepared.to_render, syntax_set).map_err(Error::from)?;
+      let rendered = markdown::render(prepared.to_render, syntax_set, &mut |text| {
+         rewrite(text, &metadata)
+      })
+      .map_err(Error::from)?;
 
       Ok(Page {
          id,

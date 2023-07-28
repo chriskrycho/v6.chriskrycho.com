@@ -35,6 +35,7 @@ pub(super) fn second_pass<'e>(
    footnote_definitions: FootnoteDefinitions<'e>,
    syntax_set: &SyntaxSet,
    events: Vec<first_pass::Event<'e>>,
+   rewrite: &mut impl FnMut(&str) -> String,
 ) -> Result<impl Iterator<Item = pulldown_cmark::Event<'e>>, Error> {
    let mut state = State {
       footnote_definitions,
@@ -47,7 +48,7 @@ pub(super) fn second_pass<'e>(
    for event in events {
       // If I ever extract/generalize this, I will want to use some kind of log level
       // handling instead of just always emitting the error.
-      if let Some(warning) = state.handle(event)? {
+      if let Some(warning) = state.handle(event, rewrite)? {
          eprintln!("{warning}");
       }
    }
@@ -58,20 +59,25 @@ pub(super) fn second_pass<'e>(
 impl<'e, 's> State<'e, 's> {
    /// Returns `Some(String)` when it could successfully emit code but there was something
    /// unexpected about it, e.g. a footnote with a missing definition.
-   fn handle(&mut self, event: first_pass::Event<'e>) -> Result<Option<String>, Error> {
+   fn handle(
+      &mut self,
+      event: first_pass::Event<'e>,
+      rewrite: &mut impl FnMut(&str) -> String,
+   ) -> Result<Option<String>, Error> {
       use pulldown_cmark::Event::*;
 
       match event {
          first_pass::Event::Basic(basic) => match basic {
             Text(text) => {
-               // We do *not* want to rewriting text in code blocks!
+               // We do *not* want to rewrite text in code blocks!
                match self.code_block {
                   Some(ref mut code_block) => {
                      code_block.highlight(&text)?;
                      Ok(None)
                   }
                   None => {
-                     self.events.push(Text(text));
+                     let text = rewrite(text.as_ref());
+                     self.events.push(Text(text.into()));
                      Ok(None)
                   }
                }

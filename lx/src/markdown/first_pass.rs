@@ -80,7 +80,7 @@ pub(super) struct ExtractingMetadata(MetadataBlockKind);
 impl ParseState for ExtractingMetadata {}
 
 impl State<ExtractingMetadata> {
-   pub(super) fn parsed<'e>(self, text: CowStr<'e>) -> State<ExtractedMetadata<'e>> {
+   pub(super) fn parsed(self, text: CowStr<'_>) -> State<ExtractedMetadata<'_>> {
       State {
          data: Box::new(ExtractedMetadata(text)),
       }
