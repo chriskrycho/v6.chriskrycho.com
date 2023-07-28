@@ -4,6 +4,7 @@ use std::convert::TryFrom;
 
 use atom_syndication::Feed as AtomFeed;
 use lx_json_feed::{AuthorOptions, JSONFeed};
+use thiserror::Error;
 
 use crate::{config::Config, page::Page};
 
@@ -36,8 +37,16 @@ impl<'a> Feed<'a> {
    }
 }
 
+#[derive(Error, Debug)]
+pub enum Error {
+   #[error("could not convert to JSON feed")]
+   Json(String),
+   #[error("could not convert to Atom feed")]
+   Atom,
+}
+
 impl<'a> TryFrom<Feed<'a>> for JSONFeed {
-   type Error = String;
+   type Error = Error;
 
    fn try_from(feed: Feed<'a>) -> Result<Self, Self::Error> {
       let items = feed.items.iter().map(|page| page.into()).collect();
@@ -48,7 +57,8 @@ impl<'a> TryFrom<Feed<'a>> for JSONFeed {
             name: Some(&feed.site_config.author.name),
             url: None,
             avatar: None,
-         })?
+         })
+         .map_err(Error::Json)?
          .with_description(&feed.site_config.description)
          .build();
 
