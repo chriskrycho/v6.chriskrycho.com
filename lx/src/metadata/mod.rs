@@ -135,8 +135,8 @@ impl Rendered {
 
 #[derive(Debug, Serialize)]
 pub struct Update {
-   at: DateTime<FixedOffset>,
-   changes: Option<String>,
+   pub at: DateTime<FixedOffset>,
+   pub changes: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

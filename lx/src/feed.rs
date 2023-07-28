@@ -6,7 +6,10 @@ use atom_syndication::Feed as AtomFeed;
 use lx_json_feed::{AuthorOptions, JSONFeed};
 use thiserror::Error;
 
-use crate::{config::Config, page::Page};
+use crate::{
+   config::Config,
+   page::{Page, Updated},
+};
 
 /// Required resources for a `Feed`.
 pub struct Feed<'a> {
@@ -24,11 +27,7 @@ pub struct Feed<'a> {
 }
 
 impl<'a> Feed<'a> {
-   pub fn _new(
-      title: String,
-      site_config: &'a Config,
-      items: &'a [Page],
-   ) -> Feed<'a> {
+   pub fn _new(title: String, site_config: &'a Config, items: &'a [Page]) -> Feed<'a> {
       Feed {
          title,
          site_config,

@@ -5,6 +5,7 @@ use std::{
    path::{Path, PathBuf},
 };
 
+use chrono::{DateTime, FixedOffset};
 use pulldown_cmark::Options;
 use serde::{Deserialize, Serialize};
 use syntect::parsing::SyntaxSet;
@@ -142,3 +143,25 @@ impl From<&Page> for lx_json_feed::FeedItem {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PageCollections(HashMap<Id, crate::collection::Id>);
+
+pub trait Updated {
+   fn updated(&self) -> DateTime<FixedOffset>;
+}
+
+impl Updated for [Page] {
+   fn updated(&self) -> chrono::DateTime<chrono::FixedOffset> {
+      self
+         .iter()
+         .map(|p| &p.metadata)
+         .map(|m| {
+            m.updated
+               .iter()
+               .map(|u| u.at)
+               .chain(m.date.into_iter())
+               .max()
+               .expect("There should always be a 'latest' date for resolved metadata")
+         })
+         .max()
+         .expect("should always be a latest date!")
+   }
+}
