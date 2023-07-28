@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::env;
 use std::path::{Path, PathBuf};
 
 use normalize_path::NormalizePath;
@@ -18,7 +18,7 @@ use crate::templates;
 
 #[derive(Error, Debug)]
 pub enum BuildError {
-   #[error("could not load templates")]
+   #[error(transparent)]
    LoadTemplates {
       #[from]
       source: templates::Error,
@@ -99,6 +99,9 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    let syntax_set = load_syntaxes();
 
    let site_files = get_files_to_load(&in_dir);
+   for template in &site_files.templates {
+      println!("{template}", template = template.display());
+   }
    let ThemeSet { themes } = ThemeSet::load_defaults();
 
    // TODO: generate these as a one-and-done with the themes I *actually* want,
@@ -112,7 +115,10 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    let dark = css_for_theme_with_class_style(&themes["base16-ocean.dark"], style)
       .expect("Missing base16-ocean.dark theme");
 
-   let tera = templates::load(&site_files.templates).map_err(BuildError::from)?;
+   // TODO: pull from config?
+   let ui_root = in_dir.join("_ui");
+   let tera =
+      templates::load(&site_files.templates, &ui_root).map_err(BuildError::from)?;
 
    std::fs::create_dir_all(&config.output).expect("Can create output dir");
 
@@ -157,7 +163,12 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
                      // I can "pre-bake" the errors into the format I want here, and not
                      // be worried about `Send + Sync` cause blow-ups when doing parallel
                      // iteration across threads.
-                     write_to_stderr(e);
+
+                     // TODO: replace the following shenanigans with a proper logging lib.
+                     if env::var("DEBUG").is_ok_and(|value| value != "false") {
+                        write_to_stderr(e);
+                     }
+
                      text.to_string()
                   })
             },
@@ -172,8 +183,8 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
 
    println!("processed {count} pages", count = pages.len());
 
-   // TODO: replace with a templating engine!
-   pages.into_iter().try_for_each(|page| {
+   // TODO: replace with the templating engine approach below!
+   pages.iter().try_for_each(|page| {
       let path = page.path_from_root(&config.output).with_extension("html");
       let containing_dir = path
          .parent()
@@ -201,7 +212,32 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
            ),
        )
        .map_err(|e| BuildError::WriteFileError { path: path.to_owned(), source: e })
-   })
+   })?;
+
+   // TODO: design a strategy for the output paths.
+   for page in &pages {
+      let path = page.path_from_root(&config.output).with_extension("html");
+      let containing_dir = path
+         .parent()
+         .unwrap_or_else(|| panic!("{} should have a containing dir!", path.display()));
+
+      std::fs::create_dir_all(containing_dir).map_err(|e| {
+         BuildError::CreateOutputDirectory {
+            path: containing_dir.to_owned(),
+            source: e,
+         }
+      })?;
+
+      let mut buf = Vec::new();
+      templates::render(&tera, page, &config, &mut buf)?;
+
+      std::fs::write(&path, buf).map_err(|source| BuildError::WriteFileError {
+         path: path.to_owned(),
+         source,
+      })?;
+   }
+
+   Ok(())
 }
 
 fn load_sources(site_files: &SiteFiles) -> Result<Vec<Source>, BuildError> {
@@ -243,13 +279,13 @@ struct SiteFiles {
 
 fn get_files_to_load(in_dir: &Path) -> SiteFiles {
    let content_dir = in_dir.join("content");
-   let dir_for_glob = content_dir.display();
+   let content_dir = content_dir.display();
 
    SiteFiles {
-      configs: get_files(&format!("{}/**/config.lx.yaml", dir_for_glob)),
-      content: get_files(&format!("{}/**/*.md", dir_for_glob)),
-      data: get_files(&format!("{}/**/*.data.yaml", dir_for_glob)),
-      templates: get_files(&format!("{}/**/*.tera", dir_for_glob)),
+      configs: get_files(&format!("{}/**/config.lx.yaml", in_dir.display())),
+      content: get_files(&format!("{}/**/*.md", content_dir)),
+      data: get_files(&format!("{}/**/*.data.yaml", content_dir)),
+      templates: get_files(&format!("{}/**/*.tera", in_dir.display())),
    }
 }
 

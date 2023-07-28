@@ -107,7 +107,7 @@ impl Page {
                source,
                root_dir,
                cascade,
-               String::from("base.html"), // TODO: not this
+               String::from("base.tera"), // TODO: not this
                options,
             )
             .map_err(Error::from)
