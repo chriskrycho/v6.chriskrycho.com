@@ -28,8 +28,11 @@ pub enum Error {
       source: std::io::Error,
    },
 
-   #[error("could not parse {path} as JSON5")]
-   JSON5ParseError { path: PathBuf, source: json5::Error },
+   #[error("could not parse {path} as YAML")]
+   YamlParseError {
+      path: PathBuf,
+      source: serde_yaml::Error,
+   },
 }
 
 impl Config {
@@ -40,7 +43,7 @@ impl Config {
       })?;
 
       let mut config: Config =
-         json5::from_str(&data).map_err(|e| Error::JSON5ParseError {
+         serde_yaml::from_str(&data).map_err(|e| Error::YamlParseError {
             path: path.to_owned(),
             source: e,
          })?;
