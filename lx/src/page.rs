@@ -43,7 +43,7 @@ pub struct Page {
    pub id: Id,
 
    /// The fully-parsed metadata associated with the page.
-   pub metadata: Metadata,
+   pub data: Metadata,
 
    /// The fully-rendered contents of the page.
    pub content: String,
@@ -117,19 +117,19 @@ impl Page {
 
       Ok(Page {
          id,
-         metadata,
+         data: metadata,
          content: rendered.html(),
          source: source.clone(), // TODO: might be able to just take ownership?
       })
    }
 
    pub fn path_from_root(&self, root_dir: &Path) -> PathBuf {
-      root_dir.join(&self.metadata.slug)
+      root_dir.join(&self.data.slug)
    }
 
    /// Given a config, generate the (canonicalized) URL for the page
    pub fn _url(&self, config: &Config) -> String {
-      String::from(config.url.trim_end_matches('/')) + "/" + self.metadata.slug.as_ref()
+      String::from(config.url.trim_end_matches('/')) + "/" + self.data.slug.as_ref()
    }
 }
 
@@ -152,7 +152,7 @@ impl Updated for [Page] {
    fn updated(&self) -> chrono::DateTime<chrono::FixedOffset> {
       self
          .iter()
-         .map(|p| &p.metadata)
+         .map(|p| &p.data)
          .map(|m| {
             m.updated
                .iter()

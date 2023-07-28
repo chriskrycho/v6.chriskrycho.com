@@ -1,6 +1,7 @@
 mod email;
 
 use normalize_path::NormalizePath;
+use serde::Serialize;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
@@ -8,7 +9,7 @@ use serde_derive::Deserialize;
 
 use email::Email;
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
    pub url: String,
    pub repo: String,
@@ -59,13 +60,13 @@ impl Config {
    }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Title {
    normal: String,
    stylized: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Author {
    pub name: String,
    #[serde(deserialize_with = "Email::de_from_str")]

@@ -87,7 +87,8 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    std::fs::write(config.output.join("light.css"), light).expect("can write output yo!");
    std::fs::write(config.output.join("dark.css"), dark).expect("can write output yo!");
 
-   // TODO: move this to a `lazy_static` in the Markdown directory?
+   // TODO: move this to a `lazy_static` in the Markdown directory? (In principle it
+   // could be configurable but: this is just for me!)
    let mut options = Options::all();
    options.set(Options::ENABLE_OLD_FOOTNOTES, false);
    options.set(Options::ENABLE_FOOTNOTES, true);
@@ -128,7 +129,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    let (rewritten_pages, warnings): (Vec<_>, Vec<_>) = pages
       .into_par_iter()
       .map(|mut page| {
-         let context = tera::Context::from_serialize(&page.metadata)
+         let context = tera::Context::from_serialize(&page.data)
             .expect("Tera should be able to build Context from any Serialize type");
          let mut tera = tera.clone();
 
