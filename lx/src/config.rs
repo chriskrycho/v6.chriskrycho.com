@@ -1,11 +1,9 @@
 mod email;
 
 use normalize_path::NormalizePath;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
-
-use serde_derive::Deserialize;
 
 use email::Email;
 

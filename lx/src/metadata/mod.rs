@@ -7,8 +7,9 @@ use std::path::StripPrefixError;
 
 use chrono::DateTime;
 use chrono::FixedOffset;
-use serde_derive::Serialize;
+use serde::Serialize;
 use slug::slugify;
+use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
 use crate::page;
@@ -56,7 +57,7 @@ impl Metadata {
       root_dir: &Path,
       cascade: &Cascade,
       default_template_name: String,
-      options: pulldown_cmark::Options,
+      syntax_set: &SyntaxSet,
    ) -> Result<Self, Error> {
       let permalink: Option<PathBuf> = item.permalink.map(|permalink| {
          permalink
@@ -77,7 +78,7 @@ impl Metadata {
                source: Some(e),
             })?;
 
-      let render = |s: String| Rendered::as_markdown(&s, options);
+      let render = |s: String| Rendered::as_markdown(&s, syntax_set);
 
       let updated = item.updated.into_iter().try_fold(
          Vec::new(),
@@ -98,15 +99,19 @@ impl Metadata {
          title: item.title,
          date: item.date,
          slug: Slug::new(permalink.as_ref(), source)?,
-         subtitle: item.subtitle.map(render),
+         subtitle: item.subtitle.map(render).transpose()?,
          layout: item
             .layout
             .or(cascade.layout(path_from_root))
             .unwrap_or(default_template_name),
-         summary: item.summary.map(render),
+         summary: item.summary.map(render).transpose()?,
          qualifiers: item.qualifiers.or(cascade.qualifiers(path_from_root)),
          updated,
-         thanks: item.thanks.or(cascade.thanks(path_from_root)).map(render),
+         thanks: item
+            .thanks
+            .or(cascade.thanks(path_from_root))
+            .map(render)
+            .transpose()?,
          tags: item
             .tags
             .or(cascade.tags(path_from_root))
@@ -125,11 +130,10 @@ impl Metadata {
 pub struct Rendered(String);
 
 impl Rendered {
-   fn as_markdown(src: &str, options: pulldown_cmark::Options) -> Rendered {
-      let events = pulldown_cmark::Parser::new_ext(src, options);
-      let mut s = String::with_capacity(src.len() * 2);
-      pulldown_cmark::html::push_html(&mut s, events);
-      Rendered(s)
+   fn as_markdown(src: &str, syntax_set: &SyntaxSet) -> Result<Rendered, Error> {
+      lx_md::render(src, None, syntax_set, &mut |s: &str| s.to_string())
+         .map(|(_, rendered)| Rendered(rendered.html()))
+         .map_err(Error::from)
    }
 }
 
@@ -199,6 +203,12 @@ pub enum Error {
    BadPermalink {
       reason: String,
       source: Option<StripPrefixError>,
+   },
+
+   #[error(transparent)]
+   Markdown {
+      #[from]
+      source: lx_md::Error,
    },
 }
 

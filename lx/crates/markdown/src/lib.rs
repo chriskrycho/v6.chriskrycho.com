@@ -1,11 +1,13 @@
 //! Implement Markdown transformation as a two-pass operation.
 //!
 //! 1. Handle two concerns:
-//!     - metadata extraction
-//!     - footnote extraction
+//!     - metadata extraction (exposed to callers)
+//!     - footnote extraction (managed wholly internally)
 //! 2. Perform "transform" operations using the result of (1):
-//!     - Rewrite the text of the document using a supplied templating language (
-//!     -
+//!     - Rewrite the text of the document using a supplied templating language,
+//!       if any (notably: applying this *only* to text nodes!).
+//!     - Apply syntax highlighting.
+//!     - Emit footnotes.
 
 mod first_pass;
 mod second_pass;
@@ -13,9 +15,9 @@ mod second_pass;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-use pulldown_cmark::{
-   html, CowStr, Event, MetadataBlockKind, Options, Parser, Tag, TagEnd,
-};
+pub use pulldown_cmark::Options;
+use pulldown_cmark::{html, CowStr, Event, MetadataBlockKind, Parser, Tag, TagEnd};
+
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
@@ -59,7 +61,38 @@ pub struct ToRender<'e> {
    footnote_definitions: FootnoteDefinitions<'e>,
 }
 
-pub fn prepare(src: &str, options: Options) -> Result<Prepared<'_>, PrepareError> {
+#[derive(Error, Debug)]
+pub enum Error {
+   #[error(transparent)]
+   Prepare {
+      #[from]
+      source: PrepareError,
+   },
+   #[error(transparent)]
+   Render {
+      #[from]
+      source: RenderError,
+   },
+}
+
+pub fn render(
+   src: &str,
+   options: Option<Options>,
+   syntax_set: &SyntaxSet,
+   rewrite: &mut impl FnMut(&str) -> String,
+   // dest: &mut
+) -> Result<(String, Rendered), Error> {
+   let Prepared {
+      metadata_src,
+      to_render,
+   } = prepare(src, options.unwrap_or(Options::all())).map_err(Error::from)?;
+
+   let rendered = emit(to_render, syntax_set, rewrite).map_err(Error::from)?;
+
+   Ok((metadata_src, rendered))
+}
+
+pub fn prepare(src: &str, options: Options) -> Result<Prepared<'_>, Error> {
    let parser = Parser::new_ext(src, options);
 
    let mut first_pass = first_pass::FirstPass::new();
@@ -72,7 +105,7 @@ pub fn prepare(src: &str, options: Options) -> Result<Prepared<'_>, PrepareError
             FirstPass::Initial(initial) => {
                first_pass = FirstPass::ExtractingMetadata(initial.parsing_metadata(kind))
             }
-            _ => return bad_prepare_state(&event, &first_pass),
+            _ => return bad_prepare_state(&event, &first_pass).map_err(Error::from),
          },
 
          Event::End(TagEnd::MetadataBlock(_)) => match first_pass {
@@ -88,24 +121,33 @@ pub fn prepare(src: &str, options: Options) -> Result<Prepared<'_>, PrepareError
                   first_pass = FirstPass::ExtractedMetadata(parsing.parsed(text.clone()));
                }
 
-               MetadataBlockKind::PlusesStyle => return Err(PrepareError::UsedToml),
+               MetadataBlockKind::PlusesStyle => {
+                  return Err(Error::from(PrepareError::UsedToml))
+               }
             },
 
-            FirstPass::Content(ref mut content) => {
-               content.handle(event).map_err(PrepareError::from)?
-            }
+            FirstPass::Content(ref mut content) => content
+               .handle(event)
+               .map_err(PrepareError::from)
+               .map_err(Error::from)?,
 
             _ => return bad_prepare_state(&event, &first_pass),
          },
 
          _ => match first_pass {
-            FirstPass::Content(ref mut content) => content.handle(event)?,
+            FirstPass::Content(ref mut content) => content
+               .handle(event)
+               .map_err(PrepareError::from)
+               .map_err(Error::from)?,
             _ => return bad_prepare_state(&event, &first_pass),
          },
       }
    }
 
-   let (metadata, first_pass_events, footnote_definitions) = first_pass.finalize()?;
+   let (metadata, first_pass_events, footnote_definitions) = first_pass
+      .finalize()
+      .map_err(PrepareError::from)
+      .map_err(Error::from)?;
    Ok(Prepared {
       metadata_src: metadata.to_string(),
       to_render: ToRender {
@@ -132,7 +174,7 @@ impl Rendered {
    }
 }
 
-pub fn render(
+pub fn emit(
    to_render: ToRender,
    syntax_set: &SyntaxSet,
    rewrite: &mut impl FnMut(&str) -> String,
@@ -151,12 +193,10 @@ pub fn render(
    Ok(Rendered(content))
 }
 
-fn bad_prepare_state<T>(
-   state: &impl Debug,
-   context: &impl Debug,
-) -> Result<T, PrepareError> {
+fn bad_prepare_state<T>(state: &impl Debug, context: &impl Debug) -> Result<T, Error> {
    Err(PrepareError::State {
       state: format!("{state:?}"),
       context: format!("{context:?}"),
    })
+   .map_err(Error::from)
 }

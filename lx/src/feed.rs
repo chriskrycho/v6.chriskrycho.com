@@ -3,7 +3,7 @@ mod json;
 use std::convert::TryFrom;
 
 use atom_syndication::Feed as AtomFeed;
-use lx_json_feed::{AuthorOptions, JSONFeed};
+use json_feed::{AuthorOptions, JSONFeed};
 use thiserror::Error;
 
 use crate::{

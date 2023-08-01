@@ -6,13 +6,12 @@ use std::{
 };
 
 use chrono::{DateTime, FixedOffset};
-use pulldown_cmark::Options;
+use lx_md::{self, Options, RenderError};
 use serde::{Deserialize, Serialize};
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::markdown::{self, RenderError};
 use crate::{
    config::Config,
    metadata::{self, cascade::Cascade, serial, Metadata},
@@ -56,7 +55,7 @@ pub enum Error {
    #[error("could not prepare Markdown for parsing")]
    Preparation {
       #[from]
-      source: markdown::PrepareError,
+      source: lx_md::Error,
    },
 
    #[error(transparent)]
@@ -97,7 +96,7 @@ impl Page {
          source.path.as_os_str().as_bytes(),
       ));
 
-      let prepared = markdown::prepare(&source.contents, options).map_err(Error::from)?;
+      let prepared = lx_md::prepare(&source.contents, options).map_err(Error::from)?;
 
       let metadata = serial::Item::try_parse(&prepared.metadata_src)
          .map_err(Error::from)
@@ -108,12 +107,12 @@ impl Page {
                root_dir,
                cascade,
                String::from("base.tera"), // TODO: not this
-               options,
+               syntax_set,
             )
             .map_err(Error::from)
          })?;
 
-      let rendered = markdown::render(prepared.to_render, syntax_set, &mut |text| {
+      let rendered = lx_md::emit(prepared.to_render, syntax_set, &mut |text| {
          rewrite(text, &metadata)
       })
       .map_err(Error::from)?;
@@ -136,9 +135,7 @@ impl Page {
    }
 }
 
-// This is here because `lx_json_feed` is an "upstream" crate. It knows nothing
-// at all about `lx`.
-impl From<&Page> for lx_json_feed::FeedItem {
+impl From<&Page> for json_feed::FeedItem {
    fn from(_: &Page) -> Self {
       unimplemented!()
    }

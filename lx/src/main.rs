@@ -3,7 +3,17 @@
 use clap::Parser;
 use cli::Cli;
 
+mod build;
 mod cli;
+mod collection;
+mod config;
+mod error;
+mod feed;
+mod metadata;
+mod page;
+mod templates;
+
+pub use build::build;
 
 fn main() -> Result<(), String> {
    let cwd = std::env::current_dir().expect(
@@ -33,8 +43,8 @@ fn ui() -> Result<(), String> {
 }
 
 fn publish(in_dir: &std::path::Path) -> Result<(), std::io::Error> {
-   if let Err(e) = lx::build::build(in_dir) {
-      lx::error::write_to_stderr(e);
+   if let Err(e) = build::build(in_dir) {
+      error::write_to_stderr(e);
    }
 
    Ok(())
