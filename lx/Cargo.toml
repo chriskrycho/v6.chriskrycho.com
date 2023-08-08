@@ -13,10 +13,10 @@ documentation.workspace = true
 [dependencies]
 clap = { workspace = true }
 clap_complete = { workspace = true }
-dirs = "5"
+dirs = { workspace = true }
 glob = "0.3"
 json-feed = { path = "./crates/json-feed" }
-lazy_static = "1.4"
+lazy_static = { workspace = true }
 lx-md = { path = "./crates/markdown" }
 normalize-path = "0.2"
 rayon = { workspace = true }
@@ -64,13 +64,15 @@ license = "BlueOak-1.0.0"
 
 [workspace.dependencies]
 clap_complete = "4"
+dirs = "5"
+lazy_static = "1.4"
 rayon = "1"
 serde = { version = "1", features = ["derive"] }
 thiserror = "1"
 
 [workspace.dependencies.clap]
 version = "4"
-features = ["unicode", "derive"]
+features = ["unicode", "cargo", "derive"]
 
 [workspace.dependencies.syntect]
 version = "5"

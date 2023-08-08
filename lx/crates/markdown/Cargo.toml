@@ -12,6 +12,10 @@ documentation.workspace = true
 # keywords.workspace = true
 
 [dependencies]
+clap = { workspace = true }
+clap_complete = { workspace = true }
+dirs = { workspace = true }
+lazy_static = { workspace = true }
 syntect = { workspace = true }
 thiserror = { workspace = true }
 

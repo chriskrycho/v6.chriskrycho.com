@@ -140,12 +140,6 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    std::fs::write(config.output.join("light.css"), light).expect("can write output yo!");
    std::fs::write(config.output.join("dark.css"), dark).expect("can write output yo!");
 
-   // TODO: move this to a `lazy_static` in the Markdown directory? (In principle it
-   // could be configurable but: this is just for me!)
-   let mut options = Options::all();
-   options.set(Options::ENABLE_OLD_FOOTNOTES, false);
-   options.set(Options::ENABLE_FOOTNOTES, true);
-
    let sources = load_sources(&site_files)?;
 
    println!("loaded {count} pages", count = sources.len());
@@ -162,7 +156,6 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
             source,
             &in_dir.join("content"),
             &syntax_set,
-            options,
             cascade,
             &mut |text, metadata| {
                let mut tera = tera.clone();

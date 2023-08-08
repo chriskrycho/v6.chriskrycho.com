@@ -15,9 +15,9 @@ mod second_pass;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
+use lazy_static::lazy_static;
 pub use pulldown_cmark::Options;
 use pulldown_cmark::{html, CowStr, Event, MetadataBlockKind, Parser, Tag, TagEnd};
-
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
@@ -75,25 +75,33 @@ pub enum Error {
    },
 }
 
+lazy_static! {
+   static ref OPTIONS: Options = {
+      let mut opts = Options::all();
+      opts.set(Options::ENABLE_OLD_FOOTNOTES, false);
+      opts.set(Options::ENABLE_FOOTNOTES, true);
+      opts
+   };
+}
+
 pub fn render(
    src: &str,
-   options: Option<Options>,
-   syntax_set: &SyntaxSet,
+   syntax_set: Option<&SyntaxSet>,
    rewrite: &mut impl FnMut(&str) -> String,
    // dest: &mut
 ) -> Result<(String, Rendered), Error> {
    let Prepared {
       metadata_src,
       to_render,
-   } = prepare(src, options.unwrap_or(Options::all())).map_err(Error::from)?;
+   } = prepare(src).map_err(Error::from)?;
 
    let rendered = emit(to_render, syntax_set, rewrite).map_err(Error::from)?;
 
    Ok((metadata_src, rendered))
 }
 
-pub fn prepare(src: &str, options: Options) -> Result<Prepared<'_>, Error> {
-   let parser = Parser::new_ext(src, options);
+pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
+   let parser = Parser::new_ext(src, *OPTIONS);
 
    let mut first_pass = first_pass::FirstPass::new();
 
@@ -176,7 +184,7 @@ impl Rendered {
 
 pub fn emit(
    to_render: ToRender,
-   syntax_set: &SyntaxSet,
+   syntax_set: Option<&SyntaxSet>,
    rewrite: &mut impl FnMut(&str) -> String,
 ) -> Result<Rendered, RenderError> {
    let ToRender {

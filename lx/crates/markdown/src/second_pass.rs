@@ -13,7 +13,7 @@ use super::FootnoteDefinitions;
 /// 3. Performing any template-language-type rewriting of text nodes.
 struct State<'e, 's> {
    footnote_definitions: FootnoteDefinitions<'e>,
-   syntax_set: &'s SyntaxSet,
+   syntax_set: Option<&'s SyntaxSet>,
    code_block: Option<CodeBlock<'e, 's>>,
    events: Vec<pulldown_cmark::Event<'e>>,
    emitted_definitions: Vec<(CowStr<'e>, Vec<pulldown_cmark::Event<'e>>)>,
@@ -33,7 +33,7 @@ pub enum Error {
 
 pub(super) fn second_pass<'e>(
    footnote_definitions: FootnoteDefinitions<'e>,
-   syntax_set: &SyntaxSet,
+   syntax_set: Option<&SyntaxSet>,
    events: Vec<first_pass::Event<'e>>,
    rewrite: &mut impl FnMut(&str) -> String,
 ) -> Result<impl Iterator<Item = pulldown_cmark::Event<'e>>, Error> {
@@ -57,8 +57,8 @@ pub(super) fn second_pass<'e>(
 }
 
 impl<'e, 's> State<'e, 's> {
-   /// Returns `Some(String)` when it could successfully emit code but there was something
-   /// unexpected about it, e.g. a footnote with a missing definition.
+   /// Returns `Some(String)` when it could successfully emit an event but there was
+   /// something unexpected about it, e.g. a footnote with a missing definition.
    fn handle(
       &mut self,
       event: first_pass::Event<'e>,
@@ -197,13 +197,21 @@ impl<'e> std::iter::IntoIterator for State<'e, '_> {
 #[derive(Debug)]
 struct CodeBlock<'e, 's> {
    highlighting: Highlighting<'s>,
-   syntax_set: &'s SyntaxSet,
+   syntax_set: Option<&'s SyntaxSet>,
    events: Vec<pulldown_cmark::Event<'e>>,
 }
 
 impl<'c, 's> CodeBlock<'c, 's> {
    /// Start highlighting a code block.
-   fn start(kind: CodeBlockKind, syntax_set: &'s SyntaxSet) -> Self {
+   fn start(kind: CodeBlockKind, syntax_set: Option<&'s SyntaxSet>) -> Self {
+      let Some(syntax_set) = syntax_set else {
+         let html = pulldown_cmark::Event::Html("<pre><code>".into());
+         return CodeBlock { highlighting: Highlighting::UnknownSyntax,
+            syntax_set: None,
+            events: vec![html],
+          };
+      };
+
       match kind {
          CodeBlockKind::Fenced(name) => {
             let found = syntax_set.find_syntax_by_token(name.as_ref());
@@ -227,13 +235,13 @@ impl<'c, 's> CodeBlock<'c, 's> {
 
             CodeBlock {
                highlighting,
-               syntax_set,
+               syntax_set: Some(syntax_set),
                events: vec![html],
             }
          }
          CodeBlockKind::Indented => CodeBlock {
             highlighting: Highlighting::RequiresFirstLineParse,
-            syntax_set,
+            syntax_set: Some(syntax_set),
             events: vec![],
          },
       }
@@ -247,15 +255,26 @@ impl<'c, 's> CodeBlock<'c, 's> {
    /// Note that it does *not* emit events while highlighting a line. Instead, it stores
    /// internal state which produces a single fully-rendered HTML event when complete.
    fn highlight(&mut self, text: &CowStr<'c>) -> Result<(), Error> {
+      let mut handle_unknown = || {
+         self
+            .events
+            .push(pulldown_cmark::Event::Text(text.to_owned()))
+      };
+
+      let Some(syntax_set) = self.syntax_set else {
+         handle_unknown();
+         return Ok(())
+      };
+
       match self.highlighting {
          Highlighting::RequiresFirstLineParse => {
-            match self.syntax_set.find_syntax_by_first_line(text) {
+            match syntax_set.find_syntax_by_first_line(text) {
                // If Syntect has a definition, emit processed HTML for the wrapper
                // and for the first line.
                Some(definition) => {
                   let mut generator = ClassedHTMLGenerator::new_with_class_style(
                      definition,
-                     self.syntax_set,
+                     syntax_set,
                      ClassStyle::Spaced,
                   );
                   let event = pulldown_cmark::Event::Html(
@@ -300,9 +319,7 @@ impl<'c, 's> CodeBlock<'c, 's> {
          }
 
          Highlighting::UnknownSyntax => {
-            self
-               .events
-               .push(pulldown_cmark::Event::Text(text.to_owned()));
+            handle_unknown();
             Ok(())
          }
       }

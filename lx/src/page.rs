@@ -6,7 +6,7 @@ use std::{
 };
 
 use chrono::{DateTime, FixedOffset};
-use lx_md::{self, Options, RenderError};
+use lx_md::{self, RenderError};
 use serde::{Deserialize, Serialize};
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
@@ -82,7 +82,6 @@ impl Page {
       source: &Source,
       root_dir: &Path,
       syntax_set: &SyntaxSet,
-      options: Options,
       cascade: &Cascade,
       rewrite: &mut impl FnMut(&str, &Metadata) -> String,
    ) -> Result<Self, Error> {
@@ -96,7 +95,7 @@ impl Page {
          source.path.as_os_str().as_bytes(),
       ));
 
-      let prepared = lx_md::prepare(&source.contents, options).map_err(Error::from)?;
+      let prepared = lx_md::prepare(&source.contents).map_err(Error::from)?;
 
       let metadata = serial::Item::try_parse(&prepared.metadata_src)
          .map_err(Error::from)
@@ -112,7 +111,7 @@ impl Page {
             .map_err(Error::from)
          })?;
 
-      let rendered = lx_md::emit(prepared.to_render, syntax_set, &mut |text| {
+      let rendered = lx_md::emit(prepared.to_render, Some(syntax_set), &mut |text| {
          rewrite(text, &metadata)
       })
       .map_err(Error::from)?;
