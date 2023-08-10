@@ -73,7 +73,7 @@ impl LxMd {
       let mut config_dir = dirs::home_dir().ok_or_else(|| Error::NoHomeDir)?;
       config_dir.extend([".config", "fish", "completions"]);
 
-      generate_to(Fish, &mut Self::command(), "lx", config_dir)
+      generate_to(Fish, &mut Self::command(), "lx-md", config_dir)
          .drop_ok()
          .map_err(|source| Error::Completions { source })
    }
