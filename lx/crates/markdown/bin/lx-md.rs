@@ -7,6 +7,7 @@ use std::{
 use anyhow::Result;
 use clap::{crate_version, Args, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate_to, shells::Fish};
+use serde_yaml::{self, Value};
 use thiserror::Error;
 
 use lx_md::render;
@@ -75,6 +76,10 @@ struct LxMd {
    // Allows accepting
    #[clap(flatten)]
    paths: Paths,
+
+   /// Output any supplied metadata as a table (a la GitHub).
+   #[arg(short = 'm', long = "metadata", default_value("true"))]
+   include_metadata: bool,
 }
 
 #[derive(Args, Debug, Clone)]
@@ -123,6 +128,12 @@ enum Error {
    #[error("`--force` is only allowed with `--output`")]
    InvalidArgs,
 
+   #[error(transparent)]
+   CouldNotParseYaml {
+      #[from]
+      source: serde_yaml::Error,
+   },
+
    #[error("could not open file at '{path}' {reason}")]
    CouldNotOpenFile {
       path: PathBuf,
@@ -157,6 +168,9 @@ enum Error {
 
    #[error("could not write to {dest}")]
    WriteFile { dest: Dest, source: std::io::Error },
+
+   #[error("meaningless (even if valid) YAML: {0}")]
+   MeaninglessYaml(String),
 }
 
 #[derive(Debug)]
@@ -253,6 +267,68 @@ impl Display for Dest {
          Dest::Stdout => f.write_str("stdin"),
       }
    }
+}
+
+fn yaml_to_table(src: &str) -> Result<Option<String>, Error> {
+   let parsed: Value = serde_yaml::from_str(src).map_err(Error::from)?;
+
+   match parsed {
+      Value::Mapping(mapping) => handle_mapping(mapping),
+      _ => Err(Error::MeaninglessYaml(src.to_string())),
+   }
+}
+
+fn handle_yaml(value: Value) -> Result<Option<String>, Error> {
+   match value {
+      Value::Null => Ok(None),
+
+      Value::Bool(b) => Ok(Some(b.to_string())),
+
+      Value::Number(n) => Ok(Some(n.to_string())),
+
+      Value::String(s) => Ok(Some(s)),
+
+      Value::Sequence(seq) => {
+         let mut buf = String::from("<ul>");
+         for item in seq {
+            if let Some(string) = handle_yaml(item)? {
+               buf.push_str(&format!("<li>{string}</li>"));
+            }
+         }
+         buf.push_str("</ul>");
+         Ok(Some(buf))
+      }
+
+      Value::Mapping(mapping) => handle_mapping(mapping),
+
+      Value::Tagged(_) => unimplemented!("Intentionally ignore YAML Tagged"),
+   }
+}
+
+fn handle_mapping(mapping: serde_yaml::Mapping) -> Result<Option<String>, Error> {
+   let mut headers = Vec::new();
+   let mut contents = Vec::new();
+   for (key, value) in mapping {
+      match key {
+         Value::String(key) => headers.push(key),
+         _ => return Err(Error::MeaninglessYaml(format!("{:?}", key))),
+      }
+
+      // no empty `content`s!
+      let content = handle_yaml(value)?.unwrap_or_default();
+      contents.push(content);
+   }
+
+   let mut buf = String::from("<table><thead><tr>");
+   for header in headers {
+      buf.push_str(&format!("<th>{header}</th>"));
+   }
+   buf.push_str("</tr></thead><tbody><tr>");
+   for content in contents {
+      buf.push_str(&format!("<td>{content}</td>"));
+   }
+   buf.push_str("</tr></tbody></table>");
+   Ok(Some(buf))
 }
 
 trait DropOk<E> {
