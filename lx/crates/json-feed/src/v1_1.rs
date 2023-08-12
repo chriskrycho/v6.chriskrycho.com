@@ -322,7 +322,7 @@ impl Builder {
       }
 
       // TODO: use real logging!
-      if warnings.len() > 0 {
+      if !warnings.is_empty() {
          dbg!(warnings);
       }
 
