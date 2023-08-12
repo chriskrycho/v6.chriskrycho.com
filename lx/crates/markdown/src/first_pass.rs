@@ -31,7 +31,7 @@ impl<'e> FirstPass<'e> {
 
    pub(super) fn finalize(
       self,
-   ) -> Result<(CowStr<'e>, Vec<Event<'e>>, FootnoteDefinitions<'e>), Error> {
+   ) -> Result<(Option<CowStr<'e>>, Vec<Event<'e>>, FootnoteDefinitions<'e>), Error> {
       match self {
          FirstPass::Content(content) => Ok((
             content.data.metadata,
@@ -71,6 +71,12 @@ impl State<Initial> {
          data: Box::new(ExtractingMetadata(kind)),
       }
    }
+
+   pub(super) fn start_content<'e>(self) -> State<Content<'e>> {
+      State {
+         data: Box::new(Content::new(None)),
+      }
+   }
 }
 
 /// Step 2 in the state machine: we start processing metadata.
@@ -102,12 +108,7 @@ impl<'e> ParseState for ExtractedMetadata<'e> {}
 impl<'e> State<ExtractedMetadata<'e>> {
    pub(super) fn start_content(self) -> State<Content<'e>> {
       State {
-         data: Box::new(Content {
-            metadata: self.data.0,
-            events: vec![],
-            current_footnote: None,
-            footnote_definitions: HashMap::new(),
-         }),
+         data: Box::new(Content::new(Some(self.data.0))),
       }
    }
 }
@@ -116,10 +117,21 @@ impl<'e> State<ExtractedMetadata<'e>> {
 /// we can iterate the rest of the events.
 #[derive(Debug)]
 pub(super) struct Content<'e> {
-   metadata: CowStr<'e>,
+   metadata: Option<CowStr<'e>>,
    events: Vec<Event<'e>>,
    current_footnote: Option<(CowStr<'e>, Vec<CmarkEvent<'e>>)>,
    footnote_definitions: FootnoteDefinitions<'e>,
+}
+
+impl<'e> Content<'e> {
+   fn new(metadata: Option<CowStr<'e>>) -> Content<'e> {
+      Content {
+         metadata,
+         events: vec![],
+         current_footnote: None,
+         footnote_definitions: HashMap::new(),
+      }
+   }
 }
 
 impl<'e> ParseState for Content<'e> {}

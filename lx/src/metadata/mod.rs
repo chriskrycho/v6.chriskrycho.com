@@ -78,7 +78,7 @@ impl Metadata {
                source: Some(e),
             })?;
 
-      let render = |s: String| Rendered::as_markdown(&s, syntax_set);
+      let render = |s: String| Rendered::as_markdown(&s, Some(syntax_set));
 
       let updated = item.updated.into_iter().try_fold(
          Vec::new(),

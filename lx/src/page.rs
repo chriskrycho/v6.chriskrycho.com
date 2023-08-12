@@ -58,6 +58,9 @@ pub enum Error {
       source: lx_md::Error,
    },
 
+   #[error("no metadata")]
+   MissingMetadata,
+
    #[error(transparent)]
    MetadataParsing {
       #[from]
@@ -97,8 +100,10 @@ impl Page {
 
       let prepared = lx_md::prepare(&source.contents).map_err(Error::from)?;
 
-      let metadata = serial::Item::try_parse(&prepared.metadata_src)
-         .map_err(Error::from)
+      let metadata = prepared
+         .metadata_src
+         .ok_or(Error::MissingMetadata)
+         .and_then(|metadata| serial::Item::try_parse(&metadata).map_err(Error::from))
          .and_then(|item_metadata| {
             Metadata::resolved(
                item_metadata,

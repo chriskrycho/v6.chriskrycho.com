@@ -52,7 +52,7 @@ pub enum PrepareError {
 // preparation pass, but only provides the `ToRender` type opaquely, so that it
 // can only be used as the type-safe requirement for calling `render`.
 pub struct Prepared<'e> {
-   pub metadata_src: String,
+   pub metadata_src: Option<String>,
    pub to_render: ToRender<'e>,
 }
 
@@ -89,7 +89,7 @@ pub fn render(
    syntax_set: Option<&SyntaxSet>,
    rewrite: &mut impl FnMut(&str) -> String,
    // dest: &mut
-) -> Result<(String, Rendered), Error> {
+) -> Result<(Option<String>, Rendered), Error> {
    let Prepared {
       metadata_src,
       to_render,
@@ -124,6 +124,10 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
          },
 
          Event::Text(ref text) => match first_pass {
+            FirstPass::Initial(initial) => {
+               first_pass = FirstPass::Content(initial.start_content());
+            }
+
             FirstPass::ExtractingMetadata(parsing) => match parsing.kind() {
                MetadataBlockKind::YamlStyle => {
                   first_pass = FirstPass::ExtractedMetadata(parsing.parsed(text.clone()));
@@ -143,6 +147,9 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
          },
 
          _ => match first_pass {
+            FirstPass::Initial(initial) => {
+               first_pass = FirstPass::Content(initial.start_content());
+            }
             FirstPass::Content(ref mut content) => content
                .handle(event)
                .map_err(PrepareError::from)
@@ -157,7 +164,7 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
       .map_err(PrepareError::from)
       .map_err(Error::from)?;
    Ok(Prepared {
-      metadata_src: metadata.to_string(),
+      metadata_src: metadata.map(|m| m.to_string()),
       to_render: ToRender {
          first_pass_events,
          footnote_definitions,
