@@ -814,6 +814,8 @@ dependencies = [
  "dirs",
  "lazy_static",
  "pulldown-cmark",
+ "serde",
+ "serde_yaml",
  "syntect",
  "thiserror",
 ]

@@ -19,6 +19,8 @@ dirs = { workspace = true }
 lazy_static = { workspace = true }
 syntect = { workspace = true }
 thiserror = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
 
 [dependencies.pulldown-cmark]
 git = "https://github.com/raphlinus/pulldown-cmark.git"

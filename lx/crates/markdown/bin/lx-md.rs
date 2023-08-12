@@ -16,36 +16,49 @@ fn main() -> Result<()> {
 
    let cli: LxMd = Parser::parse();
 
-   let (input, output) = match cli.command {
+   let Paths {
+      input,
+      output,
+      force,
+   } = match cli.command {
       Some(Completions) => {
          return cli.completions();
       }
 
-      Some(Convert(Paths { input, output })) => (input, output),
-      None => (cli.paths.input, cli.paths.output),
+      Some(Convert(paths)) => paths,
+      None => cli.paths,
    };
+
+   let force = force.unwrap_or(false);
+   if output.is_none() && force {
+      return Err(Error::InvalidArgs.into());
+   }
 
    let mut s = String::new();
    input_buffer(input.as_ref())?
       .read_to_string(&mut s)
       .map_err(|source| Error::ReadToString { source })?;
 
-   // TODO: do something with the metadata? Write it as a table, maybe?
-   let (_meta, rendered) =
-      render(&s, None, &mut |s| s.to_owned()).map_err(Error::from)?;
+   let (meta, rendered) = render(&s, None, &mut |s| s.to_owned()).map_err(Error::from)?;
 
-   let mut output = output_buffer(output.as_ref())?;
+   let metadata = match (cli.include_metadata, meta) {
+      (true, Some(metadata)) => yaml_to_table(&metadata)?,
+      _ => None,
+   };
+
+   let mut output = output_buffer(output.as_ref(), force)?;
+   let content = metadata.unwrap_or_default() + &rendered.html();
+
    output
       .buf
-      .write(rendered.html().as_bytes())
+      .write(content.as_bytes())
       .drop_ok()
-      .map_err(|source| {
-         Error::WriteFile {
-            dest: output.dest,
-            source,
-         }
-         .into()
-      })
+      .map_err(|source| Error::WriteFile {
+         dest: output.dest,
+         source,
+      })?;
+
+   Ok(())
 }
 
 #[derive(Parser, Debug)]
@@ -69,9 +82,14 @@ struct Paths {
    /// Path to the file to convert. Will use `stdin` if not supplied.
    #[arg(short, long)]
    input: Option<PathBuf>,
+
    /// Where to print the output. Will use `stdout` if not supplied.
    #[arg(short, long)]
    output: Option<PathBuf>,
+
+   /// If the supplied `output` file is present, overwrite it.
+   #[arg(long, default_missing_value("true"), num_args(0..=1), require_equals(true))]
+   force: Option<bool>,
 }
 
 impl LxMd {
@@ -102,6 +120,9 @@ enum Error {
    #[error(transparent)]
    Completions { source: std::io::Error },
 
+   #[error("`--force` is only allowed with `--output`")]
+   InvalidArgs,
+
    #[error("could not open file at '{path}' {reason}")]
    CouldNotOpenFile {
       path: PathBuf,
@@ -127,6 +148,12 @@ enum Error {
       #[from]
       source: lx_md::Error,
    },
+
+   #[error(transparent)]
+   CheckFileExistsError { source: std::io::Error },
+
+   #[error("the file '{0}' already exists")]
+   FileExists(PathBuf),
 
    #[error("could not write to {dest}")]
    WriteFile { dest: Dest, source: std::io::Error },
@@ -165,7 +192,7 @@ fn input_buffer(path: Option<&PathBuf>) -> Result<Box<dyn BufRead>, Error> {
    Ok(buf)
 }
 
-fn output_buffer(path: Option<&PathBuf>) -> Result<Output, Error> {
+fn output_buffer(path: Option<&PathBuf>, force: bool) -> Result<Output, Error> {
    match path {
       Some(path) => {
          let dir = path.parent().ok_or_else(|| Error::InvalidDirectory {
@@ -177,6 +204,17 @@ fn output_buffer(path: Option<&PathBuf>) -> Result<Output, Error> {
             path: path.to_owned(),
             source,
          })?;
+
+         // TODO: can I, without doing a TOCTOU, avoid overwriting an existing
+         // file? (That's mostly academic, but since the point of this is to
+         // learn, I want to learn that.)
+         let file_exists = path
+            .try_exists()
+            .map_err(|source| Error::CheckFileExistsError { source })?;
+
+         if file_exists && !force {
+            return Err(Error::FileExists(path.to_owned()));
+         }
 
          let file =
             std::fs::File::create(path).map_err(|source| Error::CouldNotOpenFile {

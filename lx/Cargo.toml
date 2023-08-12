@@ -23,7 +23,7 @@ normalize-path = "0.2"
 rayon = { workspace = true }
 regex = "1"
 serde = { workspace = true }
-serde_yaml = "0.9"
+serde_yaml = { workspace = true }
 slug = "0.1"
 syntect = { workspace = true }
 tera = "1"
@@ -70,6 +70,7 @@ dirs = "5"
 lazy_static = "1.4"
 rayon = "1"
 serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
 thiserror = "1"
 
 [workspace.dependencies.clap]
