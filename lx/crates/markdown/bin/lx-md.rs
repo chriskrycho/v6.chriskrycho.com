@@ -63,8 +63,10 @@ struct LxMd {
 #[derive(Args, Debug, Clone)]
 struct Paths {
    /// Path to the file to convert. Will use `stdin` if not supplied.
+   #[arg(short, long)]
    input: Option<PathBuf>,
    /// Where to print the output. Will use `stdout` if not supplied.
+   #[arg(short, long)]
    output: Option<PathBuf>,
 }
 
