@@ -175,7 +175,7 @@ fn output_buffer(path: Option<&PathBuf>) -> Result<Output, Error> {
          })?;
 
          let file =
-            std::fs::File::open(path).map_err(|source| Error::CouldNotOpenFile {
+            std::fs::File::create(path).map_err(|source| Error::CouldNotOpenFile {
                path: path.to_owned(),
                reason: FileOpenReason::Write,
                source,
