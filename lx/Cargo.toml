@@ -11,6 +11,7 @@ documentation.workspace = true
 # keywords.workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
 clap = { workspace = true }
 clap_complete = { workspace = true }
 dirs = { workspace = true }
@@ -63,6 +64,7 @@ readme = "README.md"
 license = "BlueOak-1.0.0"
 
 [workspace.dependencies]
+anyhow = "1"
 clap_complete = "4"
 dirs = "5"
 lazy_static = "1.4"

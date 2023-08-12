@@ -4,13 +4,14 @@ use std::{
    path::PathBuf,
 };
 
+use anyhow::Result;
 use clap::{crate_version, Args, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate_to, shells::Fish};
 use thiserror::Error;
 
 use lx_md::render;
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<()> {
    use Command::*;
 
    let cli: LxMd = Parser::parse();
@@ -38,9 +39,12 @@ fn main() -> Result<(), Error> {
       .buf
       .write(rendered.html().as_bytes())
       .drop_ok()
-      .map_err(|source| Error::WriteFile {
-         dest: output.dest,
-         source,
+      .map_err(|source| {
+         Error::WriteFile {
+            dest: output.dest,
+            source,
+         }
+         .into()
       })
 }
 
@@ -71,13 +75,13 @@ struct Paths {
 }
 
 impl LxMd {
-   fn completions(&self) -> Result<(), Error> {
+   fn completions(&self) -> Result<()> {
       let mut config_dir = dirs::home_dir().ok_or_else(|| Error::NoHomeDir)?;
       config_dir.extend([".config", "fish", "completions"]);
 
       generate_to(Fish, &mut Self::command(), "lx-md", config_dir)
          .drop_ok()
-         .map_err(|source| Error::Completions { source })
+         .map_err(|source| Error::Completions { source }.into())
    }
 }
 
