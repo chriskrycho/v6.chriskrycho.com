@@ -1,5 +1,0 @@
-{
-   "layout": "page.njk",
-   "standalonePage": true,
-   "permalink": "/{{page.fileSlug | slug}}/index.html"
-}

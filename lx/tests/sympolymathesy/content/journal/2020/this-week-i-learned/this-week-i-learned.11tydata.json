@@ -1,4 +1,0 @@
-{
-   "layout": "post.njk",
-   "permalink": "/journal/this-week-i-learned/{{page.fileSlug | slug}}/index.html"
-}
