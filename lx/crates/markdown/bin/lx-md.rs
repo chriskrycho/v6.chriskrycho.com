@@ -15,7 +15,7 @@ use lx_md::render;
 fn main() -> Result<()> {
    use Command::*;
 
-   let cli: LxMd = Parser::parse();
+   let cli = LxMd::parse();
 
    let Paths {
       input,
