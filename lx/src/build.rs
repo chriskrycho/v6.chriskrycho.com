@@ -1,7 +1,6 @@
 use std::env;
 use std::path::{Path, PathBuf};
 
-use lx_md::Options;
 use rayon::iter::Either;
 use rayon::prelude::*;
 use syntect::highlighting::ThemeSet;

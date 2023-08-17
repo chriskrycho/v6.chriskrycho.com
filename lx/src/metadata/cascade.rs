@@ -28,6 +28,12 @@ pub enum CascadeLoadError {
    ParseMetadata(Box<dyn std::error::Error>),
 }
 
+impl Default for Cascade {
+   fn default() -> Self {
+      Self::new()
+   }
+}
+
 impl Cascade {
    pub fn new() -> Self {
       Self {
@@ -112,7 +118,7 @@ impl Cascade {
 
 #[cfg(test)]
 mod tests {
-   use crate::metadata::{Ambient};
+   use crate::metadata::Ambient;
 
    use super::*;
 
