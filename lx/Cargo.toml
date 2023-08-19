@@ -18,12 +18,14 @@ dirs = { workspace = true }
 glob = "0.3"
 json-feed = { path = "./crates/json-feed" }
 lazy_static = { workspace = true }
+log = { workspace = true }
 lx-md = { path = "./crates/markdown" }
 normalize-path = "0.2"
 rayon = { workspace = true }
 regex = "1"
 serde = { workspace = true }
 serde_yaml = { workspace = true }
+simplelog = { workspace = true }
 slug = "0.1"
 syntect = { workspace = true }
 tera = "1"
@@ -68,10 +70,12 @@ anyhow = "1"
 clap_complete = "4"
 dirs = "5"
 lazy_static = "1.4"
+log = "0.4.20"
 rayon = "1"
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
 thiserror = "1"
+simplelog = { version = "0.12.1", features = ["paris"] }
 
 [workspace.dependencies.clap]
 version = "4"
