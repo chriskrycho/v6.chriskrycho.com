@@ -1,3 +1,4 @@
+use log::error;
 use pulldown_cmark::{CodeBlockKind, CowStr, Tag, TagEnd};
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
@@ -49,6 +50,7 @@ pub(super) fn second_pass<'e>(
       // If I ever extract/generalize this, I will want to use some kind of log level
       // handling instead of just always emitting the error.
       if let Some(warning) = state.handle(event, rewrite)? {
+         error!("{warning}");
       }
    }
 
