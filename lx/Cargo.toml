@@ -85,3 +85,6 @@ features = ["unicode", "cargo", "derive"]
 version = "5"
 default-features = false
 features = ["default-fancy"]
+
+[profile.dev]
+split-debuginfo = "unpacked"
