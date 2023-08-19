@@ -73,13 +73,21 @@ struct LxMd {
    #[command(subcommand)]
    command: Option<Command>,
 
-   // Allows accepting
+   // Allows accepting with subcommands too.
    #[clap(flatten)]
    paths: Paths,
 
    /// Output any supplied metadata as a table (a la GitHub).
    #[arg(short = 'm', long = "metadata", default_value("true"))]
    include_metadata: bool,
+
+   /// Include `debug!` logs
+   #[arg(short, long, global = true)]
+   debug: bool,
+
+   /// Include `info!` logs too.
+   #[arg(short, long, global = true, requires = "debug")]
+   verbose: bool,
 }
 
 #[derive(Args, Debug, Clone)]

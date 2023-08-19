@@ -7,7 +7,7 @@ use clap_complete::{generate_to, shells::Fish};
 
 #[derive(Parser, Debug)]
 #[clap(
-   name = "Lightning (lx)",
+   name = "lx ⚡️",
    about = "A very fast, very opinionated static site generator",
    version = "1.0",
    author = "Chris Krycho <hello@@chriskrycho.com>"
@@ -16,6 +16,30 @@ use clap_complete::{generate_to, shells::Fish};
 pub struct Cli {
    #[command(subcommand)]
    pub command: Command,
+
+   /// Include `debug!` logs
+   #[arg(short, long, global = true, conflicts_with = "quiet")]
+   pub debug: bool,
+
+   /// Include `info!` logs too.
+   #[arg(
+      short,
+      long,
+      global = true,
+      requires = "debug",
+      conflicts_with = "quiet"
+   )]
+   pub verbose: bool,
+
+   /// Don't include *any* logging. None. Zip. Zero. Nada.
+   #[arg(
+      short,
+      long,
+      global = true,
+      conflicts_with = "debug",
+      conflicts_with = "verbose"
+   )]
+   pub quiet: bool,
 }
 
 #[derive(Error, Debug)]

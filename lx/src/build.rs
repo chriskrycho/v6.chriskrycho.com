@@ -1,6 +1,6 @@
-use std::env;
 use std::path::{Path, PathBuf};
 
+use log::{debug, error, info};
 use rayon::iter::Either;
 use rayon::prelude::*;
 use syntect::highlighting::ThemeSet;
@@ -104,7 +104,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
       })?;
 
    let config_path = in_dir.join("_data/config.lx.yaml");
-   println!("{}, {}", in_dir.display(), config_path.display());
+   info!("{}, {}", in_dir.display(), config_path.display());
    let config =
       Config::from_file(&config_path).map_err(|e| BuildError::Config { source: e })?;
 
@@ -112,7 +112,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
 
    let site_files = get_files_to_load(&in_dir);
    for template in &site_files.templates {
-      println!("{template}", template = template.display());
+      info!("{template}", template = template.display());
    }
    let ThemeSet { themes } = ThemeSet::load_defaults();
 
@@ -141,7 +141,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
 
    let sources = load_sources(&site_files)?;
 
-   println!("loaded {count} pages", count = sources.len());
+   info!("loaded {count} pages", count = sources.len());
 
    let mut cascade = Cascade::new();
    let cascade = cascade
@@ -164,15 +164,11 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
                      // NOTE: another way of handling this would be to collect these in a
                      // per-par-iter vec and surface them later and either fail (in CI) or
                      // just print all the problems (for local dev) as I have done in a
-                     // previous version of this. Using `crate::error::write_to_fmt` means
-                     // I can "pre-bake" the errors into the format I want here, and not
-                     // be worried about `Send + Sync` cause blow-ups when doing parallel
-                     // iteration across threads.
-
-                     // TODO: replace the following shenanigans with a proper logging lib.
-                     if env::var("DEBUG").is_ok_and(|value| value != "false") {
-                        write_to_stderr(e);
-                     }
+                     // previous version of this. Using `debug!()` means I can just dump
+                     // the errors here, and not be worried about `Send + Sync` causing
+                     // blow-ups when doing parallel iteration across threads. (Fine to
+                     // deal with this in some other way later, if I so desire!)
+                     debug!("{e}");
 
                      text.to_string()
                   })
@@ -186,7 +182,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
       return Err(BuildError::Page(PageErrors(errors)));
    }
 
-   println!("processed {count} pages", count = pages.len());
+   info!("processed {count} pages", count = pages.len());
 
    // TODO: replace with the templating engine approach below!
    pages.iter().try_for_each(|page| {
@@ -300,7 +296,7 @@ fn get_files(glob_src: &str) -> Vec<PathBuf> {
       .fold(Vec::new(), |mut good, result| {
          match result {
             Ok(path) => good.push(path),
-            Err(e) => eprintln!("glob problem (globlem?): '{}'", e),
+            Err(e) => error!("glob problem (globlem?): '{}'", e),
          };
 
          good
