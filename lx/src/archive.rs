@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use chrono::Datelike;
+use chrono::{Datelike, Month};
 use thiserror::Error;
 
 use crate::page::Page;
@@ -29,8 +29,12 @@ impl Archive<'_> {
       for page in pages {
          if let Some(date) = &page.data.date {
             let year = date.year_ce().1;
-            let month: Month = date.month().try_into().map_err(Error::from)?;
-            let day: Day = date.day().try_into().map_err(Error::from)?;
+
+            let month = date.month();
+            let month = Month::try_from(u8::try_from(month).unwrap())
+               .map_err(|source| Error::BadMonth { raw: month, source })?;
+
+            let day = Day::try_from(date.day()).map_err(Error::from)?;
 
             let month_map = year_map.entry(year).or_insert_with(HashMap::new);
             let day_map = month_map.entry(month).or_insert_with(HashMap::new);
@@ -49,10 +53,10 @@ pub enum Order {
 
 #[derive(Debug, Error)]
 pub enum Error {
-   #[error(transparent)]
+   #[error("nonsense month value: '{raw}")]
    BadMonth {
-      #[from]
-      source: BadMonth,
+      raw: u32,
+      source: chrono::OutOfRange,
    },
 
    #[error(transparent)]
@@ -65,69 +69,6 @@ pub enum Error {
 type Year = u32;
 
 type MonthMap<'p> = HashMap<Month, DayMap<'p>>;
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub enum Month {
-   January,
-   February,
-   March,
-   April,
-   May,
-   June,
-   July,
-   August,
-   September,
-   October,
-   November,
-   December,
-}
-
-impl TryFrom<u32> for Month {
-   type Error = BadMonth;
-
-   fn try_from(value: u32) -> Result<Self, Self::Error> {
-      match value {
-         1 => Ok(Month::January),
-         2 => Ok(Month::February),
-         3 => Ok(Month::March),
-         4 => Ok(Month::April),
-         5 => Ok(Month::May),
-         6 => Ok(Month::June),
-         7 => Ok(Month::July),
-         8 => Ok(Month::August),
-         9 => Ok(Month::September),
-         10 => Ok(Month::October),
-         11 => Ok(Month::November),
-         12 => Ok(Month::December),
-         wat => Err(BadMonth { raw: wat }),
-      }
-   }
-}
-
-impl std::fmt::Display for Month {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      f.write_str(match self {
-         Month::January => "Jan",
-         Month::February => "Feb",
-         Month::March => "Mar",
-         Month::April => "Apr",
-         Month::May => "May",
-         Month::June => "Jun",
-         Month::July => "Jul",
-         Month::August => "Aug",
-         Month::September => "Sep",
-         Month::October => "Oct",
-         Month::November => "Nov",
-         Month::December => "Dec",
-      })
-   }
-}
-
-#[derive(Debug, Error)]
-#[error("nonsense month value: '{raw}")]
-pub struct BadMonth {
-   raw: u32,
-}
 
 type DayMap<'p> = HashMap<Day, Vec<&'p Page>>;
 
