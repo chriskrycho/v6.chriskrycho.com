@@ -136,6 +136,13 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
        .map_err(|e| BuildError::WriteFileError { path: path.to_owned(), source: e })
    })?;
 
+   // TODO: get standalone pages.
+
+   // TODO: get taxonomy pages. Structurally, I *think* the best thing to do is
+   // provide a top-level `Archive` and then filter on its results, since that
+   // avoids having to do the sorting more than once. So build the taxonomies
+   // *second*, as filtered versions of the Archive?
+
    let archive = Archive::new(&pages, Order::NewFirst);
 
    // TODO: design a strategy for the output paths.
