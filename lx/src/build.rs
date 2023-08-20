@@ -162,8 +162,8 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
 }
 
 fn load_sources(site_files: &SiteFiles) -> Result<Vec<Source>, BuildError> {
-   let mut sources = Vec::<page::Source>::new();
-   let mut errors = Vec::<ContentError>::new();
+   let mut sources = Vec::new();
+   let mut errors = Vec::new();
    for path in &site_files.content {
       match std::fs::read_to_string(path) {
          Ok(contents) => sources.push(Source {
