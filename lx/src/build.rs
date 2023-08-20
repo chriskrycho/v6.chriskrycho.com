@@ -14,86 +14,6 @@ use crate::metadata::cascade::{Cascade, CascadeLoadError};
 use crate::page::{self, Page, Source};
 use crate::templates;
 
-#[derive(Error, Debug)]
-pub enum BuildError {
-   #[error("invalid input directory")]
-   InvalidDir {
-      path: PathBuf,
-      source: std::io::Error,
-   },
-
-   #[error(transparent)]
-   LoadTemplates {
-      #[from]
-      source: templates::Error,
-   },
-
-   #[error("could not rewrite {text} with tera")]
-   Rewrite { text: String, source: tera::Error },
-
-   #[error("could not load data cascade")]
-   Cascade {
-      #[from]
-      source: CascadeLoadError,
-   },
-
-   #[error("could not load site config")]
-   Config { source: config::Error },
-
-   #[error("could not load one or more site content sources")]
-   Content(Vec<ContentError>),
-
-   #[error(transparent)]
-   Page(PageErrors),
-
-   #[error(transparent)]
-   RewritePage(RewriteErrors),
-
-   #[error("could not create output directory '{path}'")]
-   CreateOutputDirectory {
-      path: PathBuf,
-      source: std::io::Error,
-   },
-
-   #[error("could not write to {path}")]
-   WriteFileError {
-      path: PathBuf,
-      source: std::io::Error,
-   },
-}
-
-#[derive(Error, Debug)]
-pub struct PageErrors(Vec<(PathBuf, page::Error)>);
-
-impl std::fmt::Display for PageErrors {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      let errors = &self.0;
-      writeln!(f, "could not render {} pages", errors.len())?;
-      for (path, error) in errors {
-         writeln!(f, "{}:\n\t{error}", path.display())?;
-         write_to_fmt(f, error)?;
-      }
-
-      Ok(())
-   }
-}
-
-#[derive(Error, Debug)]
-pub struct RewriteErrors(Vec<(PathBuf, tera::Error)>);
-
-impl std::fmt::Display for RewriteErrors {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      let errors = &self.0;
-      writeln!(f, "could not rewrite {} pages", errors.len())?;
-      for (path, error) in errors {
-         writeln!(f, "{}:\n\t{error}", path.display())?;
-         write_to_fmt(f, error)?;
-      }
-
-      Ok(())
-   }
-}
-
 pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    // TODO: require this to be passed in this way instead?
    let in_dir = in_dir
@@ -261,6 +181,86 @@ fn load_sources(site_files: &SiteFiles) -> Result<Vec<Source>, BuildError> {
       Ok(sources)
    } else {
       Err(BuildError::Content(errors))
+   }
+}
+
+#[derive(Error, Debug)]
+pub enum BuildError {
+   #[error("invalid input directory")]
+   InvalidDir {
+      path: PathBuf,
+      source: std::io::Error,
+   },
+
+   #[error(transparent)]
+   LoadTemplates {
+      #[from]
+      source: templates::Error,
+   },
+
+   #[error("could not rewrite {text} with tera")]
+   Rewrite { text: String, source: tera::Error },
+
+   #[error("could not load data cascade")]
+   Cascade {
+      #[from]
+      source: CascadeLoadError,
+   },
+
+   #[error("could not load site config")]
+   Config { source: config::Error },
+
+   #[error("could not load one or more site content sources")]
+   Content(Vec<ContentError>),
+
+   #[error(transparent)]
+   Page(PageErrors),
+
+   #[error(transparent)]
+   RewritePage(RewriteErrors),
+
+   #[error("could not create output directory '{path}'")]
+   CreateOutputDirectory {
+      path: PathBuf,
+      source: std::io::Error,
+   },
+
+   #[error("could not write to {path}")]
+   WriteFileError {
+      path: PathBuf,
+      source: std::io::Error,
+   },
+}
+
+#[derive(Error, Debug)]
+pub struct PageErrors(Vec<(PathBuf, page::Error)>);
+
+impl std::fmt::Display for PageErrors {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      let errors = &self.0;
+      writeln!(f, "could not render {} pages", errors.len())?;
+      for (path, error) in errors {
+         writeln!(f, "{}:\n\t{error}", path.display())?;
+         write_to_fmt(f, error)?;
+      }
+
+      Ok(())
+   }
+}
+
+#[derive(Error, Debug)]
+pub struct RewriteErrors(Vec<(PathBuf, tera::Error)>);
+
+impl std::fmt::Display for RewriteErrors {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      let errors = &self.0;
+      writeln!(f, "could not rewrite {} pages", errors.len())?;
+      for (path, error) in errors {
+         writeln!(f, "{}:\n\t{error}", path.display())?;
+         write_to_fmt(f, error)?;
+      }
+
+      Ok(())
    }
 }
 
