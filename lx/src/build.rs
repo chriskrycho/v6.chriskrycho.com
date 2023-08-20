@@ -8,8 +8,9 @@ use syntect::html::{css_for_theme_with_class_style, ClassStyle};
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
+use crate::archive::{Archive, Order};
 use crate::config::{self, Config};
-use crate::error::{write_to_fmt, write_to_stderr};
+use crate::error::write_to_fmt;
 use crate::metadata::cascade::{Cascade, CascadeLoadError};
 use crate::page::{self, Page, Source};
 use crate::templates;
@@ -134,6 +135,8 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
        )
        .map_err(|e| BuildError::WriteFileError { path: path.to_owned(), source: e })
    })?;
+
+   let archive = Archive::new(&pages, Order::NewFirst);
 
    // TODO: design a strategy for the output paths.
    for page in &pages {

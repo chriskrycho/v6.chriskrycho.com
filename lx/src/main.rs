@@ -6,6 +6,7 @@ use cli::Cli;
 use log::info;
 use simplelog::{ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
 
+mod archive;
 mod build;
 mod cli;
 mod collection;

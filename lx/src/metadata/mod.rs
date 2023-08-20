@@ -23,7 +23,9 @@ use self::serial::*;
 /// **NOTE:** Although `title` and `date` are optional here, this is a function
 /// of the fact that my currently-chosen rendering engine, Tera, has no notion
 /// of pattern-matching in it, and therefore has no easy way to deal with a
-/// nested sum type. One or the other *is* required
+/// nested sum type. One or the other *is* required, but this is handled by way
+/// of runtime validation. (Nothing makes me want so badly to implement my own
+/// type-safe template language…)
 #[derive(Debug, Serialize)]
 pub struct Metadata {
    /// The title of the item.
