@@ -10,60 +10,60 @@ mod v1_1;
 
 use std::{collections::HashMap, convert::TryFrom};
 
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub use v1_1::{AuthorOptions, Builder as JSONFeedBuilder, FeedItem, JSONFeed};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub enum Version {
-    /// The feed is [v1](https://jsonfeed.org/version/1).
-    V1_0,
-    /// The feed is [v1.1](https://jsonfeed.org/version/1.1).
-    V1_1,
+   /// The feed is [v1](https://jsonfeed.org/version/1).
+   V1_0,
+   /// The feed is [v1.1](https://jsonfeed.org/version/1.1).
+   V1_1,
 }
 
 impl TryFrom<&str> for Version {
-    type Error = String;
+   type Error = String;
 
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        match s {
-            "https://jsonfeed.org/version/1" => Ok(Version::V1_0),
-            "https://jsonfeed.org/version/1.1" => Ok(Version::V1_1),
-            bad_version => Err(format!("Bad JSON Feed `version` field: '{}'", bad_version)),
-        }
-    }
+   fn try_from(s: &str) -> Result<Self, Self::Error> {
+      match s {
+         "https://jsonfeed.org/version/1" => Ok(Version::V1_0),
+         "https://jsonfeed.org/version/1.1" => Ok(Version::V1_1),
+         bad_version => Err(format!("Bad JSON Feed `version` field: '{}'", bad_version)),
+      }
+   }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Author {
-    AvatarOnly {
-        avatar: String,
-    },
-    NameOnly {
-        name: String,
-    },
-    UrlOnly {
-        url: String,
-    },
-    AvatarAndName {
-        avatar: String,
-        name: String,
-    },
-    AvatarAndUrl {
-        avatar: String,
-        url: String,
-    },
-    NameAndUrl {
-        name: String,
-        url: String,
-    },
-    All {
-        avatar: String,
-        name: String,
-        url: String,
-    },
+   AvatarOnly {
+      avatar: String,
+   },
+   NameOnly {
+      name: String,
+   },
+   UrlOnly {
+      url: String,
+   },
+   AvatarAndName {
+      avatar: String,
+      name: String,
+   },
+   AvatarAndUrl {
+      avatar: String,
+      url: String,
+   },
+   NameAndUrl {
+      name: String,
+      url: String,
+   },
+   All {
+      avatar: String,
+      name: String,
+      url: String,
+   },
 }
 
 /// Traditional feed readers usually poll a web site for changes at a regular
@@ -83,30 +83,30 @@ pub enum Author {
 /// tiny bits from the JSON Feed website
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Hub {
-    #[serde(alias = "type")]
-    r#type: String,
-    topic: String,
+   #[serde(alias = "type")]
+   r#type: String,
+   topic: String,
 
-    #[serde(flatten)]
-    extra: HashMap<String, Value>,
+   #[serde(flatten)]
+   extra: HashMap<String, Value>,
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+   use super::*;
 
-    #[test]
-    fn parses_version() {
-        let v1 = "https://jsonfeed.org/version/1";
-        assert_eq!(Version::try_from(v1), Ok(Version::V1_0));
+   #[test]
+   fn parses_version() {
+      let v1 = "https://jsonfeed.org/version/1";
+      assert_eq!(Version::try_from(v1), Ok(Version::V1_0));
 
-        let v1_1 = "https://jsonfeed.org/version/1.1";
-        assert_eq!(Version::try_from(v1_1), Ok(Version::V1_1));
+      let v1_1 = "https://jsonfeed.org/version/1.1";
+      assert_eq!(Version::try_from(v1_1), Ok(Version::V1_1));
 
-        let bad = "whatever";
-        assert_eq!(
-            Version::try_from(bad),
-            Err(format!("Bad JSON Feed `version` field: '{}'", bad))
-        );
-    }
+      let bad = "whatever";
+      assert_eq!(
+         Version::try_from(bad),
+         Err(format!("Bad JSON Feed `version` field: '{}'", bad))
+      );
+   }
 }

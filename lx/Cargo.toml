@@ -24,6 +24,7 @@ normalize-path = "0.2"
 rayon = { workspace = true }
 regex = "1"
 serde = { workspace = true }
+serde_derive = { workspace = true }
 serde_yaml = { workspace = true }
 simplelog = { workspace = true }
 slug = "0.1"
@@ -72,7 +73,8 @@ dirs = "5"
 lazy_static = "1.4"
 log = "0.4.20"
 rayon = "1"
-serde = { version = "1", features = ["derive"] }
+serde = "1.0.185"
+serde_derive = "1.0.185"
 serde_yaml = "0.9"
 thiserror = "1"
 simplelog = { version = "0.12.1", features = ["paris"] }

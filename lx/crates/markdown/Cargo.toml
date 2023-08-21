@@ -22,6 +22,7 @@ simplelog = { workspace = true }
 syntect = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
+serde_derive = { workspace = true }
 serde_yaml = { workspace = true }
 
 [dependencies.pulldown-cmark]
