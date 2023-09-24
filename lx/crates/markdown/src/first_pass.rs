@@ -150,17 +150,13 @@ impl<'e> State<Content<'e>> {
                .push(Event::FootnoteReference(name.clone()));
             Ok(())
          }
-         _ => {
-            self.event(event);
+         other => {
+            match self.data.current_footnote {
+               Some((_, ref mut events)) => events.push(other.clone()),
+               None => self.data.events.push(Event::Basic(other.clone())),
+            };
             Ok(())
          }
-      }
-   }
-
-   fn event(&mut self, event: CmarkEvent<'e>) {
-      match self.data.current_footnote {
-         Some((_, ref mut events)) => events.push(event.clone()),
-         None => self.data.events.push(Event::Basic(event.clone())),
       }
    }
 

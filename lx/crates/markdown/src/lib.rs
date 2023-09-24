@@ -146,15 +146,22 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
             _ => return bad_prepare_state(&event, &first_pass),
          },
 
-         _ => match first_pass {
+         other => match first_pass {
             FirstPass::Initial(initial) => {
-               first_pass = FirstPass::Content(initial.start_content());
+               let mut content = initial.start_content();
+               content
+                  .handle(other)
+                  .map_err(PrepareError::from)
+                  .map_err(Error::from)?;
+               first_pass = FirstPass::Content(content);
             }
+
             FirstPass::Content(ref mut content) => content
-               .handle(event)
+               .handle(other)
                .map_err(PrepareError::from)
                .map_err(Error::from)?,
-            _ => return bad_prepare_state(&event, &first_pass),
+
+            _ => return bad_prepare_state(&other, &first_pass),
          },
       }
    }

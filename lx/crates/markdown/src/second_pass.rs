@@ -104,8 +104,8 @@ impl<'e, 's> State<'e, 's> {
             }
 
             // Everything else can just be emitted exactly as is.
-            _ => {
-               self.events.push(basic.clone());
+            other => {
+               self.events.push(other.clone());
                Ok(None)
             }
          },
