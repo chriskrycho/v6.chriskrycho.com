@@ -45,10 +45,11 @@ fn main() -> Result<()> {
    let metadata = match (cli.include_metadata, meta) {
       (true, Some(metadata)) => yaml_to_table(&metadata)?,
       _ => None,
-   };
+   }
+   .unwrap_or_default();
 
    let mut output = output_buffer(output.as_ref(), force)?;
-   let content = metadata.unwrap_or_default() + &rendered.html();
+   let content = metadata + &rendered.html();
 
    output
       .buf
