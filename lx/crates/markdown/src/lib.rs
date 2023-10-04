@@ -103,34 +103,34 @@ pub fn render(
 pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
    let parser = Parser::new_ext(src, *OPTIONS);
 
-   let mut first_pass = first_pass::FirstPass::new();
+   let mut state = first_pass::FirstPass::new();
 
    // TODO: rewrite all these `bad_prepare_state` calls into actual specific errors from
    // the enum above!
    for event in parser {
       match event {
-         Event::Start(Tag::MetadataBlock(kind)) => match first_pass {
+         Event::Start(Tag::MetadataBlock(kind)) => match state {
             FirstPass::Initial(initial) => {
-               first_pass = FirstPass::ExtractingMetadata(initial.parsing_metadata(kind))
+               state = FirstPass::ExtractingMetadata(initial.parsing_metadata(kind))
             }
-            _ => return bad_prepare_state(&event, &first_pass).map_err(Error::from),
+            _ => return bad_prepare_state(&event, &state).map_err(Error::from),
          },
 
-         Event::End(TagEnd::MetadataBlock(_)) => match first_pass {
+         Event::End(TagEnd::MetadataBlock(_)) => match state {
             FirstPass::ExtractedMetadata(metadata) => {
-               first_pass = FirstPass::Content(metadata.start_content())
+               state = FirstPass::Content(metadata.start_content())
             }
-            _ => return bad_prepare_state(&event, &first_pass),
+            _ => return bad_prepare_state(&event, &state),
          },
 
-         Event::Text(ref text) => match first_pass {
+         Event::Text(ref text) => match state {
             FirstPass::Initial(initial) => {
-               first_pass = FirstPass::Content(initial.start_content());
+               state = FirstPass::Content(initial.start_content());
             }
 
             FirstPass::ExtractingMetadata(parsing) => match parsing.kind() {
                MetadataBlockKind::YamlStyle => {
-                  first_pass = FirstPass::ExtractedMetadata(parsing.parsed(text.clone()));
+                  state = FirstPass::ExtractedMetadata(parsing.parsed(text.clone()));
                }
 
                MetadataBlockKind::PlusesStyle => {
@@ -143,17 +143,17 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
                .map_err(PrepareError::from)
                .map_err(Error::from)?,
 
-            _ => return bad_prepare_state(&event, &first_pass),
+            _ => return bad_prepare_state(&event, &state),
          },
 
-         other => match first_pass {
+         other => match state {
             FirstPass::Initial(initial) => {
                let mut content = initial.start_content();
                content
                   .handle(other)
                   .map_err(PrepareError::from)
                   .map_err(Error::from)?;
-               first_pass = FirstPass::Content(content);
+               state = FirstPass::Content(content);
             }
 
             FirstPass::Content(ref mut content) => content
@@ -161,12 +161,12 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
                .map_err(PrepareError::from)
                .map_err(Error::from)?,
 
-            _ => return bad_prepare_state(&other, &first_pass),
+            _ => return bad_prepare_state(&other, &state),
          },
       }
    }
 
-   let (metadata, first_pass_events, footnote_definitions) = first_pass
+   let (metadata, first_pass_events, footnote_definitions) = state
       .finalize()
       .map_err(PrepareError::from)
       .map_err(Error::from)?;
