@@ -683,6 +683,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "latex2mathml"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "678cf5bdb3ba63a264e6e0c9eee36538ca1d2da0afa4dd801c1f96309e710765"
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -758,6 +764,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "dirs",
+ "latex2mathml",
  "lazy_static",
  "log",
  "pulldown-cmark",

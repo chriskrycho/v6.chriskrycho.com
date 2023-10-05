@@ -17,6 +17,7 @@ clap = { workspace = true }
 clap_complete = { workspace = true }
 dirs = { workspace = true }
 log = { workspace = true }
+latex2mathml = "0.2"
 lazy_static = { workspace = true }
 simplelog = { workspace = true }
 syntect = { workspace = true }

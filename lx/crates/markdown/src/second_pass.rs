@@ -30,6 +30,12 @@ pub enum Error {
 
    #[error("syntax highlighting failure")]
    BadSyntaxLine { source: syntect::Error },
+
+   #[error("bad LaTeX input")]
+   BadLatex {
+      #[from]
+      source: latex2mathml::LatexError,
+   },
 }
 
 pub(super) fn second_pass<'e>(
@@ -78,7 +84,8 @@ impl<'e, 's> State<'e, 's> {
                   }
                   None => {
                      let text = rewrite(text.as_ref());
-                     self.events.push(Text(text.into()));
+                     let text = latex2mathml::replace(&text)?;
+                     self.events.push(Html(text.into()));
                      Ok(None)
                   }
                }
