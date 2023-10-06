@@ -92,6 +92,24 @@ pub struct Book {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BibleRef {
+   translation: String,
+   book: String,
+   /// This needs to handle the following:
+   ///
+   /// - Individual verse references: "John 1:1"
+   /// - Books without chapters "Jude 1"
+   /// - Within-chapter ranges: "John 1:1–3"
+   /// - Multi-chapter ranges: "John 4–5"
+   /// - Verse ranges crossing chapter breaks: "John 1:35–2:12"
+   ///
+   /// Given all of these, "just use a string" makes far more sense than trying
+   /// to build a complex set of alternative types for it. (This is, after all,
+   /// not a Bible application, where that would be a thing to parse!)
+   passage: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Review {
    rating: Rating,
    summary: String,
