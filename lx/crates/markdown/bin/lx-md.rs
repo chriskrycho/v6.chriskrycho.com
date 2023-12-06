@@ -30,11 +30,6 @@ fn main() -> Result<()> {
       None => cli.paths,
    };
 
-   let force = force.unwrap_or(false);
-   if output.is_none() && force {
-      return Err(Error::InvalidArgs.into());
-   }
-
    let mut s = String::new();
    input_buffer(input.as_ref())?
       .read_to_string(&mut s)
@@ -48,7 +43,13 @@ fn main() -> Result<()> {
    }
    .unwrap_or_default();
 
-   let mut output = output_buffer(output.as_ref(), force)?;
+   let dest_cfg = match (output, force.unwrap_or(false)) {
+      (Some(buf), force) => DestCfg::Path { buf, force },
+      (None, false) => DestCfg::Stdout,
+      (None, true) => return Err(Error::InvalidArgs.into()),
+   };
+
+   let mut output = output_buffer(dest_cfg)?;
    let content = metadata + &rendered.html();
 
    output
@@ -215,9 +216,14 @@ fn input_buffer(path: Option<&PathBuf>) -> Result<Box<dyn BufRead>, Error> {
    Ok(buf)
 }
 
-fn output_buffer(path: Option<&PathBuf>, force: bool) -> Result<Output, Error> {
-   match path {
-      Some(path) => {
+enum DestCfg {
+   Path { buf: PathBuf, force: bool },
+   Stdout,
+}
+
+fn output_buffer(dest_cfg: DestCfg) -> Result<Output, Error> {
+   match dest_cfg {
+      DestCfg::Path { buf: path, force } => {
          let dir = path.parent().ok_or_else(|| Error::InvalidDirectory {
             path: path.to_owned(),
          })?;
@@ -240,17 +246,17 @@ fn output_buffer(path: Option<&PathBuf>, force: bool) -> Result<Output, Error> {
          }
 
          let file =
-            std::fs::File::create(path).map_err(|source| Error::CouldNotOpenFile {
-               path: path.to_owned(),
+            std::fs::File::create(&path).map_err(|source| Error::CouldNotOpenFile {
+               path: path.clone(),
                reason: FileOpenReason::Write,
                source,
             })?;
 
          let buf = Box::new(file) as Box<dyn Write>;
-         let kind = Dest::File(path.to_owned());
+         let kind = Dest::File(path);
          Ok(Output { buf, dest: kind })
       }
-      None => {
+      DestCfg::Stdout => {
          let buf = Box::new(std::io::stdout()) as Box<dyn Write>;
          let kind = Dest::Stdout;
          Ok(Output { buf, dest: kind })
