@@ -42,7 +42,7 @@ pub(super) fn second_pass<'e>(
    footnote_definitions: FootnoteDefinitions<'e>,
    syntax_set: Option<&SyntaxSet>,
    events: Vec<first_pass::Event<'e>>,
-   rewrite: &mut impl FnMut(&str) -> String,
+   rewrite: impl Fn(&str) -> String,
 ) -> Result<impl Iterator<Item = pulldown_cmark::Event<'e>>, Error> {
    let mut state = State {
       footnote_definitions,
@@ -55,7 +55,7 @@ pub(super) fn second_pass<'e>(
    for event in events {
       // If I ever extract/generalize this, I will want to use some kind of log level
       // handling instead of just always emitting the error.
-      if let Some(warning) = state.handle(event, rewrite)? {
+      if let Some(warning) = state.handle(event, &rewrite)? {
          error!("{warning}");
       }
    }
@@ -69,7 +69,7 @@ impl<'e, 's> State<'e, 's> {
    fn handle(
       &mut self,
       event: first_pass::Event<'e>,
-      rewrite: &mut impl FnMut(&str) -> String,
+      rewrite: &impl Fn(&str) -> String,
    ) -> Result<Option<String>, Error> {
       use pulldown_cmark::Event::*;
 

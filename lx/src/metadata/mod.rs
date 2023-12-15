@@ -133,7 +133,7 @@ pub struct Rendered(String);
 
 impl Rendered {
    fn as_markdown(src: &str, syntax_set: Option<&SyntaxSet>) -> Result<Rendered, Error> {
-      lx_md::render(src, syntax_set, &mut |s: &str| s.to_string())
+      lx_md::render(src, syntax_set, |s| s.to_string())
          .map(|(_, rendered)| Rendered(rendered.html()))
          .map_err(Error::from)
    }

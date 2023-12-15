@@ -77,10 +77,17 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
             &in_dir.join("content"),
             &syntax_set,
             cascade,
-            &mut |text, metadata| {
-               let mut tera = tera.clone();
+            |text, metadata| {
                tera::Context::from_serialize(metadata)
-                  .and_then(|ctx| tera.render_str(text, &ctx))
+                  // While this creates a new Tera instance on every document, the other
+                  // option here is to do exactly the same thing but using `.clone()`,
+                  // which will actually be *more* expensive because that has to clone the
+                  // entirety of the struct, which includes all of its underlying hash
+                  // maps and therefore the elements it has in them. This has the same
+                  // *base* amount of allocation, it gets to skip all the additional
+                  // copies *and* any additional allocations of e.g. template instances
+                  // which *also* need to be cloned.
+                  .and_then(|ctx| tera::Tera::one_off(text, &ctx, false))
                   .unwrap_or_else(|e| {
                      // NOTE: another way of handling this would be to collect these in a
                      // per-par-iter vec and surface them later and either fail (in CI) or

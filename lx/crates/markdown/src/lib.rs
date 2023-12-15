@@ -87,8 +87,7 @@ lazy_static! {
 pub fn render(
    src: &str,
    syntax_set: Option<&SyntaxSet>,
-   rewrite: &mut impl FnMut(&str) -> String,
-   // dest: &mut
+   rewrite: impl Fn(&str) -> String,
 ) -> Result<(Option<String>, Rendered), Error> {
    let Prepared {
       metadata_src,
@@ -199,7 +198,7 @@ impl Rendered {
 pub fn emit(
    to_render: ToRender,
    syntax_set: Option<&SyntaxSet>,
-   rewrite: &mut impl FnMut(&str) -> String,
+   rewrite: impl Fn(&str) -> String,
 ) -> Result<Rendered, RenderError> {
    let ToRender {
       first_pass_events,

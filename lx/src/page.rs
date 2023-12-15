@@ -86,7 +86,7 @@ impl Page {
       root_dir: &Path,
       syntax_set: &SyntaxSet,
       cascade: &Cascade,
-      rewrite: &mut impl FnMut(&str, &Metadata) -> String,
+      rewrite: impl Fn(&str, &Metadata) -> String,
    ) -> Result<Self, Error> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
       // don't want to do it based on the source path (or if I do, *only* initially as
@@ -116,7 +116,7 @@ impl Page {
             .map_err(Error::from)
          })?;
 
-      let rendered = lx_md::emit(prepared.to_render, Some(syntax_set), &mut |text| {
+      let rendered = lx_md::emit(prepared.to_render, Some(syntax_set), |text| {
          rewrite(text, &metadata)
       })
       .map_err(Error::from)?;
