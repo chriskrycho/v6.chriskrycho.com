@@ -5,7 +5,6 @@ use rayon::iter::Either;
 use rayon::prelude::*;
 use syntect::highlighting::ThemeSet;
 use syntect::html::{css_for_theme_with_class_style, ClassStyle};
-use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
 use crate::archive::{Archive, Order};
@@ -28,8 +27,6 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
    info!("{}, {}", in_dir.display(), config_path.display());
    let config =
       Config::from_file(&config_path).map_err(|e| BuildError::Config { source: e })?;
-
-   let syntax_set = load_syntaxes();
 
    let site_files = get_files_to_load(&in_dir);
    for template in &site_files.templates {
@@ -75,7 +72,6 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
          Page::build(
             source,
             &in_dir.join("content"),
-            &syntax_set,
             cascade,
             |text, metadata| {
                tera::Context::from_serialize(metadata)
@@ -318,31 +314,4 @@ fn get_files(glob_src: &str) -> Vec<PathBuf> {
 
          good
       })
-}
-
-// TODO: I think what I would *like* to do is have a slow path for dev and a
-// fast path for prod, where the slow path just loads the `.sublime-syntax`
-// from disk and compiles them, and the fast path uses a `build.rs` or similar
-// to build a binary which can then be compiled straight into the target binary
-// and loaded *extremely* fast as a result.
-//
-// The basic structure for a prod build would be something like:
-//
-// - `build.rs`:
-//    - `syntect::SyntaxSet::load_from_folder(<path to templates>)`
-//    - `syntect::dumps::dump_to_uncompressed_file(<well-known-path>)`
-// - here (or, better, in a dedicated `syntax` module?):
-//    - `include_bytes!(<well-known-path>)`
-//    - `syntect::dumps::from_uncompressed_data()`
-fn load_syntaxes() -> SyntaxSet {
-   // let mut extra_syntaxes_dir = std::env::current_dir().map_err(|e| format!("{}", e))?;
-   // extra_syntaxes_dir.push("syntaxes");
-
-   let syntax_builder = SyntaxSet::load_defaults_newlines().into_builder();
-   // let mut syntax_builder = SyntaxSet::load_defaults_newlines().into_builder();
-   // syntax_builder
-   //     .add_from_folder(&extra_syntaxes_dir, false)
-   //     .map_err(|e| format!("could not load {}: {}", &extra_syntaxes_dir.display(), e))?;
-
-   syntax_builder.build()
 }

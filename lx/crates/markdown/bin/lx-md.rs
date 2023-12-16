@@ -10,7 +10,7 @@ use clap_complete::{generate_to, shells::Fish};
 use serde_yaml::{self, Value};
 use thiserror::Error;
 
-use lx_md::render;
+use lx_md::Markdown;
 
 fn main() -> Result<()> {
    use Command::*;
@@ -35,7 +35,9 @@ fn main() -> Result<()> {
       .read_to_string(&mut s)
       .map_err(|source| Error::ReadToString { source })?;
 
-   let (meta, rendered) = render(&s, None, &mut |s| s.to_owned()).map_err(Error::from)?;
+   let (meta, rendered) = Markdown::new()
+      .render(&s, |s| s.to_string())
+      .map_err(Error::from)?;
 
    let metadata = match (cli.include_metadata, meta) {
       (true, Some(metadata)) => yaml_to_table(&metadata)?,

@@ -14,7 +14,7 @@ use super::FootnoteDefinitions;
 /// 3. Performing any template-language-type rewriting of text nodes.
 struct State<'e, 's> {
    footnote_definitions: FootnoteDefinitions<'e>,
-   syntax_set: Option<&'s SyntaxSet>,
+   syntax_set: &'s SyntaxSet,
    code_block: Option<CodeBlock<'e, 's>>,
    events: Vec<pulldown_cmark::Event<'e>>,
    emitted_definitions: Vec<(CowStr<'e>, Vec<pulldown_cmark::Event<'e>>)>,
@@ -40,7 +40,7 @@ pub enum Error {
 
 pub(super) fn second_pass<'e>(
    footnote_definitions: FootnoteDefinitions<'e>,
-   syntax_set: Option<&SyntaxSet>,
+   syntax_set: &SyntaxSet,
    events: Vec<first_pass::Event<'e>>,
    rewrite: impl Fn(&str) -> String,
 ) -> Result<impl Iterator<Item = pulldown_cmark::Event<'e>>, Error> {
@@ -211,15 +211,7 @@ struct CodeBlock<'e, 's> {
 
 impl<'c, 's> CodeBlock<'c, 's> {
    /// Start highlighting a code block.
-   fn start(kind: CodeBlockKind, syntax_set: Option<&'s SyntaxSet>) -> Self {
-      let Some(syntax_set) = syntax_set else {
-         let html = pulldown_cmark::Event::Html("<pre><code>".into());
-         return CodeBlock { highlighting: Highlighting::UnknownSyntax,
-            syntax_set: None,
-            events: vec![html],
-          };
-      };
-
+   fn start(kind: CodeBlockKind, syntax_set: &'s SyntaxSet) -> Self {
       match kind {
          CodeBlockKind::Fenced(name) => {
             let found = syntax_set.find_syntax_by_token(name.as_ref());
