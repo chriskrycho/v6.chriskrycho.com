@@ -8,7 +8,6 @@ use std::{
 use chrono::{DateTime, FixedOffset};
 use lx_md::{self, RenderError};
 use serde_derive::{Deserialize, Serialize};
-use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -84,7 +83,6 @@ impl Page {
    pub fn build(
       source: &Source,
       root_dir: &Path,
-      syntax_set: &SyntaxSet,
       cascade: &Cascade,
       rewrite: impl Fn(&str, &Metadata) -> String,
    ) -> Result<Self, Error> {
@@ -97,6 +95,8 @@ impl Page {
          &Uuid::NAMESPACE_OID,
          source.path.as_os_str().as_bytes(),
       ));
+
+      let md = lx_md::Markdown::new();
 
       let prepared = lx_md::prepare(&source.contents).map_err(Error::from)?;
 
@@ -111,15 +111,14 @@ impl Page {
                root_dir,
                cascade,
                String::from("base.tera"), // TODO: not this
-               syntax_set,
+               &md,
             )
             .map_err(Error::from)
          })?;
 
-      let rendered = lx_md::emit(prepared.to_render, Some(syntax_set), |text| {
-         rewrite(text, &metadata)
-      })
-      .map_err(Error::from)?;
+      let rendered = md
+         .emit(prepared.to_render, |text| rewrite(text, &metadata))
+         .map_err(Error::from)?;
 
       Ok(Page {
          id,

@@ -7,6 +7,7 @@ use std::path::StripPrefixError;
 
 use chrono::DateTime;
 use chrono::FixedOffset;
+use lx_md::Markdown;
 use serde_derive::Serialize;
 use slug::slugify;
 use syntect::parsing::SyntaxSet;
@@ -59,7 +60,7 @@ impl Metadata {
       root_dir: &Path,
       cascade: &Cascade,
       default_template_name: String,
-      syntax_set: &SyntaxSet,
+      md: &Markdown,
    ) -> Result<Self, Error> {
       let permalink: Option<PathBuf> = item.permalink.map(|permalink| {
          permalink
@@ -80,7 +81,7 @@ impl Metadata {
                source: Some(e),
             })?;
 
-      let render = |s: String| Rendered::as_markdown(&s, Some(syntax_set));
+      let render = |s: String| Rendered::as_markdown(&s, md);
 
       let updated = item.updated.into_iter().try_fold(
          Vec::new(),
@@ -132,8 +133,8 @@ impl Metadata {
 pub struct Rendered(String);
 
 impl Rendered {
-   fn as_markdown(src: &str, syntax_set: Option<&SyntaxSet>) -> Result<Rendered, Error> {
-      lx_md::render(src, syntax_set, |s| s.to_string())
+   fn as_markdown(src: &str, md: &Markdown) -> Result<Rendered, Error> {
+      md.render(src, |s| s.to_string())
          .map(|(_, rendered)| Rendered(rendered.html()))
          .map_err(Error::from)
    }

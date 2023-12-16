@@ -84,19 +84,71 @@ lazy_static! {
    };
 }
 
-pub fn render(
-   src: &str,
-   syntax_set: Option<&SyntaxSet>,
-   rewrite: impl Fn(&str) -> String,
-) -> Result<(Option<String>, Rendered), Error> {
-   let Prepared {
-      metadata_src,
-      to_render,
-   } = prepare(src).map_err(Error::from)?;
+pub struct Markdown<'e> {
+   pass: State<'e>,
+   syntax_set: SyntaxSet,
+}
 
-   let rendered = emit(to_render, syntax_set, rewrite).map_err(Error::from)?;
+enum State<'e> {
+   New,
+   Prepared(Prepared<'e>),
+   Rendered(Rendered),
+}
 
-   Ok((metadata_src, rendered))
+impl<'e> Markdown<'e> {
+   pub fn new() -> Markdown<'e> {
+      Markdown {
+         pass: State::New,
+         syntax_set: load_syntaxes(), // TODO: pull from location?
+      }
+   }
+
+   pub fn render(
+      &self,
+      src: &str,
+      rewrite: impl Fn(&str) -> String,
+   ) -> Result<(Option<String>, Rendered), Error> {
+      let Prepared {
+         metadata_src,
+         to_render,
+      } = prepare(src).map_err(Error::from)?;
+
+      let rendered = self.emit(to_render, rewrite).map_err(Error::from)?;
+
+      Ok((metadata_src, rendered))
+   }
+
+   pub fn emit(
+      &self,
+      to_render: ToRender,
+      rewrite: impl Fn(&str) -> String,
+   ) -> Result<Rendered, RenderError> {
+      let ToRender {
+         first_pass_events,
+         footnote_definitions,
+      } = to_render;
+
+      let events = second_pass(
+         footnote_definitions,
+         &self.syntax_set,
+         first_pass_events,
+         rewrite,
+      )
+      .map_err(RenderError::from)?;
+
+      let mut content = String::new();
+      html::push_html(&mut content, events);
+
+      Ok(Rendered(content))
+   }
+}
+
+// NOTE: this may or may not make sense when I am actually loading syntaxes. I can defer
+// deciding about that till later, though!
+impl<'e> Default for Markdown<'e> {
+   fn default() -> Self {
+      Self::new()
+   }
 }
 
 pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
@@ -195,29 +247,37 @@ impl Rendered {
    }
 }
 
-pub fn emit(
-   to_render: ToRender,
-   syntax_set: Option<&SyntaxSet>,
-   rewrite: impl Fn(&str) -> String,
-) -> Result<Rendered, RenderError> {
-   let ToRender {
-      first_pass_events,
-      footnote_definitions,
-   } = to_render;
-
-   let events = second_pass(footnote_definitions, syntax_set, first_pass_events, rewrite)
-      .map_err(RenderError::from)?;
-
-   let mut content = String::new();
-   html::push_html(&mut content, events);
-
-   Ok(Rendered(content))
-}
-
 fn bad_prepare_state<T>(state: &impl Debug, context: &impl Debug) -> Result<T, Error> {
    Err(PrepareError::State {
       state: format!("{state:?}"),
       context: format!("{context:?}"),
    })
    .map_err(Error::from)
+}
+
+// TODO: I think what I would *like* to do is have a slow path for dev and a
+// fast path for prod, where the slow path just loads the `.sublime-syntax`
+// from disk and compiles them, and the fast path uses a `build.rs` or similar
+// to build a binary which can then be compiled straight into the target binary
+// and loaded *extremely* fast as a result.
+//
+// The basic structure for a prod build would be something like:
+//
+// - `build.rs`:
+//    - `syntect::SyntaxSet::load_from_folder(<path to templates>)`
+//    - `syntect::dumps::dump_to_uncompressed_file(<well-known-path>)`
+// - here (or, better, in a dedicated `syntax` module?):
+//    - `include_bytes!(<well-known-path>)`
+//    - `syntect::dumps::from_uncompressed_data()`
+fn load_syntaxes() -> SyntaxSet {
+   // let mut extra_syntaxes_dir = std::env::current_dir().map_err(|e| format!("{}", e))?;
+   // extra_syntaxes_dir.push("syntaxes");
+
+   let syntax_builder = SyntaxSet::load_defaults_newlines().into_builder();
+   // let mut syntax_builder = SyntaxSet::load_defaults_newlines().into_builder();
+   // syntax_builder
+   //     .add_from_folder(&extra_syntaxes_dir, false)
+   //     .map_err(|e| format!("could not load {}: {}", &extra_syntaxes_dir.display(), e))?;
+
+   syntax_builder.build()
 }
