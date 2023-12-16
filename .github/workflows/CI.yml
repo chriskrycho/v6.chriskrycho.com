@@ -12,6 +12,9 @@ on:
   pull_request:
     branches: [main]
     # Don't run tests when only text files/docs/etc. were modified
+    # TODO: this will need to be updated for handling different sub-parts of the
+    # build when I have both "build `lx`" and "use `lx` to build the site" as
+    # part of the same repo (assuming that is indeed what I do).
     paths-ignore:
       - "COPYRIGHT"
       - "LICENSE-*"
