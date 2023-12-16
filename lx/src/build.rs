@@ -87,7 +87,7 @@ pub fn build(in_dir: &Path) -> Result<(), BuildError> {
                   // *base* amount of allocation, it gets to skip all the additional
                   // copies *and* any additional allocations of e.g. template instances
                   // which *also* need to be cloned.
-                  .and_then(|ctx| tera::Tera::one_off(text, &ctx, false))
+                  .and_then(|ctx| tera.render_one_off(text, &ctx))
                   .unwrap_or_else(|e| {
                      // NOTE: another way of handling this would be to collect these in a
                      // per-par-iter vec and surface them later and either fail (in CI) or
