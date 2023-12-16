@@ -41,7 +41,12 @@ fn main() -> Result<(), String> {
          });
          publish(&directory).map_err(|e| format!("{e}"))
       }
-      cli::Command::Completions => cli.completions().map_err(|e| format!("blargle {e}")),
+      cli::Command::Convert {
+         paths,
+         include_metadata,
+      } => cli::convert(paths, include_metadata).map_err(|e| e.to_string()),
+
+      cli::Command::Completions => cli.completions().map_err(|e| e.to_string()),
    }
 }
 
