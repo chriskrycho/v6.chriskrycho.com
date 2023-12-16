@@ -27,6 +27,9 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./lx
 
     steps:
       - name: Checkout
