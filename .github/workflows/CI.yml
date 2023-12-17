@@ -45,7 +45,7 @@ jobs:
         run: cargo fmt --all --quiet -- --check
 
       - name: Lint with clippy
-        run: cargo clippy
+        run: cargo clippy --no-deps
 
   build:
     runs-on: ubuntu-latest
