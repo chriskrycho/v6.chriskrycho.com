@@ -30,7 +30,3 @@ serde_yaml = { workspace = true }
 git = "https://github.com/raphlinus/pulldown-cmark.git"
 default-features = false
 features = ["simd", "html"]
-
-[[bin]]
-name = "lx-md"
-path = "bin/lx-md.rs"
