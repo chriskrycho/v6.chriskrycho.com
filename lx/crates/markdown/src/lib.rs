@@ -273,11 +273,12 @@ fn load_syntaxes() -> SyntaxSet {
    // let mut extra_syntaxes_dir = std::env::current_dir().map_err(|e| format!("{}", e))?;
    // extra_syntaxes_dir.push("syntaxes");
 
-   let syntax_builder = SyntaxSet::load_defaults_newlines().into_builder();
+   // let syntax_builder = SyntaxSet::load_defaults_newlines().into_builder();
    // let mut syntax_builder = SyntaxSet::load_defaults_newlines().into_builder();
    // syntax_builder
    //     .add_from_folder(&extra_syntaxes_dir, false)
    //     .map_err(|e| format!("could not load {}: {}", &extra_syntaxes_dir.display(), e))?;
 
-   syntax_builder.build()
+   // syntax_builder.build()
+   SyntaxSet::load_defaults_newlines()
 }
