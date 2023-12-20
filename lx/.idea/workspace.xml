@@ -25,9 +25,9 @@
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 8
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
   <component name="ProjectId" id="2ZpQ8c1xWCg4ShYFB9JsHFl9o0p" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -37,7 +37,7 @@
   "keyToString": {
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "1c245724",
+    "git-widget-placeholder": "fc009d01",
     "last_opened_file_path": "/Users/chris/dev/chriskrycho/v6.chriskrycho.com/lx",
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
@@ -93,6 +93,7 @@
       <option name="presentableId" value="Default" />
       <updated>1703116383816</updated>
       <workItem from="1703116384915" duration="199000" />
+      <workItem from="1703192457319" duration="2000" />
     </task>
     <servers />
   </component>
