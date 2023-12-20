@@ -84,21 +84,13 @@ lazy_static! {
    };
 }
 
-pub struct Markdown<'e> {
-   pass: State<'e>,
+pub struct Markdown {
    syntax_set: SyntaxSet,
 }
 
-enum State<'e> {
-   New,
-   Prepared(Prepared<'e>),
-   Rendered(Rendered),
-}
-
-impl<'e> Markdown<'e> {
-   pub fn new() -> Markdown<'e> {
+impl Markdown {
+   pub fn new() -> Markdown {
       Markdown {
-         pass: State::New,
          syntax_set: load_syntaxes(), // TODO: pull from location?
       }
    }
@@ -145,7 +137,7 @@ impl<'e> Markdown<'e> {
 
 // NOTE: this may or may not make sense when I am actually loading syntaxes. I can defer
 // deciding about that till later, though!
-impl<'e> Default for Markdown<'e> {
+impl Default for Markdown {
    fn default() -> Self {
       Self::new()
    }
@@ -248,11 +240,10 @@ impl Rendered {
 }
 
 fn bad_prepare_state<T>(state: &impl Debug, context: &impl Debug) -> Result<T, Error> {
-   Err(PrepareError::State {
+   Err(Error::from(PrepareError::State {
       state: format!("{state:?}"),
       context: format!("{context:?}"),
-   })
-   .map_err(Error::from)
+   }))
 }
 
 // TODO: I think what I would *like* to do is have a slow path for dev and a
