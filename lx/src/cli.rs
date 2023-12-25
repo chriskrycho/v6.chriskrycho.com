@@ -110,7 +110,7 @@ impl Cli {
       let mut cmd = Self::command();
       generate_to(Fish, &mut cmd, "lx", config_dir)
          .drop_ok()
-         .map_err(|source| CliError::Completions { source }.into())
+         .map_err(|source| CliError::Completions { source })
    }
 }
 

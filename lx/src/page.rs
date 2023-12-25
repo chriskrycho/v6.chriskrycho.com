@@ -160,7 +160,7 @@ impl Updated for [Page] {
             m.updated
                .iter()
                .map(|u| u.at)
-               .chain(m.date.into_iter())
+               .chain(m.date)
                .max()
                .expect("There should always be a 'latest' date for resolved metadata")
          })

@@ -10,7 +10,6 @@ use chrono::FixedOffset;
 use lx_md::Markdown;
 use serde_derive::Serialize;
 use slug::slugify;
-use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
 use crate::page;
