@@ -84,7 +84,9 @@ impl<'e, 's> State<'e, 's> {
                   }
                   None => {
                      let text = rewrite(text.as_ref());
-                     let text = latex2mathml::replace(&text)?;
+                     // TODO: find some other latex handler, or do it myself. This library
+                     // is... not great.
+                     // let text = latex2mathml::replace(&text)?;
                      self.events.push(Html(text.into()));
                      Ok(None)
                   }
@@ -263,7 +265,7 @@ impl<'c, 's> CodeBlock<'c, 's> {
 
       let Some(syntax_set) = self.syntax_set else {
          handle_unknown();
-         return Ok(())
+         return Ok(());
       };
 
       match self.highlighting {
