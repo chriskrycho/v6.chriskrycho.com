@@ -1,5 +1,4 @@
 {
-  "prettier.format-on-save": "Enable",
   "yaml.schemas": {
     "./lx/schema/item.schema.json": [
       "site/content/*.lx.yaml",
