@@ -7,7 +7,7 @@
 :root {
    --serif: 'Frame';
    --serif-secondary: 'Sanomat';
-   --sans: 'Sanomat Sans';
+   --sans: 'Sanomat Sans Text';
    --mono: 'Berkeley Mono';
 
    --text: var(--serif); /* TODO: make a stack!*/
@@ -29,10 +29,12 @@
    --brown: oklch(35.71% 0.033 55.12);
 
    --smcp-spacing: 0.05;
+
+   --lw: 38rem;
 }
 
 html {
-   font-family: var(--text-stack);
+   font-family: var(--text);
    font-size: 16px;
    line-height: 1;
    background-color: var(--light-blue);
@@ -52,11 +54,27 @@ body {
    margin: 0;
 }
 
+nav {
+   font-family: var(--text-alt);
+
+   ul {
+      list-style: none;
+      margin-inline: 0;
+   }
+}
+
+main {
+}
+
 img {
    max-width: 100%;
 }
 
+.avatar {
+}
+
 article {
+   line-height: var(--text-lh);
    font-weight: var(--b-weight);
    max-width: var(--lw);
    margin-left: auto;
@@ -159,6 +177,11 @@ article a[href]::after {
    color: hsl(208, 85%, 35%);
 }
 
+/* on-site links */
+article a[href^='/']:not([id*='fnref'])::after {
+   content: '✢';
+}
+
 /* on-page links */
 article a[href^='#']:not([id*='fnref'])::after {
    content: '\FEFF#';
@@ -240,7 +263,7 @@ pre {
 
 code {
    font-family: var(--code);
-   font-size-adjust:;
+   font-size-adjust: ;
 }
 
 h1,
