@@ -1,3 +1,9 @@
+/* Reference sizes:
+
+- 360×780 (iPhone 13 Mini)
+- 1,180×820 (iPad)
+*/
+
 /*
   TODO: do not use `@import` for real-world/prod CSS. It is slow, becuase it has
   to do multiple jumps to the server.
@@ -5,18 +11,24 @@
 @import './fonts/fonts.css';
 
 :root {
+   --base-size: 15px;
+   --grid-base: 16px;
+
    --serif: 'Frame';
    --serif-secondary: 'Sanomat';
    --sans: 'Sanomat Sans Text';
+   --sans-adjust: 1; /* TODO */
    --mono: 'Berkeley Mono';
+   --mono-adjust: 1; /* TODO */
 
    --text: var(--serif); /* TODO: make a stack!*/
-   --text-lh: 1.5;
+   --text-lh: 1.4;
    --text-weight: 400;
    --text-weight-bold: 600;
 
    --text-alt: var(--sans); /* TODO: make a stack!*/
-   --text-alt-lh: 1.475;
+   --text-alt-adjust: var(--sans-adjust);
+   --text-alt-lh: 1.375;
    --text-alt-weight: 350;
    --text-alt-weight-bold: 500;
 
@@ -33,14 +45,39 @@
    --lw: 38rem;
 }
 
+/* Rough guess */
+@media screen and (min-width: 600px) {
+   :root {
+      --base-size: 16px;
+      --grid-base: 18px;
+   }
+
+   html {
+      padding: 14px;
+   }
+}
+
+/* Rough guess, more later! */
+@media screen and (min-width: 1024px) {
+   :root {
+      --text-lh: 1.5;
+      --text-alt-lh: 1.475;
+      --grid-base: 20px;
+   }
+
+   html: {
+      padding: 16px;
+   }
+}
+
 html {
    font-family: var(--text);
-   font-size: 16px;
+   font-size: var(--base-size);
    line-height: 1;
    background-color: var(--light-blue);
    color: var(--dark-blue);
-   margin: 0;
-   font-size-adjust: from-font;
+   padding: 12px;
+   /* font-size-adjust: from-font; */
    hanging-punctuation: first allow-end last;
 }
 
@@ -56,10 +93,19 @@ body {
 
 nav {
    font-family: var(--text-alt);
+   font-weight: var(--text-alt-weight);
 
    ul {
       list-style: none;
       margin-inline: 0;
+   }
+}
+
+nav.main-nav {
+   ul li a::before {
+      content: '/';
+      margin-right: 0.1em;
+      display: inline-block;
    }
 }
 
@@ -75,7 +121,7 @@ img {
 
 article {
    line-height: var(--text-lh);
-   font-weight: var(--b-weight);
+   font-weight: var(--text-weight);
    max-width: var(--lw);
    margin-left: auto;
    margin-right: auto;
@@ -94,7 +140,7 @@ article {
 }
 
 article p {
-   text-indent: var(--p-text-indent);
+   text-indent: var(--p-text-indent, 1.65em);
    margin: var(--p-margin);
 }
 
@@ -153,6 +199,7 @@ article :is(h1, h2, h3, h4, h5, h6) a {
 
 article a:hover {
    background: var(--dark-blue);
+   color: var(--light-blue);
 }
 
 /*
@@ -206,6 +253,11 @@ article hr {
 article a[href^='https://v3.chriskrycho.com']::after
 {
    content: 'v3';
+   font-size: 0.8em;
+   vertical-align: super;
+   font-family: var(--header);
+   font-style: italic;
+   font-weight: 500;
 }
 
 article a[href^='https://v4.chriskrycho.com']::after
@@ -237,6 +289,11 @@ abbr {
    letter-spacing: var(--smcp-spacing);
 }
 
+code {
+   font-family: var(--mono);
+   font-size-adjust: var(--mono-adjust);
+}
+
 pre code {
    hanging-punctuation: none;
    line-height: 1.2;
@@ -259,11 +316,6 @@ pre {
 .smcp {
    font-variant: small-caps;
    letter-spacing: var(--smcp-spacing);
-}
-
-code {
-   font-family: var(--code);
-   font-size-adjust: ;
 }
 
 h1,
