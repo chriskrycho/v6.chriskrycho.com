@@ -17,9 +17,9 @@
    --serif: 'Frame';
    --serif-secondary: 'Sanomat';
    --sans: 'Sanomat Sans Text';
-   --sans-adjust: 1; /* TODO */
+   --sans-adjust: 0.515; /* TODO */
    --mono: 'Berkeley Mono';
-   --mono-adjust: 1; /* TODO */
+   --mono-adjust: 0.5; /* TODO */
 
    --text: var(--serif); /* TODO: make a stack!*/
    --text-lh: 1.4;
@@ -77,7 +77,6 @@ html {
    background-color: var(--light-blue);
    color: var(--dark-blue);
    padding: 12px;
-   /* font-size-adjust: from-font; */
    hanging-punctuation: first allow-end last;
 }
 
