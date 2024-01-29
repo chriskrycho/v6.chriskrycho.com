@@ -91,6 +91,7 @@ body {
 }
 
 nav {
+   background: #e8e8e8;
    font-family: var(--text-alt);
    font-weight: var(--text-alt-weight);
 
@@ -198,7 +199,7 @@ article :is(h1, h2, h3, h4, h5, h6) a {
 
 article a:hover {
    background: var(--dark-blue);
-   color: var(--light-blue);
+   color: var(--gold);
 }
 
 /*
@@ -223,6 +224,9 @@ article a[href]::after {
    color: hsl(208, 85%, 35%);
 }
 
+article a[href]:hover::after {
+   color: var(--light-blue);
+}
 /* on-site links */
 article a[href^='/']:not([id*='fnref'])::after {
    content: '✢';
