@@ -1,100 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
-   <head>
-      <meta charset="UTF-8" />
-      <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Sympolymathesy, by Chris Krycho</title>
-      <meta
-         name="description"
-         content="What will someday be the next version of chriskrycho.com"
-      />
-      <meta property="og:title" content="Under Construction – v6.chriskrycho.com" />
-      <meta
-         property="og:description"
-         content="What will someday be the next version of chriskrycho.com"
-      />
-      <meta property="og:type" content="website" />
-      <meta
-         name="twitter:description"
-         content="What will someday be the next version of chriskrycho.com"
-      />
-      <link rel="stylesheet" href="./style.css" />
-   </head>
-   <body>
-      <header>
-         <h1>Sym·poly·mathesy</h1>
-         <h2>
-            <span class="header-by">by</span>
-            <span class="header-me">Chris Krycho</span>
-         </h2>
-      </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Under Construction – v6.chriskrycho.com</title>
+    <meta
+      name="description"
+      content="What will someday be the next version of chriskrycho.com"
+    />
+    <meta property="og:title" content="Under Construction – v6.chriskrycho.com" />
+    <meta
+      property="og:description"
+      content="What will someday be the next version of chriskrycho.com"
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      name="twitter:description"
+      content="What will someday be the next version of chriskrycho.com"
+    />
+    <style>
+      @font-face {
+        font-family: Berkeley Mono;
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+        src: url("fonts/BerkeleyMono-Regular.woff2") format("woff2"),
+          url("fonts/BerkeleyMono-Regular.woff") format("woff");
+      }
 
-      <nav class="main-nav">
-         <ul>
-            <li><a href="/writing">writing</a></li>
-            <li><a href="/speaking">speaking</a></li>
-            <li><a href="/code">code</a></li>
-            <li><a href="/library">library</a></li>
-            <li><a href="/music">music</a></li>
-            <li><a href="/photography">photography</a></li>
-            <li><a href="/about">about</a></li>
-            <li><a href="/work">work</a></li>
-            <li><a href="/newsletter">newsletter</a></li>
-            <li><a href="/feed">feed</a></li>
-         </ul>
-      </nav>
+      @font-face {
+        font-family: Berkeley Mono;
+        font-weight: normal;
+        font-style: italic;
+        font-display: swap;
+        src: url("fonts/BerkeleyMono-Italic.woff2") format("woff2"),
+          url("fonts/BerkeleyMono-Italic.woff") format("woff");
+      }
 
-      <main>
-         <figure class="avatar">
-            <img
-               src="https://cdn.chriskrycho.com/images/avatars/2024%20600%C3%97600.jpeg"
-               alt="portrait of Chris Krycho"
-            />
-         </figure>
-         <article>
-            <p>
-               I’m a Christian&hairsp;—&hairsp;Reformed, Anglican, and catholic, in that
-               order. I am also a husband, and the father of two wonderful young women.
-            </p>
-            <p>By trade, I am a <a href="/cv/">software engineer</a>:</p>
-            <ul>
-               <li>
-                  I spent a few years as the tech lead for LinkedIn’s desktop web
-                  experience.
-               </li>
-               <li>
-                  I developed cutting-edge research on TypeScript types and semantic
-                  versioning.
-               </li>
-               <li>I founded the Ember.js TypeScript team, and led it for 6 years.</li>
-            </ul>
-            <p>
-               I spend a lot of my time thinking and publishing&hairsp;—&hairsp;not only
-               on technology, but also art, culture, and especially theology. I have been
-               published in
-               <a href="https://www.plough.com"><cite>Plough Quarterly</cite></a
-               >,
-               <a href="https://mereorthodoxy.com/author/chris-krycho"
-                  ><cite>Mere Orthodoxy</cite></a
-               >, and
-               <a href="https://www.thegospelcoalition.org"
-                  ><cite>The Gospel Coalition</cite></a
-               >. I have <a href="/">spoken</a> at a variety of conferences, including
-               BibleTech, Rust Belt Rust, EmberConf, All Things Open, and in 2024,
-               LambdaConf.
-            </p>
-            <p>
-               I am also an active <a href="/">composer</a>, with recent works ranging
-               from small chamber pieces written for friends to a fanfare recorded with
-               the Budapest Scoring Orchestra.
-            </p>
-            <p>
-               Finally, I am also an avid
-               <a href="https://www.strava.com/athletes/chriskrycho">runner and cyclist</a
-               >, and keep up a semi-serious <a>photography hobby</a>.
-            </p>
-         </article>
-      </main>
-   </body>
+      .Monument-Autum-1-hex { color: #3E608C; }
+      .Monument-Autum-2-hex { color: #7A9FBF; }
+      .Monument-Autum-3-hex { color: #C9E2F2; }
+      .Monument-Autum-4-hex { color: #A69580; }
+      .Monument-Autum-5-hex { color: #735645; }
+
+      /* Color Theme Swatches in RGBA */
+      .Monument-Autum-1-rgba { color: rgba(62, 96, 140, 1); }
+      .Monument-Autum-2-rgba { color: rgba(122, 159, 191, 1); }
+      .Monument-Autum-3-rgba { color: rgba(201, 226, 242, 1); }
+      .Monument-Autum-4-rgba { color: rgba(166, 149, 128, 1); }
+      .Monument-Autum-5-rgba { color: rgba(115, 86, 69, 1); }
+
+      /* Color Theme Swatches in HSLA */
+      .Monument-Autum-1-hsla { color: hsl(213, 38, 39); }
+      .Monument-Autum-2-hsla { color: hsl(207, 35, 61); }
+      .Monument-Autum-3-hsla { color: hsl(203, 61, 86); }
+      .Monument-Autum-4-hsla { color: hsl(33, 17, 57); }
+      .Monument-Autum-5-hsla { color: hsl(22, 25, 36); }
+
+
+      :root {
+        --dark-blue: hsl(213, 38%, 39%);
+        --medium-blue: hsl(207, 35%, 61%);
+        --light-blue: hsl(203, 61%, 86%);
+        --light-brown: hsl(33, 17%, 57%);
+        --dark-brown: hsl(22, 25%, 36%);
+
+        --fg: var(--dark-blue);
+        --fg-h: var(--medium-blue);
+        --bg: var(--light-blue);
+
+        --link: var(--dark-brown);
+        --link-hover: var(--dark-blue);
+        --link-shadow: var(--medium-blue);
+        --link-shadow-multiplier: 1.5;
+      }
+
+      @media screen and (min-width: 600px) {
+        :root {
+          --fs: 18px;
+          --lh: 1.7;
+        }
+      }
+
+      @media screen and (min-width: 800px) {
+        :root {
+          --fs: 20px;
+        }
+      }
+
+      @media screen and (min-width: 1000px) {
+        :root {
+          --fs: 24px;
+        }
+      }
+
+      @media screen and (min-width: 1100px) {
+        :root {
+          --fs: 26px;
+        }
+      }
+
+      @media screen and (min-width: 1200px) {
+        :root {
+          --fs: 28px;
+        }
+      }
+
+      @media screen and (min-width: 1300px) {
+        :root {
+          --fs: 32px;
+        }
+      }
+
+      @media screen and (min-width: 1400px) {
+        :root {
+          --fs: 36px;
+        }
+      }
+
+      @media screen and (min-width: 1760px) {
+        :root {
+          --fs: 40px;
+        }
+      }
+
+      @media screen and (min-width: 2160px) {
+        :root {
+          --fs: 48px;
+        }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: var(--light-blue);
+          --bg: var(--dark-blue);
+
+          --link: var(--light-brown);
+          --link-hover: var(--light-blue);
+          --link-shadow-multiplier: 1;
+        }
+      }
+
+      html {
+        font-family: "Berkeley Mono", ui-monospace, monospace;
+        font-size: var(--fs);
+        line-height: var(--lh);
+        color: var(--fg);
+        background: var(--bg);
+      }
+
+      body {
+        /* second wins if it can be interpreted. Still CSS-ing in 2022. */
+        height: 100vh;
+        height: 100dvh;
+        margin: 0;
+        padding: 0 1.7rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        flex-wrap: nowrap;
+      }
+
+      h1 {
+        font-style: italic;
+        color: var(--fg-h);
+      }
+
+      a:any-link {
+        color: var(--link);
+        transition: all 0.1s ease-out;
+        text-decoration: none;
+      }
+
+      a:any-link span:not([role="presentation"]) {
+        text-decoration: underline;
+        font-style: italic;
+      }
+
+      a:any-link:hover {
+        color: var(--link-hover);
+        text-shadow: 0 0 calc(0.33em * var(--link-shadow-multiplier)) var(--link-shadow),
+          1px 1px calc(0.33em * var(--link-shadow-multiplier)) var(--link-shadow),
+          -1px -1px calc(0.33em * var(--link-shadow-multiplier)) var(--link-shadow);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Under construction!</h1>
+    <p>
+      Someday this will have interesting things to see.
+      For now, though, there is nothing here.
+      Best to head to <a href="https://v5.chriskrycho.com">the current version</a>!
+    </p>
+  </body>
 </html>
