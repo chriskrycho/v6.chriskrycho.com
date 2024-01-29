@@ -28,7 +28,7 @@
 
    --text-alt: var(--sans); /* TODO: make a stack!*/
    --text-alt-adjust: var(--sans-adjust);
-   --text-alt-lh: 1.375;
+   --text-alt-lh: 1.325;
    --text-alt-weight: 350;
    --text-alt-weight-bold: 500;
 
@@ -61,7 +61,7 @@
 @media screen and (min-width: 1024px) {
    :root {
       --text-lh: 1.5;
-      --text-alt-lh: 1.475;
+      --text-alt-lh: 1.4;
       --grid-base: 20px;
    }
 
@@ -295,6 +295,7 @@ abbr {
 code {
    font-family: var(--mono);
    font-size-adjust: var(--mono-adjust);
+   letter-spacing: -0.25px;
 }
 
 pre code {
