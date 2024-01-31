@@ -13,7 +13,7 @@
 @import './fonts/fonts.css';
 
 :root {
-   --base-size: 15px;
+   --base-size: 14px;
    --grid-base: 16px;
 
    --serif: 'Frame';
@@ -38,6 +38,12 @@
 
    --dark-blue: oklch(37.75% 0.042 246.48);
    --light-blue: oklch(81.95% 0.042 241.48);
+   --light-blue-0: oklch(92% 0.042 241.48);
+
+   --white: oklch(97% 0.01 246.48);
+   --dark-white: oklch(94% 0.01 246.48);
+   --light-gray: oklch(92% 0.01 246.48);
+
    --gold: oklch(82.16% 0.148 73.12);
    --tan: oklch(68.99% 0.073 67.54);
    --brown: oklch(35.71% 0.033 55.12);
@@ -50,6 +56,7 @@
 html {
    font-family: var(--text);
    font-size: var(--base-size);
+   text-size-adjust: from-font;
    line-height: 1;
    background-color: var(--light-blue);
    color: var(--dark-blue);
@@ -76,7 +83,7 @@ header {
 }
 
 nav {
-   background: #e8e8e8;
+   background: var(--white);
    font-family: var(--text-alt);
    font-weight: var(--text-alt-weight);
    grid-column: span 4;
@@ -114,10 +121,10 @@ article {
    line-height: var(--text-lh);
    font-weight: var(--text-weight);
    max-width: var(--lw);
-   margin-left: auto;
-   margin-right: auto;
+   padding: var(--grid-base);
    orphans: 3;
    hyphens: none;
+   background-color: var(--white);
 }
 
 [data-paragraph-flow='spacing'] {
@@ -164,7 +171,7 @@ article .qualifiers {
    margin-block: var(--grid-base);
    /* margin: 1em -1em; */
    padding: 1em;
-   background: #e8e8e8;
+   background: var(--light-blue-0);
 }
 
 article a {
@@ -302,23 +309,23 @@ code {
    letter-spacing: -0.25px;
 }
 
-pre code {
-   hanging-punctuation: none;
-   line-height: 1.2;
-}
-
 p code {
    line-height: 1;
-   background: #f4f4f4;
+   background: var(--light-gray);
    padding: 0.05em 0.2em;
    border-radius: 0.2em;
 }
 
-pre {
-   background: #f4f4f4;
+pre:has(> code) {
+   background: var(--light-gray);
    margin: 1em -1em;
    padding: 0.4em 1em;
    overflow-x: auto;
+}
+
+pre code {
+   hanging-punctuation: none;
+   line-height: 1.2;
 }
 
 .smcp {
