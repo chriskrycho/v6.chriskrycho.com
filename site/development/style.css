@@ -54,10 +54,13 @@
    --light-blue: oklch(81.95% 0.042 241.48);
    --light-blue-0: oklch(92% 0.042 241.48);
 
-   --white: oklch(97% 0.01 246.48);
+   --bluish-white: oklch(99.13% 0.004 246.41);
+   --golden-white: oklch(98% 0.005 73);
+
    --light-gray: oklch(94% 0.01 246.48);
 
    --gold: oklch(82.16% 0.148 73.12);
+   --gold-darker: oklch(72.16% 0.1 73.12);
    --tan: oklch(68.99% 0.073 67.54);
    --brown: oklch(35.71% 0.033 55.12);
 
@@ -93,10 +96,19 @@ body {
 
 header {
    grid-column: span 4;
+   font-weight: 300;
+
+   h1 {
+      font-size: var(--fs6);
+   }
+}
+
+.header-by {
+   font-style: italic;
 }
 
 nav {
-   background: var(--white);
+   background: var(--golden-white);
    font-family: var(--text-alt);
    font-weight: var(--text-alt-weight);
    grid-column: span 4;
@@ -137,7 +149,7 @@ article {
    padding: var(--grid-base);
    orphans: 3;
    hyphens: none;
-   background-color: var(--white);
+   background-color: var(--golden-white);
    margin-right: 0;
    margin-left: auto;
 }
@@ -194,7 +206,10 @@ article p:last-child {
 
 article .item-subtitle {
    font-style: italic;
+   font-family: var(--sans);
    font-size: var(--fs1);
+   font-weight: 300;
+   letter-spacing: -0.5px;
 }
 
 article blockquote,
@@ -217,24 +232,13 @@ article .qualifiers {
 
 article a {
    color: inherit;
-   transition: all 0.2s ease-out;
+   transition: all 0.2s ease-in-out;
    text-decoration: none;
    padding: 0.3em 0.12em 0.075em;
    margin-left: -0.06em;
    margin-right: -0.06em;
    border-radius: 2pt;
    line-height: 0;
-}
-
-article :is(h1, h2, h3, h4, h5, h6) a {
-   text-decoration: none;
-   color: inherit;
-   /* transition: none; */
-   text-decoration: none;
-   font-family: var(--header);
-   &::after {
-      content: '';
-   }
 }
 
 article a:hover {
@@ -266,8 +270,9 @@ article a[href]::after {
    vertical-align: baseline;
    line-height: 0;
    font-size: 0.9em;
-   margin: 0 1pt;
-   color: hsl(208, 85%, 35%);
+   /* margin: 0 1pt; */
+   padding: 0 1pt;
+   color: var(--gold-darker);
 }
 
 article a[href]:hover::after {
@@ -291,6 +296,33 @@ article a[href^='#'][id*='fnref'] {
 
    &::after {
       content: ']';
+   }
+}
+
+article :is(h1, h2, h3, h4, h5, h6) a[href] {
+   text-decoration: none;
+   color: inherit;
+   text-decoration: none;
+   font-family: var(--header);
+
+   &:hover {
+      background: transparent;
+   }
+
+   &:hover::after {
+      color: var(--gold-darker);
+   }
+}
+
+article h1,
+article h2,
+article h3,
+article h4,
+article h5,
+article h6 {
+   a[href]::after {
+      padding-left: 0.2em;
+      color: transparent;
    }
 }
 

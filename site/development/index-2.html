@@ -30,29 +30,51 @@
          </h2>
       </header>
 
-      <nav class="main-nav">
-         <ul>
-            <li><a href="/writing">writing</a></li>
-            <li><a href="/speaking">speaking</a></li>
-            <li><a href="/code">code</a></li>
-            <li><a href="/library">library</a></li>
-            <li><a href="/music">music</a></li>
-            <li><a href="/photography">photography</a></li>
-            <li><a href="/about">about</a></li>
-            <li><a href="/work">work</a></li>
-            <li><a href="/newsletter">newsletter</a></li>
-            <li><a href="/feed">feed</a></li>
-         </ul>
-      </nav>
+      <main class="grid">
+         <section class="span-6">
+            <h1>Software →</h1>
+            <h2>Projects →</h2>
+            <ul>
+               <li>New Rustacean</li>
+            </ul>
+            <h2>Consulting →</h2>
+            <p>Hire me to do things for you. I am good at things.</p>
+         </section>
 
-      <main>
-         <article>
-            <figure class="avatar">
+         <section class="span-6">
+            <h1>Music →</h1>
+            <ul>
+               <li>Spring Evening (voice and violin)</li>
+               <li>The Desert (solo piano)</li>
+               <li>Fanfare for a New Era of American Spaceflight (symphony orchestra)</li>
+            </ul>
+         </section>
+
+         <section class="span-6">
+            <h1>Essays →</h1>
+            <ul>
+               <li>Human-Scale Computing, <cite>Plough Quarterly</cite>, Summer 2024</li>
+               <li>Therapy and Theology, <cite>The Gospel Coalition</cite></li>
+               <li>jj init</li>
+            </ul>
+         </section>
+
+         <section class="span-6">
+            <h1>Journal →</h1>
+            <ul>
+               <li>Gut Feelings</li>
+               <li>Garmin Training Status – Three Complaints</li>
+               <li>Being a Fast, Cogent Writer is Useful</li>
+            </ul>
+         </section>
+
+         <article class="span-12">
+            <!-- <figure class="avatar">
                <img
                   src="https://cdn.chriskrycho.com/images/avatars/2024%20600%C3%97600.jpeg"
                   alt="portrait of Chris Krycho"
                />
-            </figure>
+            </figure> -->
             <p>
                I’m a Christian&hairsp;—&hairsp;Reformed, Anglican, and catholic. I am also
                a husband, and the father of two wonderful young women.
@@ -95,9 +117,68 @@
                >, and keep up a semi-serious <a>photography hobby</a>.
             </p>
          </article>
+
+         <section class="span-4">
+            <h1>Speaking →</h1>
+            <h2>Upcoming</h2>
+            <ul>
+               <li>Ratchets Over Levers, DevOpsDays Denver 2024</li>
+               <li>Seeing Like a Programmer, LambdaConf 2024</li>
+               <li>The Cutting Edge of Versioning, LambdaConf 2024</li>
+            </ul>
+
+            <h2>Previously</h2>
+            <ul>
+               <li>Keep It Local, EmberConf 2021</li>
+               <li>Becoming a Contributor, Rust Belt Rust 2017</li>
+            </ul>
+         </section>
+
+         <section class="span-4">
+            <h1>Library →</h1>
+            <ul>
+               <li>
+                  <cite>How Big Things Get Done</cite>, Bent Flyvbjerg and Dan Gardner
+               </li>
+               <li><cite>Our Game</cite>, John le Carré</li>
+            </ul>
+         </section>
+
+         <section class="span-4">
+            <h1>Photography</h1>
+            <figure>
+               <img
+                  src="https://cdn.chriskrycho.com/images/2023/From%20Mount%20Muscoco%20(1)%20(thumb).jpg"
+               />
+            </figure>
+         </section>
+
+         <section class="span-12">
+            <h1>Subscribe</h1>
+            <a href="/feed.xml">Feed</a>
+            <form>
+               Via email
+               <input type="email" />
+               <button type="submit">Subscribe</button>
+            </form>
+         </section>
       </main>
 
       <footer>
+         <!-- <nav class="main-nav">
+            <ul>
+               <li><a href="/writing">writing</a></li>
+               <li><a href="/speaking">speaking</a></li>
+               <li><a href="/code">code</a></li>
+               <li><a href="/library">library</a></li>
+               <li><a href="/music">music</a></li>
+               <li><a href="/photography">photography</a></li>
+               <li><a href="/about">about</a></li>
+               <li><a href="/work">work</a></li>
+               <li><a href="/newsletter">newsletter</a></li>
+               <li><a href="/feed">feed</a></li>
+            </ul>
+         </nav> -->
          <nav>
             <ul>
                <li>
@@ -115,17 +196,12 @@
                      <li><a href="/photography">Photography</a></li>
                   </ul>
                </li>
+               <li>
+                  <a href="/colophon">Colophon</a>
+                  <a href="/license">License</a>
+               </li>
             </ul>
          </nav>
-         <section>
-            <h1>Subscribe</h1>
-            <a href="/feed.xml">Feed</a>
-            <form>
-               Via email
-               <input type="email" />
-               <button type="submit">Subscribe</button>
-            </form>
-         </section>
       </footer>
    </body>
 </html>
