@@ -36,3 +36,7 @@ Temporary Items
 ## Note: special handling here for Jujutsu for the moment! This ignores the
 ## binary file for syntaxes, but I forcibly override that for Git!
 *.bin
+
+# misc. undesired IDE files
+.idea/cody_history.xml
+*/.idea/cody_history.xml
