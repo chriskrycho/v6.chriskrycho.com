@@ -459,12 +459,10 @@ figure img {
 
 /* https://css-tricks.com/a-grid-of-logos-in-squares/ */
 .gallery {
-   display: grid;
-   grid-template-columns: repeat(4, 1fr);
-   grid-gap: var(--grid-base);
 }
 
 .gallery figure {
+   grid-column-end: span 2;
    display: grid;
    place-items: center;
    position: relative;
@@ -561,6 +559,10 @@ figure img {
 
       --text-lh: 1.5;
       --text-alt-lh: 1.4;
+   }
+
+   .padding-grid {
+      padding: calc(var(--grid-base) * 2);
    }
 }
 

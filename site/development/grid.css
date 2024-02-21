@@ -62,10 +62,3 @@
    grid-template-rows: auto;
    gap: var(--grid-base);
 }
-
-.grid-4 {
-   display: grid;
-   grid-template-columns: repeat(4, 1fr);
-   grid-template-rows: auto;
-   gap: var(--grid-base);
-}
