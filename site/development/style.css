@@ -10,7 +10,10 @@
   TODO: do not use `@import` for real-world/prod CSS. It is slow, becuase it has
   to do multiple jumps to the server.
 */
+@import './normalize.css';
+@import './reset.css';
 @import './fonts/fonts.css';
+@import './grid.css';
 
 :root {
    --base-size: 14px;
@@ -50,7 +53,12 @@
 
    --header: var(--serif-secondary); /* TODO: make a stack!*/
 
+   --dark-blue-3: oklch(16.32% 0.0198 246.48);
+   --dark-blue-2: oklch(16.62% 0.042 246.48);
+   --dark-blue-1: oklch(19.88% 0.042 246.48);
+   --dark-blue-0: oklch(27.89% 0.042 246.48);
    --dark-blue: oklch(37.75% 0.042 246.48);
+
    --light-blue: oklch(81.95% 0.042 241.48);
    --light-blue-0: oklch(92% 0.042 241.48);
 
@@ -67,6 +75,27 @@
    --smcp-spacing: 0.05;
 
    --lw: 38rem;
+
+   --bg: var(--golden-white);
+   --bg-secondary: var(--light-blue);
+   --fg: var(--dark-blue);
+}
+
+.shadow {
+   --shadow-color: var(--dark-blue);
+   box-shadow: 0 0 calc(var(--grid-base) / 2) var(--shadow-color);
+}
+
+@media screen and (prefers-color-scheme: dark) {
+   :root {
+      --bg: var(--dark-blue-1);
+      --bg-secondary: var(--dark-blue);
+      --fg: var(--golden-white);
+   }
+
+   .shadow {
+      --shadow-color: var(--dark-blue-2);
+   }
 }
 
 html {
@@ -74,9 +103,8 @@ html {
    font-size: var(--fs0);
    font-size-adjust: from-font;
    line-height: 1;
-   background-color: var(--light-blue);
-   color: var(--dark-blue);
-   padding: var(--grid-base);
+   background-color: var(--bg-secondary);
+   color: var(--fg);
    hanging-punctuation: first allow-end last;
 }
 
@@ -86,16 +114,7 @@ html {
    line-height: var(--text-lh);
 }
 
-body {
-   margin: 0;
-   display: grid;
-   gap: var(--grid-base);
-   grid-template-columns: repeat(4, 1fr);
-   grid-template-rows: repeat(auto-fit, 100px);
-}
-
 header {
-   grid-column: span 4;
    font-weight: 300;
 
    h1 {
@@ -107,8 +126,44 @@ header {
    font-style: italic;
 }
 
+.bg {
+   background: var(--bg);
+}
+
+.margin-grid {
+   margin: var(--grid-base);
+}
+
+.margin-bottom-grid {
+   margin-bottom: var(--grid-base);
+}
+
+.padding-grid {
+   padding: var(--grid-base);
+}
+
+.section-break {
+   grid-column-end: span 12;
+   width: calc(50% - var(--grid-base) * 3);
+   border: 0;
+   height: 1px;
+   background: var(--brown);
+   margin-block: var(--grid-base);
+}
+
+label {
+   font-family: var(--sans);
+}
+
+input {
+   font-family: var(--sans);
+}
+
+button {
+   font-family: var(--sans);
+}
+
 nav {
-   background: var(--golden-white);
    font-family: var(--text-alt);
    font-weight: var(--text-alt-weight);
    grid-column: span 4;
@@ -121,47 +176,21 @@ nav {
 
 nav.main-nav {
    ul li a::before {
-      content: '/';
       margin-right: 0.1em;
       display: inline-block;
    }
-}
-
-main {
-   grid-column: span 4;
-}
-
-footer {
-   grid-column: span 4;
 }
 
 img {
    max-width: 100%;
 }
 
-.avatar {
-}
-
+/* This should really just be for all content blocks */
 article {
    line-height: var(--text-lh);
    font-weight: var(--text-weight);
-   max-width: var(--lw);
-   padding: var(--grid-base);
    orphans: 3;
    hyphens: none;
-   background-color: var(--golden-white);
-   margin-right: 0;
-   margin-left: auto;
-}
-
-article h1,
-article h2,
-article h3,
-article h4,
-article h5,
-article h6 {
-   line-height: 1;
-   margin: 0;
 }
 
 article h1 {
@@ -419,11 +448,56 @@ sup {
    font-size: 0.8em;
 }
 
+figure img {
+   box-shadow: 0 0 calc(var(--grid-base) / 4) -2pt;
+   border-radius: 2pt;
+}
+
+.round-corner {
+   border-radius: 2pt;
+}
+
+/* https://css-tricks.com/a-grid-of-logos-in-squares/ */
+.gallery {
+   display: grid;
+   grid-template-columns: repeat(4, 1fr);
+   grid-gap: var(--grid-base);
+}
+
+.gallery figure {
+   display: grid;
+   place-items: center;
+   position: relative;
+}
+
+.gallery figure::before {
+   content: '';
+   padding-bottom: 100%;
+   display: block;
+}
+
+.gallery figure img {
+   height: 100%;
+   width: 100%;
+   display: block;
+   object-fit: cover;
+   object-position: center;
+   position: absolute;
+   max-width: 100%;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+}
+
+.gallery figure::before .gallery figure img {
+   grid-area: 1 / 1 / 2 / 2;
+}
+
 /* Rough guess */
 @media (min-width: 600px) {
    :root {
       --base-size: 15px;
-      --grid-base: 18px;
+      --grid-base: 23px;
 
       /* Rounded to whole numbers from https://www.modularscale.com/?15,18&px&1.5 */
       --fs-4: 7px;
@@ -439,33 +513,13 @@ sup {
       --fs6: 51px;
       --fs7: 61px;
    }
-
-   body {
-      grid-template-columns: repeat(8, 1fr);
-   }
-
-   header {
-      grid-column: span 8;
-   }
-
-   nav {
-      grid-column: span 3;
-   }
-
-   main {
-      grid-column: span 5;
-   }
-
-   footer {
-      grid-column: span 8;
-   }
 }
 
 /* Rough guess, more later! */
 @media (min-width: 1024px) {
    :root {
       --base-size: 16px;
-      --grid-base: 20px;
+      --grid-base: 36px;
 
       /* Rounded to whole numbers from https://www.modularscale.com/?16,20&px&1.5 */
       --fs-4: 7px;
@@ -484,26 +538,29 @@ sup {
       --text-lh: 1.5;
       --text-alt-lh: 1.4;
    }
+}
 
-   body {
-      grid-template-columns: repeat(12, 1fr);
-   }
+@media (min-width: 1400px) {
+   :root {
+      --base-size: 18px;
+      --grid-base: 36px;
 
-   header {
-      grid-column: span 12;
-   }
+      /* Rounded to whole numbers from https://www.modularscale.com/?18,24&px&1.5 */
+      --fs-4: 8px;
+      --fs-3: 11px;
+      --fs-2: 12px;
+      --fs-1: 16px;
+      --fs0: 18px;
+      --fs1: 24px;
+      --fs2: 27px;
+      --fs3: 36px;
+      --fs4: 41px;
+      --fs5: 54px;
+      --fs6: 61px;
+      --fs7: 81px;
 
-   nav {
-      grid-column: span 3;
-      /* grid-row: min-content; */
-   }
-
-   main {
-      grid-column: 5 / 12;
-   }
-
-   footer {
-      grid-column: span 12;
+      --text-lh: 1.5;
+      --text-alt-lh: 1.4;
    }
 }
 
