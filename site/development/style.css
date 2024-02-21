@@ -143,12 +143,25 @@ header {
 }
 
 .section-break {
+   display: grid;
+   grid-template-columns: subgrid;
    grid-column-end: span 12;
-   width: calc(50% - var(--grid-base) * 3);
+   width: 100%;
    border: 0;
+   height: 0;
+   background: none;
+   grid-column-start: 1;
+   grid-column-end: span 12;
+   margin-block: var(--grid-base);
+}
+
+.section-break::after {
+   content: '';
    height: 1px;
    background: var(--brown);
-   margin-block: var(--grid-base);
+   grid-column-start: 5;
+   grid-column-end: span 4;
+   display: block;
 }
 
 label,
