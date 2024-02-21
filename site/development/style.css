@@ -151,16 +151,11 @@ header {
    margin-block: var(--grid-base);
 }
 
-label {
-   font-family: var(--sans);
-}
-
-input {
-   font-family: var(--sans);
-}
-
+label,
+input,
 button {
-   font-family: var(--sans);
+   font-family: var(--text-alt);
+   font-weight: var(--text-alt-weight);
 }
 
 nav {
