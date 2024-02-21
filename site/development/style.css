@@ -444,7 +444,7 @@ sup {
 }
 
 figure img {
-   box-shadow: 0 0 calc(var(--grid-base) / 4) -2pt;
+   box-shadow: 0 0 calc(var(--grid-base) / 4) -2pt var(--shadow-color);
    border-radius: 2pt;
 }
 
