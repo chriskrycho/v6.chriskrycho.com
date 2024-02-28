@@ -15,6 +15,7 @@ mod error;
 mod feed;
 mod metadata;
 mod page;
+mod sass;
 mod templates;
 
 pub use build::build;
@@ -45,6 +46,8 @@ fn main() -> Result<(), String> {
          paths,
          include_metadata,
       } => cli::convert(paths, include_metadata).map_err(|e| e.to_string()),
+
+      cli::Command::Sass { paths } => sass::convert(paths).map_err(|e| e.to_string()),
 
       cli::Command::Completions => cli.completions().map_err(|e| e.to_string()),
    }

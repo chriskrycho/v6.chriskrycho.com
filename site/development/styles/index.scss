@@ -1,0 +1,11 @@
+.grid {
+   display: grid;
+}
+
+.text {
+   font-family: var(--serif);
+}
+
+.article-content {
+   @extend .grid, .text;
+}

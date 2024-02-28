@@ -144,21 +144,29 @@ pub enum Command {
       #[arg(short = 'm', long = "metadata", default_value("false"))]
       include_metadata: bool,
    },
+
+   /// Process one or more Sass/SCSS files exactly the same way `lx` does. (Does
+   /// not compress styles the way a prod build does.)
+   Sass {
+      /// The entry points to process.
+      #[clap(flatten)]
+      paths: Paths,
+   },
 }
 
 #[derive(Args, Debug, PartialEq, Clone)]
 pub struct Paths {
    /// Path to the file to convert. Will use `stdin` if not supplied.
    #[arg(short, long)]
-   input: Option<PathBuf>,
+   pub input: Option<PathBuf>,
 
    /// Where to print the output. Will use `stdout` if not supplied.
    #[arg(short, long)]
-   output: Option<PathBuf>,
+   pub output: Option<PathBuf>,
 
    /// If the supplied `output` file is present, overwrite it.
    #[arg(long, default_missing_value("true"), num_args(0..=1), require_equals(true))]
-   force: Option<bool>,
+   pub force: Option<bool>,
 }
 
 pub fn convert(paths: Paths, include_metadata: bool) -> Result<(), CliError> {
@@ -230,6 +238,7 @@ fn input_buffer(path: Option<&PathBuf>) -> Result<Box<dyn BufRead>, CliError> {
 
    Ok(buf)
 }
+
 fn output_buffer(dest_cfg: DestCfg) -> Result<Output, CliError> {
    match dest_cfg {
       DestCfg::Path { buf: path, force } => {
