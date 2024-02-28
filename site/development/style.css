@@ -189,6 +189,11 @@ nav.main-nav {
    }
 }
 
+.page-nav ul {
+   position: sticky;
+   top: var(--grid-base);
+}
+
 img {
    max-width: 100%;
 }
@@ -569,8 +574,8 @@ figure img {
    }
 
    .padding-grid {
-      padding-inline: calc(var(--grid-base) * 2);
-      padding-block: calc(var(--grid-base) * 1.5);
+      padding-inline: calc(var(--grid-base) * 1.5);
+      padding-block: calc(var(--grid-base));
    }
 }
 
