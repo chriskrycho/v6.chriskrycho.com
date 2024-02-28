@@ -53,19 +53,19 @@
 
    --header: var(--serif-secondary); /* TODO: make a stack!*/
 
-   --dark-blue-3: oklch(16.32% 0.0198 246.48);
-   --dark-blue-2: oklch(16.62% 0.042 246.48);
-   --dark-blue-1: oklch(19.88% 0.042 246.48);
-   --dark-blue-0: oklch(27.89% 0.042 246.48);
-   --dark-blue: oklch(37.75% 0.042 246.48);
+   --blue-3: oklch(16.32% 0.0198 246.48);
+   --blue-2: oklch(16.62% 0.042 246.48);
+   --blue-1: oklch(19.88% 0.042 246.48);
+   --blue-0: oklch(27.89% 0.042 246.48);
+   --blue: oklch(37.75% 0.042 246.48);
 
-   --light-blue: oklch(81.95% 0.042 241.48);
-   --light-blue-0: oklch(92% 0.042 241.48);
+   --light-blue: oklch(81.95% 0.042 246.48);
+   --light-blue-0: oklch(92% 0.042 246.48);
 
-   --bluish-white: oklch(99.13% 0.004 246.41);
-   --golden-white: oklch(98% 0.005 73);
+   --bluish-white: oklch(99.2% 0.001 246.48);
+   --golden-white: oklch(99.7% 0.001 73);
 
-   --light-gray: oklch(94% 0.01 246.48);
+   --light-gray-0: oklch(95% 0.001 246.48);
 
    --gold: oklch(82.16% 0.148 73.12);
    --gold-darker: oklch(72.16% 0.1 73.12);
@@ -74,27 +74,27 @@
 
    --smcp-spacing: 0.05;
 
-   --lw: 38rem;
+   --lw: 39rem;
 
-   --bg: var(--golden-white);
+   --bg: var(--bluish-white);
    --bg-secondary: var(--light-blue);
-   --fg: var(--dark-blue);
+   --fg: var(--blue);
 }
 
 .shadow {
-   --shadow-color: var(--dark-blue);
+   --shadow-color: var(--blue);
    box-shadow: 0 0 calc(var(--grid-base) / 2) var(--shadow-color);
 }
 
 @media screen and (prefers-color-scheme: dark) {
    :root {
-      --bg: var(--dark-blue-1);
-      --bg-secondary: var(--dark-blue);
+      --bg: var(--blue-1);
+      --bg-secondary: var(--blue);
       --fg: var(--golden-white);
    }
 
    .shadow {
-      --shadow-color: var(--dark-blue-2);
+      --shadow-color: var(--blue-2);
    }
 }
 
@@ -279,7 +279,7 @@ article a {
 }
 
 article a:hover {
-   background: var(--dark-blue);
+   background: var(--blue);
    color: var(--gold);
 }
 
@@ -418,14 +418,13 @@ code {
 
 p code {
    line-height: 1;
-   background: var(--light-gray);
+   background: var(--light-gray-0);
    padding: 0.05em 0.2em;
    border-radius: 0.2em;
 }
 
 pre:has(> code) {
-   background: var(--light-gray);
-   margin: 1em -1em;
+   background: var(--light-gray-0);
    padding: 0.4em 1em;
    overflow-x: auto;
 }
@@ -570,7 +569,8 @@ figure img {
    }
 
    .padding-grid {
-      padding: calc(var(--grid-base) * 2);
+      padding-inline: calc(var(--grid-base) * 2);
+      padding-block: calc(var(--grid-base) * 1.5);
    }
 }
 
