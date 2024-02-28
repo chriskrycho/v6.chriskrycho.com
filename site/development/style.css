@@ -65,6 +65,7 @@
    --bluish-white: oklch(99.2% 0.001 246.48);
    --golden-white: oklch(99.7% 0.001 73);
 
+   --light-gray-1: oklch(96.5% 0.001 246.48);
    --light-gray-0: oklch(95% 0.001 246.48);
 
    --gold: oklch(82.16% 0.148 73.12);
@@ -427,21 +428,22 @@ code {
 
 p code {
    line-height: 1;
-   background: var(--light-gray-0);
+   background: var(--light-gray-1);
    padding: 0.05em 0.2em;
    border-radius: 0.2em;
 }
 
 pre:has(> code) {
    background: var(--light-gray-0);
-   padding: 0.4em 1em;
+   padding: 0.4em;
    overflow-x: auto;
 }
 
 pre code {
    display: block;
    hanging-punctuation: none;
-   line-height: 1.15;
+   line-height: 1.2;
+   font-size: var(--fs-1);
 }
 
 .smcp {

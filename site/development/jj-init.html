@@ -869,11 +869,10 @@ author: github-actions[bot] &lt;41898282+github-actions[bot]@users.noreply.githu
                      example:
                   </p>
                   <pre><code class="language-sh"><span class="hljs-comment"># long version</span>
-           $ jj describe --revision abcd --message <span class="hljs-string">"An updated message."</span>
+$ jj describe --revision abcd --message <span class="hljs-string">"An updated message."</span>
 
-           <span class="hljs-comment"># short version</span>
-           $ jj describe -r abcd -m <span class="hljs-string">"An updated message."</span>
-           </code></pre>
+<span class="hljs-comment"># short version</span>
+$ jj describe -r abcd -m <span class="hljs-string">"An updated message."</span></code></pre>
                   <p>
                      That’s it. How you choose to integrate that into your workflow is a
                      matter for you and your team to decide, of course. Jujutsu
@@ -1064,15 +1063,14 @@ author: github-actions[bot] &lt;41898282+github-actions[bot]@users.noreply.githu
                      anywhere in the history of your project, trivially:
                   </p>
                   <pre><code>-A, --insert-after
-                 Insert the new change between the target commit(s) and their children
+      Insert the new change between the target commit(s) and their children
 
-                 [aliases: after]
+      [aliases: after]
 
-           -B, --insert-before
-                 Insert the new change between the target commit(s) and their parents
+-B, --insert-before
+      Insert the new change between the target commit(s) and their parents
 
-                 [aliases: before]
-           </code></pre>
+      [aliases: before]</code></pre>
                   <p>
                      You can do this using interactive rebasing with Git (or with history
                      rewriting with Mercurial, though I am afraid my <code>hg</code> is
