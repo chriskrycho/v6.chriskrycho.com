@@ -206,6 +206,10 @@ article {
    hyphens: none;
 }
 
+.article-content {
+   max-width: var(--lw);
+}
+
 article h1 {
    font-size: var(--fs4);
    font-weight: 600;
