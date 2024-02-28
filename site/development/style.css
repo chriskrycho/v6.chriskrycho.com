@@ -556,7 +556,7 @@ figure img {
    }
 }
 
-@media (min-width: 1400px) {
+@media (min-width: 1440px) {
    :root {
       --base-size: 18px;
       --grid-base: 36px;
