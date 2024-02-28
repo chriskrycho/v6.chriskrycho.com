@@ -15,7 +15,7 @@ use clap_complete::{generate_to, shells::Fish};
    name = "lx ⚡️",
    about = "A very fast, very opinionated static site generator",
    version = "1.0",
-   author = "Chris Krycho <hello@@chriskrycho.com>"
+   author = "Chris Krycho <hello@chriskrycho.com>"
 )]
 #[command(author, version, about, arg_required_else_help(true))]
 pub struct Cli {
