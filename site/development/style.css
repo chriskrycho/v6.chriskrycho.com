@@ -53,10 +53,11 @@
 
    --header: var(--serif-secondary); /* TODO: make a stack!*/
 
+   --blue-4: oklch(20% 0.015 246.48);
    --blue-3: oklch(16.32% 0.0198 246.48);
    --blue-2: oklch(16.62% 0.042 246.48);
-   --blue-1: oklch(19.88% 0.042 246.48);
-   --blue-0: oklch(27.89% 0.042 246.48);
+   --blue-1: oklch(20% 0.042 246.48);
+   --blue-0: oklch(28% 0.042 246.48);
    --blue: oklch(37.75% 0.042 246.48);
 
    --light-blue: oklch(81.95% 0.042 246.48);
@@ -89,7 +90,7 @@
 
 @media screen and (prefers-color-scheme: dark) {
    :root {
-      --bg: var(--blue-1);
+      --bg: var(--blue-4);
       --bg-secondary: var(--blue);
       --fg: var(--golden-white);
    }
