@@ -81,6 +81,9 @@
    --bg: var(--bluish-white);
    --bg-secondary: var(--light-blue);
    --fg: var(--blue);
+
+   --code-bg: var(--light-gray-1);
+   --code-block-bg: var(--light-gray-0);
 }
 
 .shadow {
@@ -93,6 +96,9 @@
       --bg: var(--blue-4);
       --bg-secondary: var(--blue);
       --fg: var(--golden-white);
+
+      --code-bg: var(--blue-2);
+      --code-block-bg: var(--blue-2);
    }
 
    .shadow {
@@ -429,13 +435,13 @@ code {
 
 p code {
    line-height: 1;
-   background: var(--light-gray-1);
+   background: var(--code-bg);
    padding: 0.05em 0.2em;
    border-radius: 0.2em;
 }
 
 pre:has(> code) {
-   background: var(--light-gray-0);
+   background: var(--code-block-bg);
    padding: 0.4em;
    overflow-x: auto;
 }
