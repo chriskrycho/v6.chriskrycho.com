@@ -1,7 +1,0 @@
-.grid, .article-content {
-  display: grid;
-}
-
-.text, .article-content {
-  font-family: var(--serif);
-}
