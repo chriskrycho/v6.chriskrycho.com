@@ -1,11 +1,630 @@
-.grid {
-   display: grid;
+@use './normalize';
+@use './reset';
+
+@use './fonts';
+
+@use './grid';
+
+// Syntax highlighting
+@use './dark';
+@use './light';
+
+/* Reference sizes:
+
+- 360×780 (iPhone 13 Mini)
+- 1,180×820 (iPad)
+*/
+
+/* https://www.modularscale.com/?16,12&px&1.6 */
+
+:root {
+   --base-size: 14px;
+   --grid-base: 16px;
+
+   /* Rounded to whole numbers from https://www.modularscale.com/?14,16&px&1.5 */
+   --fs-4: 6px;
+   --fs-3: 8px;
+   --fs-2: 9px;
+   --fs-1: 12px;
+   --fs0: 14px;
+   --fs1: 16px;
+   --fs2: 21px;
+   --fs3: 24px;
+   --fs4: 32px;
+   --fs5: 36px;
+   --fs6: 47px;
+   --fs7: 54px;
+
+   --fs-scheme-adjust: 1;
+
+   --serif: 'Frame';
+   --serif-secondary: 'Sanomat';
+   --sans: 'Sanomat Sans Text';
+   --sans-adjust: 0.515; /* TODO */
+   --mono: 'Berkeley Mono';
+   --mono-adjust: 0.5; /* TODO */
+
+   --text: var(--serif); /* TODO: make a stack!*/
+   --text-lh: 1.4;
+   --text-weight: 400;
+   --text-weight-bold: 600;
+
+   --text-alt: var(--sans); /* TODO: make a stack!*/
+   --text-alt-adjust: var(--sans-adjust);
+   --text-alt-lh: 1.325;
+   --text-alt-weight: 350;
+   --text-alt-weight-bold: 500;
+
+   --header: var(--serif-secondary); /* TODO: make a stack!*/
+
+   --blue-4: oklch(25% 0.01 246.48);
+   --blue-3: oklch(16% 0.02 246.48);
+   --blue-2: oklch(16% 0.03 246.48);
+   --blue-1: oklch(28% 0.03 246.48);
+   --blue-0: oklch(28% 0.04 246.48);
+   --blue: oklch(38% 0.04 246.48);
+
+   --light-blue: oklch(81.95% 0.042 246.48);
+   --light-blue-0: oklch(92% 0.042 246.48);
+
+   --bluish-white: oklch(99.2% 0.001 246.48);
+   --golden-white: oklch(99.7% 0.001 73);
+
+   --light-gray-1: oklch(96.5% 0.001 246.48);
+   --light-gray-0: oklch(95% 0.001 246.48);
+
+   --gold: oklch(82.16% 0.148 73.12);
+   --gold-darker: oklch(72.16% 0.1 73.12);
+   --tan: oklch(68.99% 0.073 67.54);
+   --brown: oklch(35.71% 0.033 55.12);
+
+   --smcp-spacing: 0.05;
+
+   --lw: 39rem;
+
+   --bg: var(--bluish-white);
+   --bg-secondary: var(--light-blue);
+   --fg: var(--blue);
+
+   --code-bg: var(--light-gray-1);
+   --code-block-bg: var(--light-gray-0);
 }
 
-.text {
-   font-family: var(--serif);
+.shadow {
+   --shadow-color: var(--blue);
+   box-shadow: 0 0 calc(var(--grid-base) / 2) var(--shadow-color);
+}
+
+@media screen and (prefers-color-scheme: dark) {
+   :root {
+      --bg: var(--blue-4);
+      --bg-secondary: var(--blue);
+      --fg: var(--golden-white);
+
+      --code-bg: var(--blue-2);
+      --code-block-bg: var(--blue-2);
+   }
+
+   .shadow {
+      --shadow-color: var(--blue-2);
+   }
+}
+
+html {
+   font-family: var(--text);
+   font-size: calc(var(--fs0) * var(--fs-scheme-adjust));
+   font-size-adjust: from-font;
+   line-height: 1;
+   background-color: var(--bg-secondary);
+   color: var(--fg);
+   hanging-punctuation: first allow-end last;
+}
+
+.content {
+   --width: 38em;
+
+   line-height: var(--text-lh);
+}
+
+header {
+   font-weight: 300;
+
+   h1 {
+      font-size: var(--fs6);
+   }
+}
+
+.header-by {
+   font-style: italic;
+}
+
+.bg {
+   background: var(--bg);
+}
+
+.margin-grid {
+   margin: var(--grid-base);
+}
+
+.margin-bottom-grid {
+   margin-bottom: var(--grid-base);
+}
+
+.padding-grid {
+   padding: var(--grid-base);
+}
+
+.section-break {
+   display: grid;
+   grid-template-columns: subgrid;
+   grid-column-end: span 12;
+   width: 100%;
+   border: 0;
+   height: 0;
+   background: none;
+   grid-column-start: 1;
+   grid-column-end: span 12;
+   margin-block: var(--grid-base);
+}
+
+.section-break::after {
+   content: '';
+   height: 1px;
+   background: var(--brown);
+   grid-column-start: 5;
+   grid-column-end: span 4;
+   display: block;
+}
+
+label,
+input,
+button {
+   font-family: var(--text-alt);
+   font-weight: var(--text-alt-weight);
+}
+
+nav {
+   font-family: var(--text-alt);
+   font-weight: var(--text-alt-weight);
+   grid-column: span 4;
+
+   ul {
+      list-style: none;
+      margin-inline: 0;
+   }
+}
+
+nav.main-nav {
+   ul li a::before {
+      margin-right: 0.1em;
+      display: inline-block;
+   }
+}
+
+.page-nav ul {
+   position: sticky;
+   top: var(--grid-base);
+}
+
+img {
+   max-width: 100%;
+}
+
+/* This should really just be for all content blocks */
+article {
+   line-height: var(--text-lh);
+   font-weight: var(--text-weight);
+   orphans: 3;
+   hyphens: none;
 }
 
 .article-content {
-   @extend .grid, .text;
+   max-width: var(--lw);
 }
+
+article h1 {
+   font-size: var(--fs4);
+   font-weight: 600;
+}
+
+article h2 {
+   font-size: var(--fs3);
+   margin-top: 1em;
+   margin-bottom: var(--fs-3);
+}
+
+article h3 {
+   font-size: var(--fs1);
+   font-weight: 600;
+   margin-top: 1em;
+   margin-bottom: var(--fs-3);
+}
+
+article h4 {
+   font-size: var(--fs0);
+   font-style: italic;
+   font-weight: 600;
+   margin-top: 1em;
+   margin-bottom: var(--fs-3);
+}
+
+article p {
+}
+
+article p:first-child,
+article :not(p) + p {
+   margin-top: 0;
+}
+
+article p:last-child {
+   margin-bottom: 0;
+}
+
+article .item-subtitle {
+   font-style: italic;
+   font-family: var(--sans);
+   font-size: var(--fs1);
+   font-weight: 300;
+   letter-spacing: -0.5px;
+}
+
+article blockquote,
+article .note,
+article aside,
+article .qualifiers {
+   font-family: var(--text-alt);
+   line-height: var(--text-alt-lh);
+   font-weight: var(--text-alt-weight);
+}
+
+article .note,
+article aside,
+article .qualifiers {
+   margin-block: var(--grid-base);
+   /* margin: 1em -1em; */
+   padding: 1em;
+   background: var(--light-blue-0);
+}
+
+article a {
+   color: inherit;
+   transition: all 0.2s ease-in-out;
+   text-decoration: none;
+   padding: 0.3em 0.12em 0.075em;
+   margin-left: -0.06em;
+   margin-right: -0.06em;
+   border-radius: 2pt;
+   line-height: 0;
+}
+
+article a:hover {
+   background: var(--blue);
+   color: var(--gold);
+}
+
+.sans {
+   font-family: var(--text-alt);
+   font-weight: var(--text-alt-weight);
+}
+
+/*
+  When I actually do this, do it by pre-processing the links! The CSS to do it
+  may technically be *possible*, but… so many hoops to jump through. Whereas if
+  I just preprocess the links, it is trivial. I can simply select on:
+
+  - `.fnref`
+  - `.xref`
+  - `.xref .v3
+  - `.xref .v4`
+  - `.xref .v5`
+
+  Then normal links can just be, well, normal links!
+ */
+article a[href]::after {
+   content: '∞';
+   font-family: var(--text);
+   vertical-align: baseline;
+   line-height: 0;
+   font-size: 0.9em;
+   /* margin: 0 1pt; */
+   padding: 0 1pt;
+   color: var(--gold-darker);
+}
+
+article a[href]:hover::after {
+   color: var(--light-blue);
+}
+
+/* on-site links */
+article a[href^='/']:not([id*='fnref'])::after {
+   content: '✢';
+}
+
+/* on-page links */
+article a[href^='#']:not([id*='fnref'])::after {
+   content: '\FEFF#';
+}
+
+article a[href^='#'][id*='fnref'] {
+   &::before {
+      content: '[';
+   }
+
+   &::after {
+      content: ']';
+   }
+}
+
+article :is(h1, h2, h3, h4, h5, h6) a[href] {
+   text-decoration: none;
+   color: inherit;
+   text-decoration: none;
+   font-family: var(--header);
+
+   &:hover {
+      background: transparent;
+   }
+
+   &:hover::after {
+      color: var(--gold-darker);
+   }
+}
+
+article h1,
+article h2,
+article h3,
+article h4,
+article h5,
+article h6 {
+   a[href]::after {
+      padding-left: 0.2em;
+      color: transparent;
+   }
+}
+
+article hr {
+   visibility: hidden;
+   margin: 2em;
+}
+
+article img {
+   margin: var(--grid-base);
+}
+
+/* Previous version links */
+article a[href^='https://v3.chriskrycho.com']::after
+{
+   content: 'v3';
+   font-size: 0.8em;
+   vertical-align: super;
+   font-family: var(--header);
+   font-style: italic;
+   font-weight: 500;
+}
+
+article a[href^='https://v4.chriskrycho.com']::after
+{
+   content: 'v4';
+   font-size: 0.8em;
+   vertical-align: super;
+   font-family: var(--header);
+   font-style: italic;
+   font-weight: 500;
+}
+
+article a[href^='https://v5.chriskrycho.com']::after
+{
+   content: 'v5';
+   font-size: 0.8em;
+   vertical-align: super;
+   font-family: var(--header);
+   font-style: italic;
+   font-weight: 500;
+}
+
+[data-hidden] {
+   display: none;
+}
+
+abbr {
+   font-variant: all-small-caps;
+   letter-spacing: var(--smcp-spacing);
+}
+
+code {
+   font-family: var(--mono);
+}
+
+p code {
+   line-height: 1;
+   background: var(--code-bg);
+   padding: 0.05em 0.2em;
+   border-radius: 0.2em;
+}
+
+pre:has(> code) {
+   background: var(--code-block-bg);
+   padding: 0.4em;
+   overflow-x: auto;
+}
+
+pre code {
+   display: block;
+   hanging-punctuation: none;
+   line-height: 1.2;
+   font-size: var(--fs-1);
+}
+
+.smcp {
+   font-variant: small-caps;
+   letter-spacing: var(--smcp-spacing);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+   font-family: var(--header);
+   font-weight: var(--h-weight);
+}
+
+sup {
+   line-height: 0;
+   font-size: 0.8em;
+}
+
+figure img {
+   box-shadow: 0 0 calc(var(--grid-base) / 4) -2pt var(--shadow-color);
+   border-radius: 2pt;
+}
+
+.round-corner {
+   border-radius: 2pt;
+}
+
+/* https://css-tricks.com/a-grid-of-logos-in-squares/ */
+.gallery {
+}
+
+.gallery figure {
+   grid-column-end: span 2;
+   display: grid;
+   place-items: center;
+   position: relative;
+}
+
+.gallery figure::before {
+   content: '';
+   padding-bottom: 100%;
+   display: block;
+}
+
+.gallery figure img {
+   height: 100%;
+   width: 100%;
+   display: block;
+   object-fit: cover;
+   object-position: center;
+   position: absolute;
+   max-width: 100%;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+}
+
+.gallery figure::before .gallery figure img {
+   grid-area: 1 / 1 / 2 / 2;
+}
+
+/* Rough guess */
+@media (min-width: 600px) {
+   :root {
+      --base-size: 15px;
+      --grid-base: 23px;
+
+      /* Rounded to whole numbers from https://www.modularscale.com/?15,18&px&1.5 */
+      --fs-4: 7px;
+      --fs-3: 8px;
+      --fs-2: 10px;
+      --fs-1: 12px;
+      --fs0: 15px;
+      --fs1: 18px;
+      --fs2: 23px;
+      --fs3: 27px;
+      --fs4: 34px;
+      --fs5: 41px;
+      --fs6: 51px;
+      --fs7: 61px;
+   }
+}
+
+/* Rough guess, more later! */
+@media (min-width: 1024px) {
+   :root {
+      --base-size: 16px;
+      --grid-base: 36px;
+
+      /* Rounded to whole numbers from https://www.modularscale.com/?16,20&px&1.5 */
+      --fs-4: 7px;
+      --fs-3: 9px;
+      --fs-2: 11px;
+      --fs-1: 13px;
+      --fs0: 16px;
+      --fs1: 20px;
+      --fs2: 24px;
+      --fs3: 30px;
+      --fs4: 36px;
+      --fs5: 45px;
+      --fs6: 54px;
+      --fs7: 68px;
+
+      --text-lh: 1.5;
+      --text-alt-lh: 1.4;
+   }
+}
+
+@media screen and (prefers-color-scheme: dark) {
+   :root {
+      /* --fs-scheme-adjust: 1.0625; */
+
+      --text-lh: 1.55;
+      --text-alt-lh: 1.4;
+   }
+}
+
+@media (min-width: 1440px) {
+   :root {
+      --base-size: 18px;
+      --grid-base: 36px;
+
+      /* Rounded to whole numbers from https://www.modularscale.com/?18,24&px&1.5 */
+      --fs-4: 8px;
+      --fs-3: 11px;
+      --fs-2: 12px;
+      --fs-1: 16px;
+      --fs0: 18px;
+      --fs1: 24px;
+      --fs2: 27px;
+      --fs3: 36px;
+      --fs4: 41px;
+      --fs5: 54px;
+      --fs6: 61px;
+      --fs7: 81px;
+
+      --text-lh: 1.5;
+      --text-alt-lh: 1.4;
+   }
+
+   .padding-grid {
+      padding-inline: calc(var(--grid-base) * 1.5);
+      padding-block: calc(var(--grid-base));
+   }
+}
+
+/*
+410.063px | 25.629em
+341.719px | 21.357em
+273.375px | 17.086em
+227.813px | 14.238em
+182.25px | 11.391em
+151.875px | 9.492em
+121.5px | 7.594em
+101.25px | 6.328em
+81px | 5.063em
+67.5px | 4.219em
+54px | 3.375em
+45px | 2.813em
+36px | 2.25em
+30px | 1.875em
+24px | 1.5em
+20px | 1.25em
+16px | 1em
+13.333px | 0.833em
+10.667px | 0.667em
+8.889px | 0.556em
+7.111px | 0.444em
+5.926px | 0.37em
+4.741px | 0.296em
+*/
