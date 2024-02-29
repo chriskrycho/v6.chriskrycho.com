@@ -33,6 +33,8 @@
    --fs6: 47px;
    --fs7: 54px;
 
+   --fs-scheme-adjust: 1;
+
    --serif: 'Frame';
    --serif-secondary: 'Sanomat';
    --sans: 'Sanomat Sans Text';
@@ -108,7 +110,7 @@
 
 html {
    font-family: var(--text);
-   font-size: var(--fs0);
+   font-size: calc(var(--fs0) * var(--fs-scheme-adjust));
    font-size-adjust: from-font;
    line-height: 1;
    background-color: var(--bg-secondary);
@@ -245,13 +247,11 @@ article h4 {
 }
 
 article p {
-   text-indent: var(--p-text-indent, 1.65em);
-   margin: var(--p-margin);
 }
 
 article p:first-child,
 article :not(p) + p {
-   text-indent: 0;
+   margin-top: 0;
 }
 
 article p:last-child {
@@ -559,6 +559,15 @@ figure img {
       --fs7: 68px;
 
       --text-lh: 1.5;
+      --text-alt-lh: 1.4;
+   }
+}
+
+@media screen and (prefers-color-scheme: dark) {
+   :root {
+      /* --fs-scheme-adjust: 1.0625; */
+
+      --text-lh: 1.55;
       --text-alt-lh: 1.4;
    }
 }
