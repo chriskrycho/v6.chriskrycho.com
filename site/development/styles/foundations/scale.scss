@@ -10,7 +10,8 @@
    --base-size: 14px;
    --grid-base: 16px;
 
-   // Rounded to whole numbers from https://www.modularscale.com/?14px&1.333
+   // Rounded to whole numbers from https://www.modularscale.com/?14&px&1.333
+   --fs-3: 6px;
    --fs-2: 8px;
    --fs-1: 11px;
    --fs0: 14px;
@@ -29,6 +30,7 @@
          --grid-base: 24px;
 
          // Rounded to whole numbers from https://www.modularscale.com/?15&px&1.333
+         --fs-3: 6px;
          --fs-2: 8px;
          --fs-1: 11px;
          --fs0: 15px;
@@ -47,6 +49,7 @@
          --grid-base: 32px;
 
          // Rounded to whole numbers from https://www.modularscale.com/?16&px&1.333
+         --fs-3: 7px;
          --fs-2: 9px;
          --fs-1: 12px;
          --fs0: 16px;
@@ -67,6 +70,7 @@
          --grid-base: 36px;
 
          // Rounded to whole numbers from https://www.modularscale.com/?18&px&1.333
+         --fs-3: 8px;
          --fs-2: 10px;
          --fs-1: 14px;
          --fs0: 18px;
