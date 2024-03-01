@@ -1,0 +1,5 @@
+@use '../foundations/grid';
+
+.home {
+   @include grid.grid;
+}

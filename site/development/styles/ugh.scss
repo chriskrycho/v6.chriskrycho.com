@@ -1,25 +1,8 @@
-@use './normalize';
-@use './reset';
-
-@use './fonts';
+// This file has all the content I haven’t yet moved into an appropriate place
+// in `foundations` or `layouts` or `components` (maybe, if that ever becomes a
+// thing).
 
 @use './foundations/breakpoints';
-// N.b. all of the rest of these define global variables courtesy of `:root`, so
-// they are *not* incidental even though they are not used explicitly anywhere
-// in this file. Thanks, CSS! 😑
-@use './foundations/color';
-@use './foundations/grid';
-@use './foundations/scale';
-@use './foundations/type';
-
-@use './ugh'; // 🥴
-
-// Syntax highlighting
-@use './dark';
-@use './light';
-
-@use './layouts/home';
-@use './layouts/post';
 
 html {
    font-family: var(--text);
