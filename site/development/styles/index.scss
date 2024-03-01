@@ -3,111 +3,22 @@
 
 @use './fonts';
 
-@use './grid';
+@use './foundations/breakpoints';
+// N.b. all of the rest of these define global variables courtesy of `:root`, so
+// they are *not* incidental even though they are not used explicitly anywhere
+// in this file. Thanks, CSS! 😑
+@use './foundations/color';
+@use './foundations/grid';
+@use './foundations/scale';
+@use './foundations/type';
 
 // Syntax highlighting
 @use './dark';
 @use './light';
 
-/* Reference sizes:
-
-- 360×780 (iPhone 13 Mini)
-- 1,180×820 (iPad)
-*/
-
-/* https://www.modularscale.com/?16,12&px&1.6 */
-
-:root {
-   --base-size: 14px;
-   --grid-base: 16px;
-
-   /* Rounded to whole numbers from https://www.modularscale.com/?14,16&px&1.5 */
-   --fs-4: 6px;
-   --fs-3: 8px;
-   --fs-2: 9px;
-   --fs-1: 12px;
-   --fs0: 14px;
-   --fs1: 16px;
-   --fs2: 21px;
-   --fs3: 24px;
-   --fs4: 32px;
-   --fs5: 36px;
-   --fs6: 47px;
-   --fs7: 54px;
-
-   --fs-scheme-adjust: 1;
-
-   --serif: 'Frame';
-   --serif-secondary: 'Sanomat';
-   --sans: 'Sanomat Sans Text';
-   --sans-adjust: 0.515; /* TODO */
-   --mono: 'Berkeley Mono';
-   --mono-adjust: 0.5; /* TODO */
-
-   --text: var(--serif); /* TODO: make a stack!*/
-   --text-lh: 1.4;
-   --text-weight: 400;
-   --text-weight-bold: 600;
-
-   --text-alt: var(--sans); /* TODO: make a stack!*/
-   --text-alt-adjust: var(--sans-adjust);
-   --text-alt-lh: 1.325;
-   --text-alt-weight: 350;
-   --text-alt-weight-bold: 500;
-
-   --header: var(--serif-secondary); /* TODO: make a stack!*/
-
-   --blue-4: oklch(25% 0.01 246.48);
-   --blue-3: oklch(16% 0.02 246.48);
-   --blue-2: oklch(16% 0.03 246.48);
-   --blue-1: oklch(28% 0.03 246.48);
-   --blue-0: oklch(28% 0.04 246.48);
-   --blue: oklch(38% 0.04 246.48);
-
-   --light-blue: oklch(81.95% 0.042 246.48);
-   --light-blue-0: oklch(92% 0.042 246.48);
-
-   --bluish-white: oklch(99.2% 0.001 246.48);
-   --golden-white: oklch(99.7% 0.001 73);
-
-   --light-gray-1: oklch(96.5% 0.001 246.48);
-   --light-gray-0: oklch(95% 0.001 246.48);
-
-   --gold: oklch(82.16% 0.148 73.12);
-   --gold-darker: oklch(72.16% 0.1 73.12);
-   --tan: oklch(68.99% 0.073 67.54);
-   --brown: oklch(35.71% 0.033 55.12);
-
-   --smcp-spacing: 0.05;
-
-   --lw: 39rem;
-
-   --bg: var(--bluish-white);
-   --bg-secondary: var(--light-blue);
-   --fg: var(--blue);
-
-   --code-bg: var(--light-gray-1);
-   --code-block-bg: var(--light-gray-0);
-}
-
 .shadow {
    --shadow-color: var(--blue);
    box-shadow: 0 0 calc(var(--grid-base) / 2) var(--shadow-color);
-}
-
-@media screen and (prefers-color-scheme: dark) {
-   :root {
-      --bg: var(--blue-4);
-      --bg-secondary: var(--blue);
-      --fg: var(--golden-white);
-
-      --code-bg: var(--blue-2);
-      --code-block-bg: var(--blue-2);
-   }
-
-   .shadow {
-      --shadow-color: var(--blue-2);
-   }
 }
 
 html {
@@ -130,7 +41,13 @@ header {
    font-weight: 300;
 
    h1 {
-      font-size: var(--fs6);
+      font-size: var(--fs4);
+   }
+}
+
+@media screen and (min-width: breakpoints.$medium) {
+   header h1 {
+      font-size: var(--fs5);
    }
 }
 
@@ -518,113 +435,16 @@ figure img {
    grid-area: 1 / 1 / 2 / 2;
 }
 
-/* Rough guess */
-@media (min-width: 600px) {
-   :root {
-      --base-size: 15px;
-      --grid-base: 23px;
-
-      /* Rounded to whole numbers from https://www.modularscale.com/?15,18&px&1.5 */
-      --fs-4: 7px;
-      --fs-3: 8px;
-      --fs-2: 10px;
-      --fs-1: 12px;
-      --fs0: 15px;
-      --fs1: 18px;
-      --fs2: 23px;
-      --fs3: 27px;
-      --fs4: 34px;
-      --fs5: 41px;
-      --fs6: 51px;
-      --fs7: 61px;
-   }
-}
-
-/* Rough guess, more later! */
-@media (min-width: 1024px) {
-   :root {
-      --base-size: 16px;
-      --grid-base: 36px;
-
-      /* Rounded to whole numbers from https://www.modularscale.com/?16,20&px&1.5 */
-      --fs-4: 7px;
-      --fs-3: 9px;
-      --fs-2: 11px;
-      --fs-1: 13px;
-      --fs0: 16px;
-      --fs1: 20px;
-      --fs2: 24px;
-      --fs3: 30px;
-      --fs4: 36px;
-      --fs5: 45px;
-      --fs6: 54px;
-      --fs7: 68px;
-
-      --text-lh: 1.5;
-      --text-alt-lh: 1.4;
-   }
-}
-
 @media screen and (prefers-color-scheme: dark) {
    :root {
-      /* --fs-scheme-adjust: 1.0625; */
-
       --text-lh: 1.55;
       --text-alt-lh: 1.4;
    }
 }
 
-@media (min-width: 1440px) {
-   :root {
-      --base-size: 18px;
-      --grid-base: 36px;
-
-      /* Rounded to whole numbers from https://www.modularscale.com/?18,24&px&1.5 */
-      --fs-4: 8px;
-      --fs-3: 11px;
-      --fs-2: 12px;
-      --fs-1: 16px;
-      --fs0: 18px;
-      --fs1: 24px;
-      --fs2: 27px;
-      --fs3: 36px;
-      --fs4: 41px;
-      --fs5: 54px;
-      --fs6: 61px;
-      --fs7: 81px;
-
-      --text-lh: 1.5;
-      --text-alt-lh: 1.4;
-   }
-
+@media (min-width: breakpoints.$large) {
    .padding-grid {
       padding-inline: calc(var(--grid-base) * 1.5);
       padding-block: calc(var(--grid-base));
    }
 }
-
-/*
-410.063px | 25.629em
-341.719px | 21.357em
-273.375px | 17.086em
-227.813px | 14.238em
-182.25px | 11.391em
-151.875px | 9.492em
-121.5px | 7.594em
-101.25px | 6.328em
-81px | 5.063em
-67.5px | 4.219em
-54px | 3.375em
-45px | 2.813em
-36px | 2.25em
-30px | 1.875em
-24px | 1.5em
-20px | 1.25em
-16px | 1em
-13.333px | 0.833em
-10.667px | 0.667em
-8.889px | 0.556em
-7.111px | 0.444em
-5.926px | 0.37em
-4.741px | 0.296em
-*/

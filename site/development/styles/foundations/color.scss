@@ -1,0 +1,46 @@
+:root {
+   --blue-4: oklch(25% 0.01 246.48);
+   --blue-3: oklch(16% 0.02 246.48);
+   --blue-2: oklch(16% 0.03 246.48);
+   --blue-1: oklch(28% 0.03 246.48);
+   --blue-0: oklch(28% 0.04 246.48);
+   --blue: oklch(38% 0.04 246.48);
+
+   --light-blue: oklch(81.95% 0.042 246.48);
+   --light-blue-0: oklch(92% 0.042 246.48);
+
+   --bluish-white: oklch(99.2% 0.001 246.48);
+   --golden-white: oklch(99.7% 0.001 73);
+
+   --light-gray-1: oklch(96.5% 0.001 246.48);
+   --light-gray-0: oklch(95% 0.001 246.48);
+
+   --gold: oklch(82.16% 0.148 73.12);
+   --gold-darker: oklch(72.16% 0.1 73.12);
+   --tan: oklch(68.99% 0.073 67.54);
+   --brown: oklch(35.71% 0.033 55.12);
+
+   --bg: var(--bluish-white);
+   --bg-secondary: var(--light-blue);
+   --fg: var(--blue);
+
+   --code-bg: var(--light-gray-1);
+   --code-block-bg: var(--light-gray-0);
+
+   --fs-scheme-adjust: 1;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+   :root {
+      --bg: var(--blue-4);
+      --bg-secondary: var(--blue);
+      --fg: var(--golden-white);
+
+      --code-bg: var(--blue-2);
+      --code-block-bg: var(--blue-2);
+   }
+
+   .shadow {
+      --shadow-color: var(--blue-2);
+   }
+}

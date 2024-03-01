@@ -1,0 +1,25 @@
+:root {
+   --serif: 'Frame';
+   --serif-secondary: 'Sanomat';
+   --sans: 'Sanomat Sans Text';
+   --sans-adjust: 0.515; /* TODO */
+   --mono: 'Berkeley Mono';
+   --mono-adjust: 0.5; /* TODO */
+
+   --text: var(--serif); /* TODO: make a stack!*/
+   --text-lh: 1.4;
+   --text-weight: 400;
+   --text-weight-bold: 600;
+
+   --text-alt: var(--sans); /* TODO: make a stack!*/
+   --text-alt-adjust: var(--sans-adjust);
+   --text-alt-lh: 1.325;
+   --text-alt-weight: 350;
+   --text-alt-weight-bold: 500;
+
+   --header: var(--serif-secondary); /* TODO: make a stack!*/
+
+   --smcp-spacing: 0.05;
+
+   --lw: 39rem;
+}
