@@ -19,12 +19,6 @@ html {
    box-shadow: 0 0 calc(var(--grid-base) / 2) var(--shadow-color);
 }
 
-.content {
-   --width: 38em;
-
-   line-height: var(--text-lh);
-}
-
 .bg {
    background: var(--bg);
 }
@@ -98,214 +92,13 @@ img {
 }
 
 /* This should really just be for all content blocks */
-article {
-   line-height: var(--text-lh);
-   font-weight: var(--text-weight);
-   orphans: 3;
-   hyphens: none;
-}
-
 .article-content {
    max-width: var(--lw);
-}
-
-article h1 {
-   font-size: var(--fs3);
-   font-weight: 700;
-}
-
-article h2 {
-   font-size: var(--fs2);
-   margin-top: 1em;
-   margin-bottom: var(--fs-3);
-}
-
-article h3 {
-   font-size: var(--fs1);
-   font-weight: 600;
-   margin-top: 1em;
-   margin-bottom: var(--fs-3);
-}
-
-article h4 {
-   font-size: var(--fs0);
-   font-style: italic;
-   font-weight: 600;
-   margin-top: 1em;
-   margin-bottom: var(--fs-3);
-}
-
-article p {
-}
-
-article p:first-child,
-article :not(p) + p {
-   margin-top: 0;
-}
-
-article p:last-child {
-   margin-bottom: 0;
-}
-
-article .item-subtitle {
-   font-family: var(--sans);
-   font-size: var(--fs1);
-   font-weight: 300;
-   letter-spacing: -0.5px;
-}
-
-article blockquote,
-article .note,
-article aside,
-article .qualifiers {
-   font-family: var(--text-alt);
-   line-height: var(--text-alt-lh);
-   font-weight: var(--text-alt-weight);
-}
-
-article .note,
-article aside,
-article .qualifiers {
-   margin-block: var(--grid-base);
-   /* margin: 1em -1em; */
-   padding: 1em;
-   background: var(--light-blue-0);
-}
-
-article a {
-   color: inherit;
-   transition: all 0.2s ease-in-out;
-   text-decoration: none;
-   padding: 0.3em 0.12em 0.075em;
-   margin-left: -0.06em;
-   margin-right: -0.06em;
-   border-radius: 2pt;
-   line-height: 0;
-}
-
-article a:hover {
-   background: var(--blue);
-   color: var(--gold);
 }
 
 .sans {
    font-family: var(--text-alt);
    font-weight: var(--text-alt-weight);
-}
-
-/*
-  When I actually do this, do it by pre-processing the links! The CSS to do it
-  may technically be *possible*, but… so many hoops to jump through. Whereas if
-  I just preprocess the links, it is trivial. I can simply select on:
-
-  - `.fnref`
-  - `.xref`
-  - `.xref .v3
-  - `.xref .v4`
-  - `.xref .v5`
-
-  Then normal links can just be, well, normal links!
- */
-article a[href]::after {
-   content: '∞';
-   font-family: var(--text);
-   vertical-align: baseline;
-   line-height: 0;
-   font-size: 0.9em;
-   /* margin: 0 1pt; */
-   padding: 0 1pt;
-   color: var(--gold-darker);
-}
-
-article a[href]:hover::after {
-   color: var(--light-blue);
-}
-
-/* on-site links */
-article a[href^='/']:not([id*='fnref'])::after {
-   content: '✢';
-}
-
-/* on-page links */
-article a[href^='#']:not([id*='fnref'])::after {
-   content: '\FEFF#';
-}
-
-article a[href^='#'][id*='fnref'] {
-   &::before {
-      content: '[';
-   }
-
-   &::after {
-      content: ']';
-   }
-}
-
-article :is(h1, h2, h3, h4, h5, h6) a[href] {
-   text-decoration: none;
-   color: inherit;
-   text-decoration: none;
-   font-family: var(--header);
-
-   &:hover {
-      background: transparent;
-   }
-
-   &:hover::after {
-      color: var(--gold-darker);
-   }
-}
-
-article h1,
-article h2,
-article h3,
-article h4,
-article h5,
-article h6 {
-   a[href]::after {
-      padding-left: 0.2em;
-      color: transparent;
-   }
-}
-
-article hr {
-   visibility: hidden;
-   margin: 2em;
-}
-
-article img {
-   margin: var(--grid-base);
-}
-
-/* Previous version links */
-article a[href^='https://v3.chriskrycho.com']::after
-{
-   content: 'v3';
-   font-size: 0.8em;
-   vertical-align: super;
-   font-family: var(--header);
-   font-style: italic;
-   font-weight: 500;
-}
-
-article a[href^='https://v4.chriskrycho.com']::after
-{
-   content: 'v4';
-   font-size: 0.8em;
-   vertical-align: super;
-   font-family: var(--header);
-   font-style: italic;
-   font-weight: 500;
-}
-
-article a[href^='https://v5.chriskrycho.com']::after
-{
-   content: 'v5';
-   font-size: 0.8em;
-   vertical-align: super;
-   font-family: var(--header);
-   font-style: italic;
-   font-weight: 500;
 }
 
 [data-hidden] {
@@ -344,16 +137,6 @@ pre code {
 .smcp {
    font-variant: small-caps;
    letter-spacing: var(--smcp-spacing);
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-   font-family: var(--header);
-   font-weight: var(--h-weight);
 }
 
 sup {
