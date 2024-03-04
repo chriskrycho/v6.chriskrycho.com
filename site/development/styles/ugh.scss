@@ -91,15 +91,6 @@ img {
    max-width: 100%;
 }
 
-.sans {
-   font-family: var(--text-alt);
-   font-weight: var(--text-alt-weight);
-}
-
-[data-hidden] {
-   display: none;
-}
-
 abbr {
    font-variant: all-small-caps;
    letter-spacing: var(--smcp-spacing);
