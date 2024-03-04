@@ -3,14 +3,7 @@
 
 @use './fonts';
 
-@use './foundations/breakpoints';
-// N.b. all of the rest of these define global variables courtesy of `:root`, so
-// they are *not* incidental even though they are not used explicitly anywhere
-// in this file. Thanks, CSS! 😑
-@use './foundations/color';
-@use './foundations/grid';
-@use './foundations/scale';
-@use './foundations/type';
+@use './foundations';
 
 @use './ugh'; // 🥴
 
@@ -18,9 +11,5 @@
 @use './dark';
 @use './light';
 
-@use './components/content';
-@use './components/gallery';
-@use './components/site-header';
-
-@use './layouts/home';
-@use './layouts/post';
+@use './components';
+@use './layouts';
