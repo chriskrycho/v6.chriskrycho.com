@@ -3,3 +3,12 @@
 @use './grid';
 @use './scale';
 @use './type';
+
+@mixin shadow {
+   --shadow-color: var(--blue);
+   box-shadow: 0 0 calc(var(--grid-base) / 2) var(--shadow-color);
+}
+
+@mixin round-corner {
+   border-radius: 2pt;
+}

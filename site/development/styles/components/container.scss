@@ -1,0 +1,15 @@
+// The big container that holds all the primary content: header, main, etc.
+
+@use '../foundations';
+@use '../foundations/grid';
+
+.container {
+   background: var(--bg);
+   margin: var(--grid-base);
+   padding: var(--grid-base);
+
+   @include grid.grid;
+
+   @include foundations.shadow;
+   @include foundations.round-corner;
+}

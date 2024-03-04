@@ -1,0 +1,59 @@
+// Shared/baseline styles used everywhere. This list is and should remain short.
+// One goal for this particular little style sheet is that none of the ordering
+// in it should matter other than the opening `html` declaration.
+
+html {
+   font-family: var(--text);
+   font-size: calc(var(--fs0) * var(--fs-scheme-adjust));
+   font-size-adjust: from-font;
+   line-height: 1;
+   background-color: var(--bg-secondary);
+   color: var(--fg);
+   hanging-punctuation: first allow-end last;
+}
+
+abbr {
+   font-variant: all-small-caps;
+   letter-spacing: var(--smcp-spacing);
+}
+
+label,
+input,
+button {
+   font-family: var(--text-alt);
+   font-weight: var(--text-alt-weight);
+}
+
+code {
+   font-family: var(--mono);
+}
+
+figure img {
+   box-shadow: 0 0 calc(var(--grid-base) / 4) -2pt var(--shadow-color);
+   border-radius: 2pt;
+}
+
+p code {
+   line-height: 1;
+   background: var(--code-bg);
+   padding: 0.05em 0.2em;
+   border-radius: 0.2em;
+}
+
+pre:has(> code) {
+   background: var(--code-block-bg);
+   padding: 0.4em;
+   overflow-x: auto;
+}
+
+pre code {
+   display: block;
+   hanging-punctuation: none;
+   line-height: 1.2;
+   font-size: var(--fs-1);
+}
+
+sup,
+sub {
+   font-size: var(--fs-1);
+}

@@ -22,3 +22,15 @@
 
    --lw: 39rem;
 }
+
+@media screen and (prefers-color-scheme: dark) {
+   :root {
+      --text-lh: 1.55;
+      --text-alt-lh: 1.4;
+   }
+}
+
+.smcp {
+   font-variant: small-caps;
+   letter-spacing: var(--smcp-spacing);
+}

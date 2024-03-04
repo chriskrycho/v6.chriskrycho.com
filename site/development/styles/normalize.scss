@@ -1,4 +1,4 @@
-// The following is *derived* from normalize, but I have made some non-trivial
+// The following is *derived* from normalize.css, but I have made some non-trivial
 // tweaks to it. In particular, I have removed everything that is there for old
 // versions of Edge and IE, as well as very old versions of other browsers,
 // because: I do. not. care. and I do not want to ship needless CSS. 😅
@@ -275,4 +275,28 @@ details {
 
 summary {
    display: list-item;
+}
+
+// ----- reset ---- //
+// From this point, these my additional “resets”. I am treating these as
+// distinct from actual definite *style* choices.
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+   font-size: 1rem;
+   line-height: 1;
+   margin: 0;
+}
+
+figure {
+   margin: 0;
+}
+
+img {
+   display: block;
+   max-width: 100%;
+   aspect-ratio: auto;
 }

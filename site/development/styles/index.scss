@@ -1,11 +1,9 @@
 @use './normalize';
-@use './reset';
+@use './basics';
 
 @use './fonts';
 
 @use './foundations';
-
-@use './ugh'; // 🥴
 
 // Syntax highlighting
 @use './dark';

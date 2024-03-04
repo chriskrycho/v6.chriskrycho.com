@@ -1,0 +1,15 @@
+.main-nav {
+   font-family: var(--text-alt);
+   font-weight: var(--text-alt-weight);
+   grid-column: span 4; // TODO: NOPE
+
+   ul {
+      list-style: none;
+      margin: none;
+   }
+
+   ul li a::before {
+      margin-right: 0.1em;
+      display: inline-block;
+   }
+}
