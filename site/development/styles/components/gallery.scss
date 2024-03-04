@@ -1,0 +1,35 @@
+// A grid
+// https://css-tricks.com/a-grid-of-logos-in-squares/
+.gallery {
+}
+
+.gallery figure {
+   grid-column-end: span 2;
+   display: grid;
+   place-items: center;
+   position: relative;
+}
+
+.gallery figure::before {
+   content: '';
+   padding-bottom: 100%;
+   display: block;
+}
+
+.gallery figure img {
+   height: 100%;
+   width: 100%;
+   margin: 0;
+   display: block;
+   object-fit: cover;
+   object-position: center;
+   position: absolute;
+   max-width: 100%;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+}
+
+.gallery figure::before .gallery figure img {
+   grid-area: 1 / 1 / 2 / 2;
+}
