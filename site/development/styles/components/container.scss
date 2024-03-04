@@ -6,7 +6,8 @@
 .container {
    background: var(--bg);
    margin: var(--grid-base);
-   padding: var(--grid-base);
+   padding-block: var(--grid-base);
+   padding-inline: calc(var(--grid-base) * 1.333);
 
    @include grid.grid;
 

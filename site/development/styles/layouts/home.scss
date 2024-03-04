@@ -3,6 +3,7 @@
 .home {
    @include grid.span(12);
    @include grid.subgrid;
+   row-gap: calc(var(--grid-base) * 1.5);
 
    .software {
       @include grid.span(5);
