@@ -8,17 +8,21 @@
       font-size: var(--fs4);
       font-style: italic;
       font-weight: 400;
+      color: var(--blue-n);
    }
 
    h2 {
       font-family: var(--site-subhead);
       font-size: var(--fs2);
-      font-weight: 700;
+      font-weight: 400;
    }
 
    .header-by {
       font-style: italic;
       font-weight: 300;
-      color: var(--blue-n);
+   }
+
+   .dot {
+      color: var(--blue-4);
    }
 }

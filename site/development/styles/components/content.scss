@@ -3,6 +3,7 @@
    font-weight: var(--text-weight);
    orphans: 3;
    hyphens: none;
+   max-width: var(--lw);
 }
 
 .content {
@@ -19,7 +20,7 @@
 
 .content h1 {
    font-size: var(--fs3);
-   font-weight: 700;
+   font-weight: 500;
 }
 
 .content h2 {

@@ -91,11 +91,6 @@ img {
    max-width: 100%;
 }
 
-/* This should really just be for all content blocks */
-.article-content {
-   max-width: var(--lw);
-}
-
 .sans {
    font-family: var(--text-alt);
    font-weight: var(--text-alt-weight);
