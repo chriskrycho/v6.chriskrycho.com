@@ -3,3 +3,11 @@
 .home {
    @include grid.grid;
 }
+
+.about {
+   justify-self: end;
+}
+
+.avatar {
+   max-width: calc(var(--lw) / 2);
+}

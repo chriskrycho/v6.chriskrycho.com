@@ -1,3 +1,15 @@
 $small: 640px;
 $medium: 1084px;
 $large: 1440px;
+
+.medium {
+   display: none;
+}
+
+@media screen {
+   @media (min-width: $medium) {
+      .medium {
+         display: inherit;
+      }
+   }
+}
