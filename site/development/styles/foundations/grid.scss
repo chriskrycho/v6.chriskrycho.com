@@ -1,90 +1,40 @@
 @use './breakpoints';
 
-@mixin grid {
+@mixin grid($n: 12) {
    display: grid;
-   grid-template-columns: repeat(12, 1fr);
+   grid-template-columns: repeat($n, 1fr);
    grid-template-rows: auto;
    gap: var(--grid-base);
 }
 
-.grid {
-   display: grid;
-   grid-template-columns: repeat(12, 1fr);
-   grid-template-rows: auto;
-   gap: var(--grid-base);
+@mixin span($n) {
+   grid-column-end: span $n;
 }
 
-.span-2 {
-   grid-column-end: span 2;
+@mixin start($n) {
+   grid-column-start: $n;
 }
 
-.span-3 {
-   grid-column-end: span 3;
-}
-
-.span-4 {
-   grid-column-end: span 4;
-}
-
-.span-5 {
-   grid-column-end: span 5;
-}
-
-.span-6 {
-   grid-column-end: span 6;
-}
-
-.span-7 {
-   grid-column-end: span 7;
-}
-
-.span-8 {
-   grid-column-end: span 8;
-}
-
-.span-12 {
-   grid-column-end: span 12;
-}
-
-.start-2 {
-   grid-column-start: 2;
-}
-
-.start-3 {
-   grid-column-start: 3;
-}
-
-.start-4 {
-   grid-column-start: 4;
-}
-
-.subgrid {
+@mixin subgrid {
    display: grid;
    grid-template-columns: subgrid;
    grid-template-rows: auto;
    gap: var(--grid-base);
 }
 
-.grid-6 {
-   display: grid;
-   grid-template-columns: repeat(6, 1fr);
-   grid-template-rows: auto;
-   gap: var(--grid-base);
-}
-
-.margin-grid {
+@mixin margin-grid {
    margin: var(--grid-base);
 }
 
-.margin-bottom-grid {
+@mixin margin-bottom-grid {
    margin-bottom: var(--grid-base);
 }
 
-.padding-grid {
+@mixin padding-grid {
    padding: var(--grid-base);
 }
 
-.padding-inline-grid-extra {
+@mixin padding-inline-grid-extra {
    padding-inline: calc(var(--grid-base) * 1.5);
 }
 

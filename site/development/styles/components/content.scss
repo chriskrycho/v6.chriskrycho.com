@@ -142,6 +142,23 @@
   Then normal links can just be, well, normal links!
  */
 
+.content a[href]::after {
+   content: '∞';
+   font-family: var(--text-alt);
+   font-weight: 600;
+   font-style: normal;
+   vertical-align: baseline;
+   line-height: 0;
+   font-size: 0.9em;
+   /* margin: 0 1pt; */
+   padding: 0 1pt;
+   color: var(--gold-darker);
+}
+
+.content a[href]:hover::after {
+   color: var(--light-blue);
+}
+
 /* Previous version links */
 .content a[href^='https://v3.chriskrycho.com']::after
 {
@@ -171,21 +188,6 @@
    font-family: var(--heading);
    font-style: italic;
    font-weight: 500;
-}
-
-.content a[href]::after {
-   content: '∞';
-   font-family: var(--text);
-   vertical-align: baseline;
-   line-height: 0;
-   font-size: 0.9em;
-   /* margin: 0 1pt; */
-   padding: 0 1pt;
-   color: var(--gold-darker);
-}
-
-.content a[href]:hover::after {
-   color: var(--light-blue);
 }
 
 /* on-site links */

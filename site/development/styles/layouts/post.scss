@@ -1,4 +1,7 @@
-.post {
+@use '../foundations/grid';
+
+.page {
+   @include grid.span(8);
 }
 
 .page-nav {

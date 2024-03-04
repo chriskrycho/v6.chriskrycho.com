@@ -1,9 +1,100 @@
 @use '../foundations/grid';
 
-.about {
-   justify-self: end;
-}
+.home {
+   @include grid.span(12);
+   @include grid.subgrid;
 
-.avatar {
-   max-width: calc(var(--lw) / 2);
+   .software {
+      @include grid.span(5);
+      @include grid.start(2);
+   }
+
+   .music {
+      @include grid.span(5);
+   }
+
+   .speaking {
+      @include grid.span(8);
+      @include grid.subgrid;
+      grid-row-end: span 2;
+      align-content: start;
+      row-gap: calc(var(--grid-base) / 2);
+
+      h1 {
+         @include grid.span(8);
+      }
+
+      .previously,
+      .upcoming {
+         @include grid.span(4);
+
+         h2 {
+            margin-top: 0;
+         }
+      }
+   }
+
+   .essays {
+      @include grid.span(4);
+   }
+
+   .journal {
+      @include grid.span(4);
+   }
+
+   .about {
+      @include grid.span(6);
+      @include grid.start(3);
+      justify-self: end;
+   }
+
+   .avatar {
+      @include grid.span(3);
+      max-width: calc(var(--lw) / 2);
+   }
+
+   .library {
+      @include grid.span(12);
+   }
+
+   .projects {
+      @include grid.span(4);
+   }
+
+   .photography {
+      @include grid.span(8);
+      @include grid.subgrid;
+
+      .header {
+         @include grid.span(8);
+      }
+
+      .gallery {
+         @include grid.span(8);
+         @include grid.subgrid;
+      }
+   }
+
+   .subscribe {
+      @include grid.span(6);
+      @include grid.start(4);
+      @include grid.grid(6);
+      @include grid.subgrid;
+
+      h1 {
+         @include grid.span(6);
+      }
+
+      .options {
+         @include grid.span(6);
+
+         @include grid.grid(6);
+         @include grid.subgrid;
+
+         .feeds,
+         .newsletter {
+            @include grid.span(3);
+         }
+      }
+   }
 }

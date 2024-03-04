@@ -1,14 +1,18 @@
 @use '../foundations/breakpoints';
+@use '../foundations/grid';
 
 .site-header {
-   // grid-area: site-header;
+   // I don't love having these here, but it beats repeating them elsewhere.
+   @include grid.margin-bottom-grid;
+   @include grid.span(12);
 
    h1 {
       font-family: var(--site-header);
       font-size: var(--fs4);
       font-style: italic;
-      font-weight: 400;
+      font-weight: 500;
       color: var(--blue-n);
+      line-height: 1.333;
    }
 
    h2 {
