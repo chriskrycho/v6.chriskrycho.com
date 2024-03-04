@@ -23,7 +23,6 @@
 }
 
 @media screen {
-   // Rough guess
    @media (min-width: breakpoints.$small) {
       :root {
          --base-size: 15px;
@@ -42,11 +41,10 @@
       }
    }
 
-   // Rough guess, more later!
    @media (min-width: breakpoints.$medium) {
       :root {
          --base-size: 16px;
-         --grid-base: 32px;
+         --grid-base: 28px;
 
          // Rounded to whole numbers from https://www.modularscale.com/?16&px&1.333
          --fs-3: 7px;
@@ -64,7 +62,26 @@
       }
    }
 
+   // Rough guess, more later!
    @media (min-width: breakpoints.$large) {
+      :root {
+         --base-size: 17px;
+         --grid-base: 32px;
+
+         // Rounded to whole numbers from https://www.modularscale.com/?16&px&1.333
+         --fs-3: 7px;
+         --fs-2: 10px;
+         --fs-1: 13px;
+         --fs0: 17px;
+         --fs1: 23px;
+         --fs2: 30px;
+         --fs3: 40px;
+         --fs4: 54px;
+         --fs5: 72px;
+      }
+   }
+
+   @media (min-width: breakpoints.$extra-large) {
       :root {
          --base-size: 18px;
          --grid-base: 36px;
@@ -79,9 +96,6 @@
          --fs3: 43px;
          --fs4: 57px;
          --fs5: 76px;
-
-         --text-lh: 1.5;
-         --text-alt-lh: 1.4;
       }
    }
 }
