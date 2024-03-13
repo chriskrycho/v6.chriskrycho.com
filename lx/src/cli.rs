@@ -122,6 +122,9 @@ pub enum Command {
       site_directory: Option<PathBuf>,
    },
 
+   /// 🛠️ Build and serve the site for development!
+   Develop { site_directory: Option<PathBuf> },
+
    /// Give me completions for my own dang tool.
    #[command(about = "🐟 Straight to the config.")]
    Completions,

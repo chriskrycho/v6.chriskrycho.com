@@ -14,19 +14,17 @@ use crate::metadata::cascade::{Cascade, CascadeLoadError};
 use crate::page::{self, Page, Source};
 use crate::templates;
 
-pub fn build_in(in_dir: &Path) -> Result<(), BuildError> {
+pub fn build_in(in_dir: &Path) -> Result<(), Error> {
    // TODO: require this to be passed in this way instead?
-   let in_dir = in_dir
-      .canonicalize()
-      .map_err(|source| BuildError::InvalidDir {
-         path: in_dir.to_owned(),
-         source,
-      })?;
+   let in_dir = in_dir.canonicalize().map_err(|source| Error::InvalidDir {
+      path: in_dir.to_owned(),
+      source,
+   })?;
 
    let config_path = in_dir.join("_data/config.lx.yaml");
    info!("{}, {}", in_dir.display(), config_path.display());
    let config =
-      Config::from_file(&config_path).map_err(|e| BuildError::Config { source: e })?;
+      Config::from_file(&config_path).map_err(|e| Error::Config { source: e })?;
 
    let site_files = get_files_to_load(&in_dir);
    for template in &site_files.templates {
@@ -47,8 +45,7 @@ pub fn build_in(in_dir: &Path) -> Result<(), BuildError> {
 
    // TODO: pull from config?
    let ui_root = in_dir.join("_ui");
-   let tera =
-      templates::load(&site_files.templates, &ui_root).map_err(BuildError::from)?;
+   let tera = templates::load(&site_files.templates, &ui_root).map_err(Error::from)?;
 
    std::fs::create_dir_all(&config.output).expect("Can create output dir");
 
@@ -64,7 +61,7 @@ pub fn build_in(in_dir: &Path) -> Result<(), BuildError> {
    let mut cascade = Cascade::new();
    let cascade = cascade
       .load(&site_files.data)
-      .map_err(|e| BuildError::Cascade { source: e })?;
+      .map_err(|e| Error::Cascade { source: e })?;
 
    let (errors, pages): (Vec<_>, Vec<_>) = sources
       .par_iter()
@@ -103,7 +100,7 @@ pub fn build_in(in_dir: &Path) -> Result<(), BuildError> {
       .partition_map(Either::from);
 
    if !errors.is_empty() {
-      return Err(BuildError::Page(PageErrors(errors)));
+      return Err(Error::Page(PageErrors(errors)));
    }
 
    info!("processed {count} pages", count = pages.len());
@@ -116,7 +113,7 @@ pub fn build_in(in_dir: &Path) -> Result<(), BuildError> {
          .unwrap_or_else(|| panic!("{} should have a containing dir!", path.display()));
 
       std::fs::create_dir_all(containing_dir)
-         .map_err(|e| BuildError::CreateOutputDirectory {
+         .map_err(|e| Error::CreateOutputDirectory {
             path: containing_dir.to_owned(),
             source: e
          })?;
@@ -136,7 +133,7 @@ pub fn build_in(in_dir: &Path) -> Result<(), BuildError> {
                body = page.content
            ),
        )
-       .map_err(|e| BuildError::WriteFileError { path: path.to_owned(), source: e })
+       .map_err(|e| Error::WriteFileError { path: path.to_owned(), source: e })
    })?;
 
    // TODO: get standalone pages.
@@ -156,7 +153,7 @@ pub fn build_in(in_dir: &Path) -> Result<(), BuildError> {
          .unwrap_or_else(|| panic!("{} should have a containing dir!", path.display()));
 
       std::fs::create_dir_all(containing_dir).map_err(|e| {
-         BuildError::CreateOutputDirectory {
+         Error::CreateOutputDirectory {
             path: containing_dir.to_owned(),
             source: e,
          }
@@ -165,7 +162,7 @@ pub fn build_in(in_dir: &Path) -> Result<(), BuildError> {
       let mut buf = Vec::new();
       templates::render(&tera, page, &config, &mut buf)?;
 
-      std::fs::write(&path, buf).map_err(|source| BuildError::WriteFileError {
+      std::fs::write(&path, buf).map_err(|source| Error::WriteFileError {
          path: path.to_owned(),
          source,
       })?;
@@ -174,7 +171,7 @@ pub fn build_in(in_dir: &Path) -> Result<(), BuildError> {
    Ok(())
 }
 
-fn load_sources(site_files: &SiteFiles) -> Result<Vec<Source>, BuildError> {
+fn load_sources(site_files: &SiteFiles) -> Result<Vec<Source>, Error> {
    let mut sources = Vec::new();
    let mut errors = Vec::new();
    for path in &site_files.content {
@@ -193,12 +190,12 @@ fn load_sources(site_files: &SiteFiles) -> Result<Vec<Source>, BuildError> {
    if errors.is_empty() {
       Ok(sources)
    } else {
-      Err(BuildError::Content(errors))
+      Err(Error::Content(errors))
    }
 }
 
 #[derive(Error, Debug)]
-pub enum BuildError {
+pub enum Error {
    #[error("invalid input directory")]
    InvalidDir {
       path: PathBuf,

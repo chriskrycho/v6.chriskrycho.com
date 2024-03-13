@@ -16,9 +16,12 @@ mod feed;
 mod metadata;
 mod page;
 mod sass;
+mod server;
 mod templates;
 
 pub use build::build_in;
+
+use crate::server::serve;
 
 fn main() -> Result<(), String> {
    let cwd = std::env::current_dir().expect(
@@ -41,6 +44,25 @@ fn main() -> Result<(), String> {
             cwd
          });
          build_in(&directory).map_err(|e| format!("{e}"))
+      }
+
+      Develop { site_directory } => {
+         let directory = site_directory.unwrap_or_else(|| {
+            info!(
+               "No directory passed, using current working directory ({}) instead",
+               cwd.display()
+            );
+            cwd
+         });
+
+         if !directory.exists() {
+            return Err(format!(
+               "Source directory '{directory}' does not exist",
+               directory = directory.display()
+            ));
+         }
+
+         serve(&directory).map_err(|e| format!("{e}"))
       }
 
       Convert {

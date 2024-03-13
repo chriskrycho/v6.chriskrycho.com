@@ -12,6 +12,7 @@ documentation.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
+axum = { version = "0.7.4", default-features = true, features = ["http2"] }
 clap = { workspace = true }
 clap_complete = { workspace = true }
 dirs = { workspace = true }
@@ -32,6 +33,9 @@ slug = "0.1"
 syntect = { workspace = true }
 tera = { git = "https://github.com/chriskrycho/tera.git", branch = "render_one_off" }
 thiserror = { workspace = true }
+tokio = { version = "1.36.0", features = ["full"] }
+tower = "0.4.13"
+tower-http = { version = "0.5.2", features = ["fs", "default"] }
 
 [dependencies.atom_syndication]
 version = "0.12"
