@@ -18,7 +18,7 @@ mod page;
 mod sass;
 mod templates;
 
-pub use build::build;
+pub use build::build_in;
 
 fn main() -> Result<(), String> {
    let cwd = std::env::current_dir().expect(
@@ -30,9 +30,9 @@ fn main() -> Result<(), String> {
    // TODO: using args from CLI for verbosity level.
    setup_logger(&cli).map_err(|e| format!("{e}"))?;
 
+   use cli::Command::*;
    match cli.command {
-      cli::Command::UI { web: _ } => todo!(),
-      cli::Command::Publish { site_directory } => {
+      Publish { site_directory } => {
          let directory = site_directory.unwrap_or_else(|| {
             info!(
                "No directory passed, using current working directory ({}) instead",
@@ -40,29 +40,18 @@ fn main() -> Result<(), String> {
             );
             cwd
          });
-         publish(&directory).map_err(|e| format!("{e}"))
+         build_in(&directory).map_err(|e| format!("{e}"))
       }
-      cli::Command::Convert {
+
+      Convert {
          paths,
          include_metadata,
       } => cli::convert(paths, include_metadata).map_err(|e| e.to_string()),
 
-      cli::Command::Sass { paths } => sass::convert(paths).map_err(|e| e.to_string()),
+      Sass { paths } => sass::convert(paths).map_err(|e| e.to_string()),
 
-      cli::Command::Completions => cli.completions().map_err(|e| e.to_string()),
+      Completions => cli.completions().map_err(|e| e.to_string()),
    }
-}
-
-fn ui() -> Result<(), String> {
-   todo!()
-}
-
-fn publish(in_dir: &std::path::Path) -> Result<(), std::io::Error> {
-   if let Err(e) = build::build(in_dir) {
-      error::write_to_stderr(e);
-   }
-
-   Ok(())
 }
 
 fn setup_logger(cli: &Cli) -> Result<(), log::SetLoggerError> {

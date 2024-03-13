@@ -116,12 +116,6 @@ impl Cli {
 
 #[derive(Subcommand, Debug, PartialEq, Clone)]
 pub enum Command {
-   #[command(about = "🛠️ Let's do some work.")]
-   UI {
-      #[arg(short = 'w')]
-      web: bool,
-   },
-
    #[command(about = "🚀 Go live.")]
    Publish {
       /// The root of the site (if different from the current directory).

@@ -14,7 +14,7 @@ use crate::metadata::cascade::{Cascade, CascadeLoadError};
 use crate::page::{self, Page, Source};
 use crate::templates;
 
-pub fn build(in_dir: &Path) -> Result<(), BuildError> {
+pub fn build_in(in_dir: &Path) -> Result<(), BuildError> {
    // TODO: require this to be passed in this way instead?
    let in_dir = in_dir
       .canonicalize()
