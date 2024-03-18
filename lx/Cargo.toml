@@ -36,6 +36,8 @@ thiserror = { workspace = true }
 tokio = { version = "1.36.0", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.5.2", features = ["fs", "default"] }
+watchexec = "3.0.1"
+watchexec-signals = "2.1.0"
 
 [dependencies.atom_syndication]
 version = "0.12"

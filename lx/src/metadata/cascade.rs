@@ -25,7 +25,7 @@ pub enum CascadeLoadError {
    },
 
    #[error("could not parse metadata")]
-   ParseMetadata(Box<dyn std::error::Error>),
+   ParseMetadata(Box<dyn std::error::Error + Send + Sync>),
 }
 
 impl Default for Cascade {
