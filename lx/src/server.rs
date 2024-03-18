@@ -37,6 +37,19 @@ pub fn serve(path: &Path) -> Result<(), Error> {
          .and_then(|inner| inner.map_err(Error::from))
    });
 
+   // This is stupid. 😆
+   match rt.block_on(async { join!(watch, serve_in(path, &rt)) }) {
+      (Ok(_), Ok(_)) => Ok(()),
+      (Ok(_), Err(serve_err)) => Err(Error::Serve { source: serve_err }),
+      (Err(watch_err), Ok(_)) => Err(Error::Watch { source: watch_err }),
+      (Err(watch_err), Err(serve_err)) => Err(Error::Compound {
+         watch: watch_err,
+         serve: serve_err,
+      }),
+   }
+}
+
+fn serve_in(path: &Path, rt: &Runtime) -> tokio::task::JoinHandle<Result<(), Error>> {
    // This could be extracted into its own function.
    let serve_dir = ServeDir::new(path).append_index_html_on_directories(true);
    let router = Router::new().route_service("/*asset", serve_dir);
@@ -53,15 +66,9 @@ pub fn serve(path: &Path) -> Result<(), Error> {
 
       axum::serve(listener, router)
          .await
-         .map_err(|e| Error::Serve { source: e })
+         .map_err(|e| Error::ServeStart { source: e })
    });
-
-   // This is stupid. 😆
-   let (watch_result, serve_result) = rt.block_on(async { join!(watch, serve) });
-   let _ = watch_result??;
-   let _ = serve_result??;
-
-   Ok(())
+   serve
 }
 
 fn watcher_in(path: PathBuf) -> Result<Arc<Watchexec>, Error> {
@@ -99,8 +106,8 @@ pub enum Error {
    #[error("I/O error")]
    Io { source: std::io::Error },
 
-   #[error("Watch error")]
-   Watch {
+   #[error("Error starting file watcher")]
+   WatchStart {
       #[from]
       source: CriticalError,
    },
@@ -111,12 +118,21 @@ pub enum Error {
       source: std::io::Error,
    },
 
-   #[error("Could not serve the site")]
-   Serve { source: std::io::Error },
+   #[error("Could not start the site server")]
+   ServeStart { source: std::io::Error },
+
+   #[error("Error while serving the site")]
+   Serve { source: JoinError },
 
    #[error("Runtime error")]
    Tokio {
       #[from]
       source: JoinError,
    },
+
+   #[error("Watch error")]
+   Watch { source: JoinError },
+
+   #[error("Multiple server errors:\nwatch: {watch}\nserve: {serve}")]
+   Compound { watch: JoinError, serve: JoinError },
 }
