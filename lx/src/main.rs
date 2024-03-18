@@ -78,13 +78,13 @@ fn main() -> Result<(), String> {
 
 fn setup_logger(cli: &Cli) -> Result<(), log::SetLoggerError> {
    let level = if cli.verbose {
-      LevelFilter::Info
+      LevelFilter::Trace
    } else if cli.debug {
       LevelFilter::Debug
    } else if cli.quiet {
       LevelFilter::Off
    } else {
-      LevelFilter::Warn
+      LevelFilter::Info
    };
 
    TermLogger::init(
