@@ -1,7 +1,7 @@
 @use '../foundations/grid';
 
 .home {
-   @include grid.span(12);
+   @include grid.span(4);
    @include grid.subgrid;
    row-gap: calc(var(--grid-base) * 1.5);
 
@@ -97,5 +97,17 @@
             @include grid.span(3);
          }
       }
+   }
+}
+
+@media screen and (min-width: breakpoints.$medium) {
+   .home {
+      @include grid.grid-cols(8);
+   }
+}
+
+@media screen and (min-width: breakpoints.$large) {
+   .home {
+      @include grid.grid-cols(12);
    }
 }

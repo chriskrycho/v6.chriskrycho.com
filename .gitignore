@@ -40,3 +40,12 @@ Temporary Items
 # misc. undesired IDE files
 .idea/cody_history.xml
 */.idea/cody_history.xml
+
+# build output
+sites/*/public
+!sites/www/public/.gitkeep
+!sites/music/public/.gitkeep
+!sites/links/public/.gitkeep
+
+# node nonsense
+node_modules

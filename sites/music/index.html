@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
    <head>
       <meta charset="UTF-8" />
@@ -37,7 +37,7 @@
             </h2>
          </header>
 
-         <main class="home">
+         <main class="splash">
             <section class="featured content">
                <h1>The Desert</h1>
                <h2>Solo piano (2024)</h2>
@@ -134,12 +134,28 @@
                   <div class="newsletter">
                      <h2>Newsletter</h2>
                      <p>Get monthly updates</p>
-                     <form>
-                        <label>Email: <input type="email" /></label>
-                        <button type="submit">Subscribe</button>
+                     <form
+                        action="https://buttondown.email/api/emails/embed-subscribe/music-by-chris-krycho"
+                        method="post"
+                        target="popupwindow"
+                        onsubmit="window.open('https://buttondown.email/music-by-chris-krycho', 'popupwindow')"
+                        class="embeddable-buttondown-form"
+                     >
+                        <label for="bd-email">Enter your email</label>
+                        <input type="email" name="email" id="bd-email" />
+
+                        <input type="submit" value="Subscribe" />
+                        <p class="buttondown">
+                           <a
+                              href="https://buttondown.email/refer/music-by-chris-krycho"
+                              target="_blank"
+                              >Powered by Buttondown.</a
+                           >
+                        </p>
                      </form>
                   </div>
                   <div class="music-services">
+                     <h2>Follow</h2>
                      <ul class="services">
                         <li><a href="">Spotify</a></li>
                         <li><a href="">Apple Music</a></li>

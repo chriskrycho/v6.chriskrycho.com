@@ -2,9 +2,13 @@
 
 @mixin grid($n: 12) {
    display: grid;
-   grid-template-columns: repeat($n, minmax(0, 1fr));
+   @include grid-cols($n);
    grid-template-rows: auto;
    gap: var(--grid-base);
+}
+
+@mixin grid-cols($n) {
+   grid-template-columns: repeat($n, minmax(0, 1fr));
 }
 
 @mixin span($n) {
@@ -41,13 +45,11 @@
 .section-break {
    display: grid;
    grid-template-columns: subgrid;
-   grid-column-end: span 12;
+   grid-column-end: span 4;
    width: 100%;
    border: 0;
    height: 0;
    background: none;
-   grid-column-start: 1;
-   grid-column-end: span 12;
    margin-block: var(--grid-base);
 }
 
@@ -55,7 +57,23 @@
    content: '';
    height: 1px;
    background: var(--brown);
-   grid-column-start: 5;
    grid-column-end: span 4;
    display: block;
+}
+
+@media screen and (min-width: breakpoints.$medium) {
+   .section-break {
+      grid-column-end: span 8;
+   }
+
+   .section-break::after {
+      grid-column-start: 1;
+      grid-column-end: span 6;
+   }
+}
+
+@media screen and (min-width: breakpoints.$large) {
+   .section-break {
+      grid-column: 5 / span 4;
+   }
 }
