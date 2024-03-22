@@ -9,15 +9,12 @@
 
 .splash {
    @include grid.subgrid();
-   @include grid.span(4);
+   @include grid.span-all();
 }
 
 @media screen and (min-width: breakpoints.$small) {
    .container {
       @include grid.grid-cols(6);
-   }
-   .splash {
-      @include grid.span(6);
    }
 }
 
@@ -25,17 +22,10 @@
    .container {
       @include grid.grid-cols(8);
    }
-   .splash {
-      @include grid.span(8);
-   }
 }
 
 @media screen and (min-width: breakpoints.$large) {
    .container {
       @include grid.grid(12);
-   }
-
-   .splash {
-      @include grid.span(12);
    }
 }

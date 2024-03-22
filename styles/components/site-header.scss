@@ -4,7 +4,7 @@
 .site-header {
    // I don't love having these here, but it beats repeating them elsewhere.
    @include grid.margin-bottom-grid;
-   @include grid.span(12);
+   @include grid.span-all();
 
    h1 {
       font-family: var(--site-header);

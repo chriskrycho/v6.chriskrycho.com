@@ -1,4 +1,5 @@
-@use '../foundations/grid';
+@use 'styles/foundations/breakpoints';
+@use 'styles/foundations/grid';
 
 .home {
    @include grid.span(4);
