@@ -1,3 +1,59 @@
 @use '../../../styles';
+@use '../../../styles/foundations/breakpoints';
+@use '../../../styles/foundations/grid';
 
 // Not bothering extracting this until I have a *reason* to do so.
+.avatar {
+   @include grid.span(2);
+}
+
+.about {
+   @include grid.span(4);
+}
+
+.sketch-to-sound {
+   @include grid.span(4);
+}
+
+@media screen {
+   @media (min-width: breakpoints.$small) {
+      .about {
+         @include grid.start(2);
+         @include grid.span(4);
+      }
+
+      .sketch-to-sound {
+         @include grid.start(2);
+      }
+   }
+
+   @media (min-width: breakpoints.$medium) {
+      .avatar {
+         @include grid.start(2);
+      }
+
+      .about {
+         @include grid.start(auto);
+         @include grid.span(4);
+      }
+
+      .sketch-to-sound {
+         @include grid.span(6);
+      }
+   }
+
+   @media (min-width: breakpoints.$large) {
+      .avatar {
+         @include grid.span(3);
+      }
+
+      .about {
+         @include grid.span(6);
+      }
+
+      .sketch-to-sound {
+         @include grid.start(4);
+         @include grid.span(6);
+      }
+   }
+}
