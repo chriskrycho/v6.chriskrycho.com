@@ -23,7 +23,7 @@
 }
 
 @media screen {
-   @media (min-width: breakpoints.$small) {
+   @media (min-width: breakpoints.$six-col) {
       :root {
          --base-size: 15px;
          --grid-base: 24px;
@@ -41,7 +41,7 @@
       }
    }
 
-   @media (min-width: breakpoints.$medium) {
+   @media (min-width: breakpoints.$eight-col) {
       :root {
          --base-size: 16px;
          --grid-base: 28px;
@@ -63,7 +63,7 @@
    }
 
    // Rough guess, more later!
-   @media (min-width: breakpoints.$large) {
+   @media (min-width: breakpoints.$twelve-col) {
       :root {
          --base-size: 17px;
          --grid-base: 32px;

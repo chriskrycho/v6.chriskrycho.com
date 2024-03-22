@@ -7,16 +7,61 @@
    @include grid.span(2);
 }
 
-.about {
-   @include grid.span(4);
-}
-
+.about,
+.featured-item,
 .sketch-to-sound {
    @include grid.span(4);
 }
 
+.subscribe {
+   @include grid.span-all();
+   @include grid.subgrid;
+
+   h1 {
+      @include grid.span-all();
+   }
+}
+
+.options {
+   @include grid.span-all();
+   @include grid.subgrid();
+}
+
+.option {
+   @include grid.span(4);
+}
+
+.option h2 {
+   margin-top: var(--fs-2);
+}
+
+.buttondown {
+   font-size: var(--fs-2);
+   font-family: var(--text-alt);
+}
+
+.featured {
+   @include grid.span-all();
+   @include grid.subgrid();
+   grid-template-columns: subgrid;
+}
+
+.featured-item {
+   @include grid.span-all();
+   @include grid.subgrid();
+   grid-template-columns: subgrid;
+   grid-auto-rows: min-content;
+
+   header,
+   .embed,
+   .links {
+      @include grid.span-all();
+      grid-row-end: span 1;
+   }
+}
+
 @media screen {
-   @media (min-width: breakpoints.$small) {
+   @media (min-width: breakpoints.$six-col) {
       .about {
          @include grid.start(2);
          @include grid.span(4);
@@ -25,9 +70,21 @@
       .sketch-to-sound {
          @include grid.start(2);
       }
+
+      .featured-item {
+         @include grid.span(5);
+      }
+
+      .featured-item:nth-of-type(2) {
+         @include grid.start(2);
+      }
+
+      .option {
+         @include grid.span(6);
+      }
    }
 
-   @media (min-width: breakpoints.$medium) {
+   @media (min-width: breakpoints.$eight-col) {
       .avatar {
          @include grid.start(2);
       }
@@ -38,11 +95,43 @@
       }
 
       .sketch-to-sound {
-         @include grid.span(6);
+         @include grid.span(4);
+      }
+
+      .featured-item:nth-of-type(2) {
+         @include grid.start(auto);
+      }
+
+      .featured {
+         grid-template-columns: subgrid;
+         grid-template-rows: repeat(3, auto);
+      }
+
+      .featured-item {
+         @include grid.span(4);
+         @include grid.subgrid();
+         grid-row: 1 / -1;
+         grid-template-columns: subgrid;
+         grid-auto-rows: min-content;
+
+         header,
+         .embed,
+         .links {
+            @include grid.span-all();
+            grid-row-end: span 1;
+         }
+      }
+
+      .option {
+         @include grid.span(4);
+
+         h2 {
+            margin-top: 0;
+         }
       }
    }
 
-   @media (min-width: breakpoints.$large) {
+   @media (min-width: breakpoints.$twelve-col) {
       .avatar {
          @include grid.span(3);
       }
@@ -54,6 +143,43 @@
       .sketch-to-sound {
          @include grid.start(4);
          @include grid.span(6);
+      }
+
+      .featured {
+         @include grid.span-all();
+         @include grid.subgrid();
+         grid-template-columns: subgrid;
+         grid-template-rows: repeat(3, auto);
+      }
+
+      .featured-item {
+         @include grid.span(5);
+      }
+
+      .featured-item:nth-of-type(1) {
+         @include grid.start(2);
+      }
+
+      .featured-item {
+         grid-row: 1 / -1;
+         grid-template-columns: subgrid;
+         grid-auto-rows: min-content;
+
+         header,
+         .embed,
+         .links {
+            @include grid.span-all();
+            grid-row-end: span 1;
+         }
+      }
+
+      .subscribe {
+         @include grid.start(2);
+         @include grid.span(10);
+      }
+
+      .option {
+         @include grid.span(5);
       }
    }
 }

@@ -101,13 +101,13 @@
    }
 }
 
-@media screen and (min-width: breakpoints.$medium) {
+@media screen and (min-width: breakpoints.$eight-col) {
    .home {
       @include grid.grid-cols(8);
    }
 }
 
-@media screen and (min-width: breakpoints.$large) {
+@media screen and (min-width: breakpoints.$twelve-col) {
    .home {
       @include grid.grid-cols(12);
    }

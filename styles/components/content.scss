@@ -29,6 +29,10 @@
    margin-bottom: var(--fs-3);
 }
 
+.content h1 + h2 {
+   margin-top: var(--fs-2);
+}
+
 .content h3 {
    font-size: var(--fs1);
    font-weight: 600;

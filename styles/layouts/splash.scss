@@ -12,19 +12,19 @@
    @include grid.span-all();
 }
 
-@media screen and (min-width: breakpoints.$small) {
+@media screen and (min-width: breakpoints.$six-col) {
    .container {
       @include grid.grid-cols(6);
    }
 }
 
-@media screen and (min-width: breakpoints.$medium) {
+@media screen and (min-width: breakpoints.$eight-col) {
    .container {
       @include grid.grid-cols(8);
    }
 }
 
-@media screen and (min-width: breakpoints.$large) {
+@media screen and (min-width: breakpoints.$twelve-col) {
    .container {
       @include grid.grid(12);
    }

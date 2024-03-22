@@ -20,12 +20,6 @@
          content="Contemporary classical works for chamber groups and orchestras, congregational church songs, and the occasional bit of electronica."
       />
       <link rel="stylesheet" href="./style.css" media="screen" />
-
-      <style>
-         .featured {
-            grid-column-end: span 6;
-         }
-      </style>
    </head>
    <body>
       <div class="container">
@@ -38,32 +32,48 @@
          </header>
 
          <main class="splash">
-            <section class="featured content">
-               <h1>The Desert</h1>
-               <h2>Solo piano (2024)</h2>
-               <!-- TODO: YouTube embed -->
-               <!-- TODO: icon-driven links to services -->
-            </section>
+            <section class="featured">
+               <section class="featured-item content">
+                  <header>
+                     <h1>The Desert</h1>
+                     <h2>Solo piano (2024)</h2>
+                  </header>
+                  <iframe
+                     class="embed youtube-embed"
+                     src="https://www.youtube.com/embed/CpzJO8BO64o?si=nBeKbls-n1oeSv_r"
+                     title="YouTube video player"
+                     frameborder="0"
+                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                     referrerpolicy="strict-origin-when-cross-origin"
+                     allowfullscreen
+                  ></iframe>
+                  <ul class="links">
+                     <li>Spotify</li>
+                     <li>Apple Music</li>
+                     <li>YouTube Music</li>
+                  </ul>
+               </section>
 
-            <section class="featured content">
-               <h1>Fanfare for a New Era of American Spaceflight</h1>
-               <h2>Symphony orchestra (2022)</h2>
-               <iframe
-                  class="youtube-embed"
-                  src="https://www.youtube.com/embed/l_rRCCHczuU?si=4LzJERZZyfbuafQI"
-                  title="YouTube video player"
-                  frameborder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerpolicy="strict-origin-when-cross-origin"
-                  allowfullscreen
-               ></iframe>
-
-               <ul class="links">
-                  <li>Spotify</li>
-                  <li>Apple Music</li>
-                  <li>YouTube Music</li>
-               </ul>
-               <!-- TODO: icon-driven links to services -->
+               <section class="featured-item content">
+                  <header>
+                     <h1>Fanfare for a New Era of American Spaceflight</h1>
+                     <h2>Symphony orchestra (2022)</h2>
+                  </header>
+                  <iframe
+                     class="embed youtube-embed"
+                     src="https://www.youtube.com/embed/l_rRCCHczuU?si=4LzJERZZyfbuafQI"
+                     title="YouTube video player"
+                     frameborder="0"
+                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                     referrerpolicy="strict-origin-when-cross-origin"
+                     allowfullscreen
+                  ></iframe>
+                  <ul class="links">
+                     <li>Spotify</li>
+                     <li>Apple Music</li>
+                     <li>YouTube Music</li>
+                  </ul>
+               </section>
             </section>
 
             <hr class="section-break" />
@@ -114,6 +124,11 @@
 
             <section class="sketch-to-sound content">
                <h1>Sketch to Sound</h1>
+               <p>
+                  Exploring the process of going from an idea to a performance or
+                  recording.
+               </p>
+               <p>The latest in the series:</p>
                <iframe
                   class="youtube-embed"
                   src="https://www.youtube.com/embed/awvi-KfFCyA?si=L7Pm4thd5f7OquTP"
@@ -123,15 +138,16 @@
                   referrerpolicy="strict-origin-when-cross-origin"
                   allowfullscreen
                ></iframe>
+               <p>See <a href="">the playlist</a> for more!</p>
             </section>
             <hr class="section-break" />
 
             <section class="subscribe content">
                <h1>Follow</h1>
                <div class="options">
-                  <div class="newsletter">
+                  <div class="option newsletter">
                      <h2>Newsletter</h2>
-                     <p>Get monthly updates</p>
+                     <p>Updates in your inbox once a month or so.</p>
                      <form
                         action="https://buttondown.email/api/emails/embed-subscribe/music-by-chris-krycho"
                         method="post"
@@ -152,8 +168,8 @@
                         </p>
                      </form>
                   </div>
-                  <div class="music-services">
-                     <h2>Follow</h2>
+                  <div class="option music-services">
+                     <h2>Music</h2>
                      <ul class="services">
                         <li><a href="">Spotify</a></li>
                         <li><a href="">Apple Music</a></li>
