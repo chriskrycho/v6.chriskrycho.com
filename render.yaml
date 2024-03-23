@@ -1,0 +1,27 @@
+services:
+  - type: web
+    plan: free
+    name: www
+    runtime: static
+    buildFilter:
+      paths:
+        - 'site/styles'
+        - 'site/public'
+
+  - type: web
+    plan: free
+    name: music
+    runtime: static
+    buildFilter:
+      paths:
+        - 'site/styles'
+        - 'sites/music'
+    buildCommand: |
+      # get grass (Rust Sass)
+      curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
+      # build CSS for prod
+      grass --style=compressed ./sites/music/styles/style.scss ./sites/music/public/style.css
+
+      # copy the HTML to the target directory
+      cp ./sites/music/index.html ./sites/music/public/index.html
