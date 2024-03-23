@@ -63,12 +63,11 @@
 @media screen {
    @media (min-width: breakpoints.$six-col) {
       .about {
-         @include grid.start(2);
-         @include grid.span(4);
+         @include grid.span-all();
       }
 
       .sketch-to-sound {
-         @include grid.start(2);
+         @include grid.span(6);
       }
 
       .featured-item {
@@ -84,6 +83,17 @@
       }
    }
 
+   @media (min-width: breakpoints.$medium) {
+      .avatar {
+         @include grid.span(2);
+      }
+
+      .about {
+         @include grid.start(auto);
+         @include grid.span(4);
+      }
+   }
+
    @media (min-width: breakpoints.$eight-col) {
       .avatar {
          @include grid.start(2);
@@ -95,7 +105,7 @@
       }
 
       .sketch-to-sound {
-         @include grid.span(4);
+         @include grid.start(2);
       }
 
       .featured-item:nth-of-type(2) {

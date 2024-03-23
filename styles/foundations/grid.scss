@@ -69,7 +69,7 @@
 
 @media screen and (min-width: breakpoints.$six-col) {
    .section-break::after {
-      grid-column-start: 1;
+      grid-column-start: 2;
       grid-column-end: span 4;
    }
 }
