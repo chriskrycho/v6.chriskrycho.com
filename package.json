@@ -9,6 +9,14 @@
    "prettier": {
       "tabWidth": 3,
       "printWidth": 90,
-      "singleQuote": true
+      "singleQuote": true,
+      "overrides": [
+         {
+            "files": "*.yaml",
+            "options": {
+               "tabWidth": 2
+            }
+         }
+      ]
    }
 }
