@@ -133,11 +133,12 @@
 
    @media (min-width: breakpoints.$twelve-col) {
       .avatar {
+         @include grid.start(3);
          @include grid.span(3);
       }
 
       .about {
-         @include grid.span(6);
+         @include grid.span(5);
       }
 
       .sketch-to-sound {
