@@ -32,6 +32,9 @@ services:
       # use it build CSS for prod
       ./grass --style=compressed ./sites/music/styles/style.scss ./sites/music/public/style.css
 
+      # copy vendored JS and CSS to target directory
+      cp vendor/lite-yt-embed.css vendor/lite-yt-embed.js ./sites/music/public/
+
       # copy the HTML to the target directory
       cp ./sites/music/index.html ./sites/music/public/index.html
 
