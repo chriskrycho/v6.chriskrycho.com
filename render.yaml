@@ -9,6 +9,7 @@ services:
       paths:
         - 'site/styles'
         - 'site/public'
+    staticPublishPath: './site/public'
 
   - type: web
     name: music
@@ -29,3 +30,4 @@ services:
 
       # copy the HTML to the target directory
       cp ./sites/music/index.html ./sites/music/public/index.html
+    staticPublishPath: './sites/music/public'
