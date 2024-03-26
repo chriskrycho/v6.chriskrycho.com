@@ -2,6 +2,9 @@ services:
   - type: web
     name: www
     runtime: static
+    envVars:
+      - key: SKIP_INSTALL_DEPS
+        value: 'true'
     buildFilter:
       paths:
         - 'site/styles'
@@ -10,6 +13,9 @@ services:
   - type: web
     name: music
     runtime: static
+    envVars:
+      - key: SKIP_INSTALL_DEPS
+        value: 'true'
     buildFilter:
       paths:
         - 'site/styles'
