@@ -24,12 +24,16 @@ services:
         - 'sites/music'
     buildCommand: |
       # get grass (Rust Sass)
-      curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+      curl -L --proto '=https' --tlsv1.2 -sSf https://github.com/cargo-bins/cargo-quickinstall/releases/download/grass-0.13.2/grass-0.13.2-x86_64-unknown-linux-musl.tar.gz --output grass.tgz
 
-      # build CSS for prod
-      grass --style=compressed ./sites/music/styles/style.scss ./sites/music/public/style.css
+      # unpack it
+      tar -xzf grass.tgz
+
+      # use it build CSS for prod
+      ./grass --style=compressed ./sites/music/styles/style.scss ./sites/music/public/style.css
 
       # copy the HTML to the target directory
       cp ./sites/music/index.html ./sites/music/public/index.html
+
     staticPublishPath: './sites/music/public'
     domain: music.chriskrycho.com
