@@ -27,7 +27,9 @@
    @include grid.subgrid();
 }
 
-.option {
+.newsletter,
+.music-services,
+.social-media {
    @include grid.span(4);
 }
 
@@ -78,8 +80,17 @@
          @include grid.start(2);
       }
 
-      .option {
+      .subscribe h1 {
+         text-align: center;
+      }
+
+      .newsletter {
          @include grid.span(6);
+      }
+
+      .music-services,
+      .social-media {
+         @include grid.span(3);
       }
    }
 
@@ -132,12 +143,17 @@
          }
       }
 
-      .option {
-         @include grid.span(4);
+      .newsletter {
+         @include grid.span(6);
+         @include grid.start(2);
+      }
 
-         h2 {
-            margin-top: 0;
-         }
+      .music-services {
+         @include grid.start(2);
+      }
+
+      .option h2 {
+         margin-top: 0;
       }
    }
 
@@ -189,8 +205,17 @@
          @include grid.span(10);
       }
 
-      .option {
+      .newsletter {
          @include grid.span(5);
+      }
+
+      .music-services,
+      .social-media {
+         @include grid.span(2);
+      }
+
+      .music-services {
+         @include grid.start(auto);
       }
    }
 }
