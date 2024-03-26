@@ -1,3 +1,16 @@
+.content .embed a:hover {
+   background: inherit;
+   color: inherit;
+   padding: inherit;
+   margin: inherit;
+   border-radius: inherit;
+   line-height: inherit;
+
+   &::after {
+      content: '';
+   }
+}
+
 .youtube-embed {
    aspect-ratio: 16 / 9;
    width: 100%;
