@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: www
+    name: v6.chriskrycho.com
     runtime: static
     envVars:
       - key: SKIP_INSTALL_DEPS
@@ -10,7 +10,7 @@ services:
         - 'site/styles'
         - 'site/public'
     staticPublishPath: './site/public'
-    domain: www.chriskrycho.com
+    domain: v6.chriskrycho.com
 
   - type: web
     name: music
