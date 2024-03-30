@@ -7,8 +7,8 @@ services:
         value: 'true'
     buildFilter:
       paths:
-        - 'site/styles'
-        - 'site/public'
+        - site/styles/**
+        - site/public/**
     staticPublishPath: './site/public'
     domain: v6.chriskrycho.com
 
@@ -20,8 +20,8 @@ services:
         value: 'true'
     buildFilter:
       paths:
-        - 'site/styles'
-        - 'sites/music'
+        - site/styles/**
+        - sites/music/**
     buildCommand: |
       # get grass (Rust Sass)
       curl -L --proto '=https' --tlsv1.2 -sSf https://github.com/cargo-bins/cargo-quickinstall/releases/download/grass-0.13.2/grass-0.13.2-x86_64-unknown-linux-musl.tar.gz --output grass.tgz
