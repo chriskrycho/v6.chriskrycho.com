@@ -60,6 +60,16 @@
       @include grid.span-all();
       grid-row-end: span 1;
    }
+
+   header h1 {
+      font-weight: 500;
+      font-style: italic;
+   }
+
+   header h2 {
+      font-family: Frame Head;
+      font-weight: 400;
+   }
 }
 
 @media screen {
