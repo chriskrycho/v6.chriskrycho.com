@@ -213,6 +213,7 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
       .finalize()
       .map_err(PrepareError::from)
       .map_err(Error::from)?;
+
    Ok(Prepared {
       metadata_src: metadata.map(|m| m.to_string()),
       to_render: ToRender {
@@ -231,9 +232,11 @@ pub struct RenderError {
 
 /// The result of successfully rendering content: HTML. It can be extracted via
 /// the `.html()` method.
+#[repr(transparent)]
 pub struct Rendered(String);
 
 impl Rendered {
+   #[inline]
    pub fn html(self) -> String {
       self.0
    }

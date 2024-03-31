@@ -28,12 +28,6 @@ pub enum CascadeLoadError {
    ParseMetadata(Box<dyn std::error::Error + Send + Sync>),
 }
 
-impl Default for Cascade {
-   fn default() -> Self {
-      Self::new()
-   }
-}
-
 impl Cascade {
    pub fn new() -> Self {
       Self {
