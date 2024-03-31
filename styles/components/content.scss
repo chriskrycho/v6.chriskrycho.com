@@ -90,7 +90,7 @@
    color: inherit;
    transition: all 0.2s ease-in-out;
    text-decoration: none;
-   padding: 0 0.12em;
+   padding: 0 0.12em 1.5pt;
    margin-inline: -0.06em;
    border-radius: 2pt;
    line-height: 0;
@@ -162,35 +162,31 @@
    color: var(--light-blue);
 }
 
-/* Previous version links */
-.content a[href^='https://v3.chriskrycho.com']::after
+.content a[href^='https://v3.chriskrycho.com']::after,
+.content a[href^='https://v4.chriskrycho.com']::after,
+.content a[href^='https://v5.chriskrycho.com']::after
 {
-   content: 'v3';
    font-size: 0.8em;
    vertical-align: super;
    font-family: var(--heading);
    font-style: italic;
    font-weight: 500;
+}
+
+/* Previous version links */
+.content a[href^='https://v3.chriskrycho.com']::after
+{
+   content: 'v3';
 }
 
 .content a[href^='https://v4.chriskrycho.com']::after
 {
    content: 'v4';
-   font-size: 0.8em;
-   vertical-align: super;
-   font-family: var(--heading);
-   font-style: italic;
-   font-weight: 500;
 }
 
 .content a[href^='https://v5.chriskrycho.com']::after
 {
    content: 'v5';
-   font-size: 0.8em;
-   vertical-align: super;
-   font-family: var(--heading);
-   font-style: italic;
-   font-weight: 500;
 }
 
 /* on-site links */
