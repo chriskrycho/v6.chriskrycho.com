@@ -226,23 +226,32 @@
                      <h2>Newsletter</h2>
                      <p>Updates in your inbox once a month or so.</p>
                      <form
+                        class="email-subscribe"
                         action="https://buttondown.email/api/emails/embed-subscribe/music-by-chris-krycho"
                         method="post"
                         target="popupwindow"
                         onsubmit="window.open('https://buttondown.email/music-by-chris-krycho', 'popupwindow')"
                         class="embeddable-buttondown-form"
                      >
-                        <label for="bd-email">Enter your email</label>
-                        <input type="email" name="email" id="bd-email" />
-
-                        <input type="submit" value="Subscribe" />
-                        <p class="buttondown">
-                           <a
-                              href="https://buttondown.email/refer/music-by-chris-krycho"
-                              target="_blank"
-                              >Powered by Buttondown.</a
+                        <div class="email-subscribe__row">
+                           <label for="bd-email" class="email-subscribe__label"
+                              >Enter your email:</label
                            >
-                        </p>
+                           <input
+                              type="email"
+                              name="email"
+                              id="bd-email"
+                              class="email-subscribe__email"
+                           />
+                        </div>
+
+                        <div class="email-subscribe__row">
+                           <input
+                              type="submit"
+                              value="Subscribe"
+                              class="email-subscribe__submit"
+                           />
+                        </div>
                      </form>
                   </div>
                   <div class="option music-services">

@@ -1,0 +1,33 @@
+.email-subscribe {
+}
+
+.email-subscribe__row {
+   display: flex;
+   flex-wrap: nowrap;
+   justify-content: end;
+   gap: 0.5em;
+   margin-block: 0.5em;
+}
+
+.email-subscribe__label {
+   flex: 0 0 auto;
+   line-height: 1.5em;
+   padding: 2pt 0; // account for form weirdness
+}
+
+.email-subscribe__email {
+   flex: 2 0 auto;
+   height: auto;
+   line-height: 1.5em;
+   border: 1px solid var(--light-blue);
+   padding: 1pt 2pt;
+}
+
+.email-subscribe__submit {
+   flex: 0 0 50%;
+   justify-self: end;
+   height: 2em;
+   border-radius: 2pt;
+   background: var(--light-blue-0);
+   border: 1px solid var(--light-blue);
+}
