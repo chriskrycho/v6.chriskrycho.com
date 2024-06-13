@@ -116,23 +116,20 @@ impl Cli {
 
 #[derive(Subcommand, Debug, PartialEq, Clone)]
 pub enum Command {
-   #[command(about = "🚀 Go live.")]
+   /// Go live
    Publish {
       /// The root of the site (if different from the current directory).
       site_directory: Option<PathBuf>,
    },
 
-   /// 🛠️ Build and serve the site for development!
+   /// Build and serve the site for development
    Develop { site_directory: Option<PathBuf> },
 
-   /// Give me completions for my own dang tool.
-   #[command(about = "🐟 Straight to the config.")]
+   /// Straight to the config. Give me completions for my own dang tool
    Completions,
 
-   #[command(
-      about = "Emit markdown *exactly* the same way `lx build|serve` does.",
-      name = "md"
-   )]
+   /// Emit Markdown *exactly* the same way `lx build|serve` does
+   #[command(name = "md")]
    Convert {
       #[clap(flatten)]
       paths: Paths,
@@ -142,8 +139,9 @@ pub enum Command {
       include_metadata: bool,
    },
 
-   /// Process one or more Sass/SCSS files exactly the same way `lx` does. (Does
-   /// not compress styles the way a prod build does.)
+   /// Process one or more Sass/SCSS files exactly the same way `lx` does.
+   ///
+   /// (Does not compress styles the way a prod build does.)
    Sass {
       /// The entry points to process.
       #[clap(flatten)]
