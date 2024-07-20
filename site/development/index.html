@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en-us">
+   <head>
+      <title>Testing</title>
+   </head>
+   <body>
+      <p>Hello, world!</p>
+   </body>
+
+   <script>
+      let ws = new WebSocket('http://localhost:24747/live-reload');
+      console.log('created WebSocket instance');
+
+      ws.addEventListener('error', (event) => {
+         console.error('error:', event);
+      });
+
+      ws.addEventListener('close', (closeEvent) => {
+         let message = `closed because ${closeEvent.reason}`;
+         if (closeEvent.wasClean) {
+            console.log(message);
+         } else {
+            console.error(message, closeEvent.code);
+         }
+      });
+
+      ws.addEventListener('message', (message) => {
+         console.log('got message', message);
+         // TODO:
+         //
+         // 1. Update the Serde config to send this as `type: 'Reload', values: ...`.
+         // 2. Only reload if the path is relevant.
+         let payload;
+         try {
+            payload = JSON.parse(message.data);
+            console.log('Parsed JSON payload of WebSocket message', payload);
+         } catch (e) {
+            console.error('Error deserializing WebSocket message', e);
+         }
+
+         if (payload.Reload) {
+            console.log('Specified reload paths were:', message.data.Reload);
+            location.reload();
+         }
+      });
+
+      console.log('added all WebSocket listeners');
+   </script>
+</html>

@@ -3,7 +3,7 @@ mod email;
 use std::path::{Path, PathBuf};
 
 use normalize_path::NormalizePath;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use email::Email;

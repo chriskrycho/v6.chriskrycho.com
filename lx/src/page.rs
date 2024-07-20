@@ -7,7 +7,7 @@ use std::{
 
 use chrono::{DateTime, FixedOffset};
 use lx_md::{self, RenderError};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 

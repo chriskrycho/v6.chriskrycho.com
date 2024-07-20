@@ -3,7 +3,7 @@
 //! support in data files.
 
 use chrono::{DateTime, FixedOffset};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Deserialize, Debug, Default)]

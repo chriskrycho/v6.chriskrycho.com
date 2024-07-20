@@ -1,19 +1,33 @@
 use std::{
+   future::Future,
    net::SocketAddr,
    path::{Path, PathBuf},
+   pin::pin,
    time::Duration,
 };
 
-use axum::Router;
-use log::info;
+use axum::{
+   extract::{
+      ws::{Message, WebSocket},
+      State, WebSocketUpgrade,
+   },
+   response::Response,
+   routing, Router,
+};
+use futures::{
+   future::{self, Either},
+   SinkExt, StreamExt,
+};
+use log::{debug, error, info};
 use notify::{RecursiveMode, Watcher};
 use notify_debouncer_full::DebouncedEvent;
+use serde::Serialize;
 use tokio::{
    net::TcpListener,
    runtime::Runtime,
    signal,
    sync::{
-      broadcast::{self, Sender},
+      broadcast::{self, error::RecvError, Sender},
       mpsc,
    },
    task::{self, JoinError},
@@ -76,7 +90,10 @@ pub fn serve(path: &Path) -> Result<(), Error> {
 async fn serve_in(path: PathBuf, state: Tx) -> Result<(), Error> {
    // This could be extracted into its own function.
    let serve_dir = ServeDir::new(path).append_index_html_on_directories(true);
-   let router = Router::new().route_service("/*asset", serve_dir);
+   let router = Router::new()
+      .route_service("/*asset", serve_dir)
+      .route("/live-reload", routing::get(websocket_upgrade))
+      .with_state(state);
 
    let addr = SocketAddr::from(([127, 0, 0, 1], 24747)); // 24747 = CHRIS on a phone 🤣
    let listener = TcpListener::bind(addr)
@@ -91,6 +108,133 @@ async fn serve_in(path: PathBuf, state: Tx) -> Result<(), Error> {
    axum::serve(listener, router)
       .await
       .map_err(|source| Error::ServeStart { source })
+}
+
+async fn websocket_upgrade(
+   extractor: WebSocketUpgrade,
+   State(state): State<Tx>,
+) -> Response {
+   debug!("binding websocket upgrade");
+   extractor.on_upgrade(|socket| {
+      debug!("upgrading the websocket");
+      websocket(socket, state)
+   })
+}
+
+async fn websocket(socket: WebSocket, state: Sender<Change>) {
+   let (mut ws_tx, mut ws_rx) = socket.split();
+   let mut change_rx = state.subscribe();
+
+   let reload = pin!(async {
+      loop {
+         match change_rx.recv().await {
+            Ok(Change { paths }) => {
+               let paths_desc = paths
+                  .iter()
+                  .map(|p| p.to_string_lossy())
+                  .collect::<Vec<_>>()
+                  .join("\n\t");
+               debug!("sending WebSocket reload message with paths:\n\t{paths_desc}");
+
+               let payload = serde_json::to_string(&ChangePayload::Reload { paths })
+                  .unwrap_or_else(|e| panic!("Could not serialize payload: {e}"));
+
+               match ws_tx.send(Message::Text(payload)).await {
+                  Ok(_) => debug!("Successfully sent {paths_desc}"),
+                  Err(reason) => error!("Could not send WebSocket message:\n{reason}"),
+               }
+            }
+
+            Err(recv_error) => match recv_error {
+               RecvError::Closed => break,
+               RecvError::Lagged(skipped) => {
+                  error!("Websocket change notifier: lost {skipped} messages");
+               }
+            },
+         }
+      }
+   });
+
+   let close = pin!(async {
+      while let Some(message) = ws_rx.next().await {
+         match handle(message) {
+            Ok(state) => debug!("{state}"),
+
+            Err(error) => {
+               debug!("WebSocket error:\n{error}");
+               break;
+            }
+         }
+      }
+   });
+
+   (reload, close).race().await;
+}
+
+fn handle(message_result: Result<Message, axum::Error>) -> Result<WebSocketState, Error> {
+   debug!("Received {message_result:?} from WebSocket.");
+
+   use Message::*;
+   match message_result {
+      Ok(message) => match message {
+         Text(content) => Err(Error::UnexpectedString(content)),
+
+         Binary(content) => Err(Error::UnexpectedBytes(content)),
+
+         Ping(bytes) => {
+            debug!("Ping with bytes: {bytes:?}");
+            Ok(WebSocketState::Open)
+         }
+
+         Pong(bytes) => {
+            debug!("Ping with bytes: {bytes:?}");
+            Ok(WebSocketState::Open)
+         }
+
+         Close(maybe_frame) => {
+            let message = WebSocketState::Closed {
+               reason: maybe_frame.map(|frame| {
+                  let desc = if !frame.reason.is_empty() {
+                     format!("Reason: {};", frame.reason)
+                  } else {
+                     String::from("")
+                  };
+
+                  let code = format!("Code: {}", frame.code);
+                  desc + &code
+               }),
+            };
+
+            Ok(message)
+         }
+      },
+
+      Err(source) => Err(Error::WebsocketReceive { source }),
+   }
+}
+
+#[derive(Debug, Serialize)]
+enum ChangePayload {
+   Reload { paths: Vec<PathBuf> },
+}
+
+#[derive(Debug)]
+enum WebSocketState {
+   Open,
+   Closed { reason: Option<String> },
+}
+
+impl std::fmt::Display for WebSocketState {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      use WebSocketState::*;
+      match self {
+         Open => write!(f, "WebSocket state: open"),
+         Closed {
+            reason: Some(reason),
+         } => write!(f, "WebSocket state: closed. Cause:\n{reason}"),
+         Closed { reason: None } => write!(f, "WebSocket state: closed."),
+      }
+   }
 }
 
 #[derive(Debug, Clone)]
@@ -122,10 +266,9 @@ async fn watch_in(dir: PathBuf, change_tx: Tx) -> Result<(), Error> {
 
    while let Some(result) = rx.recv().await {
       let paths = result
-         .map_err(|reasons| Error::DebounceErrors(reasons))?
+         .map_err(Error::DebounceErrors)?
          .into_iter()
-         .map(|DebouncedEvent { event, .. }| event.paths)
-         .flatten()
+         .flat_map(|DebouncedEvent { event, .. }| event.paths)
          .collect::<Vec<_>>();
 
       let change = Change { paths };
@@ -173,12 +316,6 @@ pub enum Error {
       source: JoinError,
    },
 
-   #[error("Watch error")]
-   Watch { source: JoinError },
-
-   #[error("Multiple server errors:\nwatch: {watch}\nserve: {serve}")]
-   Compound { watch: JoinError, serve: JoinError },
-
    #[error("Building watcher\n{source}")]
    Watcher {
       #[from]
@@ -186,11 +323,50 @@ pub enum Error {
    },
 
    #[error(
-      "Error in debounce server.\n{}",
+      "Debouncing changes from the file system:\n{}",
       .0.iter()
          .map(|reason| format!("{reason}"))
          .collect::<Vec<_>>()
          .join("\n"))
    ]
    DebounceErrors(Vec<notify::Error>),
+
+   #[error("Could not receive WebSocket message:\n{source}")]
+   WebsocketReceive { source: axum::Error },
+
+   #[error("Unexpectedly received string WebSocket message with content:\n{0}")]
+   UnexpectedString(String),
+
+   #[error("Unexpectedly received binary WebSocket message with bytes:\n{0:?}")]
+   UnexpectedBytes(Vec<u8>),
+   // TODO: use this when handling errors without panicking in WebSocket handler
+   // #[error("Could not serialize data:\n{source}")]
+   // Serialize { source: serde_json::Error },
+}
+
+trait Race<T, U>: Sized {
+   async fn race(self) -> Either<T, U>;
+}
+
+impl<A, B, F1, F2> Race<A, B> for (F1, F2)
+where
+   A: Sized,
+   B: Sized,
+   F1: Future<Output = A> + Unpin,
+   F2: Future<Output = B> + Unpin,
+{
+   async fn race(self) -> Either<A, B> {
+      race(self.0, self.1).await
+   }
+}
+
+async fn race<A, B, F1, F2>(f1: F1, f2: F2) -> Either<A, B>
+where
+   F1: Future<Output = A> + Unpin,
+   F2: Future<Output = B> + Unpin,
+{
+   match future::select(f1, f2).await {
+      Either::Left((a, _f2)) => Either::Left(a),
+      Either::Right((b, _f1)) => Either::Right(b),
+   }
 }

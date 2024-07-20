@@ -8,7 +8,7 @@ use std::path::StripPrefixError;
 use chrono::DateTime;
 use chrono::FixedOffset;
 use lx_md::Markdown;
-use serde_derive::Serialize;
+use serde::Serialize;
 use slug::slugify;
 use thiserror::Error;
 

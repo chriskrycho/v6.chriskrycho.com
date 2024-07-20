@@ -10,7 +10,7 @@ mod v1_1;
 
 use std::{collections::HashMap, convert::TryFrom};
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub use v1_1::{AuthorOptions, Builder as JSONFeedBuilder, FeedItem, JSONFeed};

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Deserialize, Serialize)]
 pub struct Id(uuid::Uuid);
