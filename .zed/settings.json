@@ -3,13 +3,6 @@
 // For a full list of overridable settings, and general information on folder-specific settings,
 // see the documentation: https://zed.dev/docs/configuring-zed#folder-specific-settings
 {
-   "languages": {
-      "JSON": {
-         "tab_size": 3
-      },
-      "Rust": {
-         "tab_size": 3,
-         "wrap_guides": [90]
-      }
-   }
+   "tab_size": 3,
+   "wrap_guides": [90]
 }
