@@ -1,5 +1,6 @@
 use std::{
    future::Future,
+   io,
    net::SocketAddr,
    path::{Path, PathBuf},
    pin::pin,
@@ -12,7 +13,8 @@ use axum::{
       State, WebSocketUpgrade,
    },
    response::Response,
-   routing, Router,
+   routing::{self, trace},
+   Router,
 };
 use futures::{
    future::{self, Either},
@@ -22,6 +24,7 @@ use log::{debug, error, info};
 use notify::{RecursiveMode, Watcher};
 use notify_debouncer_full::DebouncedEvent;
 use serde::Serialize;
+use simplelog::trace;
 use tokio::{
    net::TcpListener,
    runtime::Runtime,
@@ -36,18 +39,26 @@ use tower_http::services::ServeDir;
 use watchexec::error::CriticalError;
 
 // Initially, just rebuild everything. This can get smarter later!
-use crate::build;
+use crate::build::{self, config_for};
 
 /// Serve the site, blocking on the result (i.e. blocking forever until it is
 /// killed by some kind of signal or failure).
-pub fn serve(path: &Path) -> Result<(), Error> {
+pub fn serve(site_dir: &Path) -> Result<(), Error> {
    // Instead of making `main` be `async` (regardless of whether it needs it, as
    // many operations do *not*), make *this* function handle it. An alternative
    // would be to do this same basic wrapping in `main` but only for this.
    let rt = Runtime::new().map_err(|e| Error::Io { source: e })?;
 
-   // TODO: need to (a) do this and (b) do re-builds when watch triggers it.
-   // build_in(path).map_err(Error::from)?;
+   // 1. Run an initial build.
+   // 2. Create a watcher on the *input* directory, *not* the output directory.
+   // 3. When the watcher signals a change, use that to trigger a new *build*, not a
+   //    reload.
+   // 4. When the build finishes, use *that* to trigger a reload.
+   let site_dir = site_dir.try_into()?;
+   trace!("Building in {site_dir:?}");
+   let config = config_for(&site_dir)?; // TODO: watch this separately?
+   trace!("Computed config: {config:?}");
+   build::build(site_dir, &config).map_err(Error::from)?;
 
    // I only need the tx side, since we are going to take advantage of the fact that it
    // `broadcast::Sender` implements `Clone` to pass it around and get easy and convenient
@@ -55,8 +66,10 @@ pub fn serve(path: &Path) -> Result<(), Error> {
    let (tx, _rx) = broadcast::channel(10);
 
    let mut set = task::JoinSet::new();
-   let server_handle = set.spawn_on(serve_in(path.to_owned(), tx.clone()), rt.handle());
-   let watcher_handle = set.spawn_on(watch_in(path.to_owned(), tx.clone()), rt.handle());
+   let server_handle =
+      set.spawn_on(serve_in(config.output.clone(), tx.clone()), rt.handle());
+   let watcher_handle =
+      set.spawn_on(watch_in(config.output.clone(), tx.clone()), rt.handle());
 
    set.spawn_on(
       async move {
@@ -177,9 +190,13 @@ fn handle(message_result: Result<Message, axum::Error>) -> Result<WebSocketState
    use Message::*;
    match message_result {
       Ok(message) => match message {
-         Text(content) => Err(Error::UnexpectedString(content)),
+         Text(content) => {
+            Err(Error::WebSocket(WebSocketError::UnexpectedString(content)))
+         }
 
-         Binary(content) => Err(Error::UnexpectedBytes(content)),
+         Binary(content) => {
+            Err(Error::WebSocket(WebSocketError::UnexpectedBytes(content)))
+         }
 
          Ping(bytes) => {
             debug!("Ping with bytes: {bytes:?}");
@@ -209,7 +226,7 @@ fn handle(message_result: Result<Message, axum::Error>) -> Result<WebSocketState
          }
       },
 
-      Err(source) => Err(Error::WebsocketReceive { source }),
+      Err(source) => Err(Error::WebSocket(WebSocketError::Receive { source })),
    }
 }
 
@@ -281,16 +298,18 @@ async fn watch_in(dir: PathBuf, change_tx: Tx) -> Result<(), Error> {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("Error serving site")]
 pub enum Error {
-   #[error("Build error:\n{source}")]
+   #[error("Build error: {source}")]
    Build {
       #[from]
       source: build::Error,
    },
 
+   #[error(transparent)]
+   Canonicalize(#[from] crate::canonicalized::InvalidDir),
+
    #[error("I/O error\n{source}")]
-   Io { source: std::io::Error },
+   Io { source: io::Error },
 
    #[error("Error starting file watcher\n{source}")]
    WatchStart {
@@ -301,11 +320,11 @@ pub enum Error {
    #[error("Could not open socket on address: {value}\n{source}")]
    BadAddress {
       value: SocketAddr,
-      source: std::io::Error,
+      source: io::Error,
    },
 
    #[error("Could not start the site server\n{source}")]
-   ServeStart { source: std::io::Error },
+   ServeStart { source: io::Error },
 
    #[error("Error while serving the site\n{source}")]
    Serve { source: JoinError },
@@ -331,17 +350,21 @@ pub enum Error {
    ]
    DebounceErrors(Vec<notify::Error>),
 
+   #[error(transparent)]
+   WebSocket(#[from] WebSocketError),
+}
+
+// TODO: consider moving to its own module.
+#[derive(Debug, thiserror::Error)]
+pub enum WebSocketError {
    #[error("Could not receive WebSocket message:\n{source}")]
-   WebsocketReceive { source: axum::Error },
+   Receive { source: axum::Error },
 
    #[error("Unexpectedly received string WebSocket message with content:\n{0}")]
    UnexpectedString(String),
 
    #[error("Unexpectedly received binary WebSocket message with bytes:\n{0:?}")]
    UnexpectedBytes(Vec<u8>),
-   // TODO: use this when handling errors without panicking in WebSocket handler
-   // #[error("Could not serialize data:\n{source}")]
-   // Serialize { source: serde_json::Error },
 }
 
 trait Race<T, U>: Sized {

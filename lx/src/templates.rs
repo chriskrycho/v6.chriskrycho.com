@@ -10,7 +10,7 @@ use crate::{config::Config, page::Page};
 
 #[derive(Error, Debug)]
 pub enum Error {
-   #[error("could not load templates")]
+   #[error("could not load templates: {source}")]
    Load { source: tera::Error },
 
    #[error("could not render template for {path}")]

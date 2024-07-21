@@ -29,13 +29,11 @@ pub enum CascadeLoadError {
 }
 
 impl Cascade {
-   pub fn new() -> Self {
-      Self {
+   pub fn new(paths: &[PathBuf]) -> Result<Self, CascadeLoadError> {
+      let mut cascade = Cascade {
          inner: HashMap::new(),
-      }
-   }
+      };
 
-   pub fn load(&mut self, paths: &[PathBuf]) -> Result<&mut Self, CascadeLoadError> {
       for path in paths {
          let fd = std::fs::File::open(path).map_err(|e| CascadeLoadError::OpenFile {
             source: e,
@@ -46,15 +44,15 @@ impl Cascade {
             .map_err(|e| CascadeLoadError::ParseMetadata(Box::new(e)))?;
 
          // Panic instead of returning a `Result` because this means there is
-         // a real bug in our path construction (not something missing on disk).
+         // a real bug in the path construction (not something missing on disk).
          let context_dir = path
             .parent()
             .unwrap_or_else(|| panic!("missing parent of path {}", path.display()));
 
-         self.add_at(context_dir, metadata);
+         cascade.add_at(context_dir, metadata);
       }
 
-      Ok(self)
+      Ok(cascade)
    }
 
    pub fn add_at<P: AsRef<Path>>(&mut self, path: P, value: Ambient) -> &mut Self {
@@ -94,9 +92,7 @@ impl Cascade {
    pub fn series<P: AsRef<Path>>(&self, p: P) -> Option<Series> {
       self.find_map(p.as_ref(), &|m| m.series.clone())
    }
-}
 
-impl Cascade {
    fn find_map<T, F>(&self, path: &Path, f: &F) -> Option<T>
    where
       F: Fn(&Ambient) -> Option<T>,
@@ -118,7 +114,7 @@ mod tests {
 
    #[test]
    fn direct_lookup_finds_entry() {
-      let mut cascade = Cascade::new();
+      let mut cascade = Cascade::new(&[]).unwrap();
       cascade.add_at(
          "basic-path",
          Ambient {
@@ -132,7 +128,7 @@ mod tests {
 
    #[test]
    fn nested_lookup_finds_entry() {
-      let mut cascade = Cascade::new();
+      let mut cascade = Cascade::new(&[]).unwrap();
       cascade.add_at(
          "nested",
          Ambient {
@@ -146,7 +142,7 @@ mod tests {
 
    #[test]
    fn direct_nesting_takes_last() {
-      let mut cascade = Cascade::new();
+      let mut cascade = Cascade::new(&[]).unwrap();
       cascade.add_at(
          "nested/path",
          Ambient {
@@ -168,13 +164,13 @@ mod tests {
 
    #[test]
    fn no_entry_is_none() {
-      let cascade = Cascade::new();
+      let cascade = Cascade::new(&[]).unwrap();
       assert_eq!(cascade.layout("path"), None);
    }
 
    #[test]
    fn no_matching_path_is_none() {
-      let mut cascade = Cascade::new();
+      let mut cascade = Cascade::new(&[]).unwrap();
       cascade.add_at(
          "some/path",
          Ambient {
@@ -187,7 +183,7 @@ mod tests {
 
    #[test]
    fn no_matching_entry_is_none() {
-      let mut cascade = Cascade::new();
+      let mut cascade = Cascade::new(&[]).unwrap();
       cascade.add_at(
          "path",
          Ambient {

@@ -8,6 +8,7 @@ use simplelog::{ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
 
 mod archive;
 mod build;
+mod canonicalized;
 mod cli;
 mod collection;
 mod config;
@@ -19,8 +20,7 @@ mod sass;
 mod server;
 mod templates;
 
-pub use build::build_in;
-
+use crate::build::build_in;
 use crate::server::serve;
 
 fn main() -> Result<(), String> {
@@ -30,20 +30,25 @@ fn main() -> Result<(), String> {
 
    let mut cli = Cli::parse();
 
-   // TODO: using args from CLI for verbosity level.
+   // TODO: configure Miette or similar to print this particularly nicely. Then we can
+   // just return that!
    setup_logger(&cli).map_err(|e| format!("{e}"))?;
 
    use cli::Command::*;
    match cli.command {
       Publish { site_directory } => {
-         let directory = site_directory.unwrap_or_else(|| {
-            info!(
-               "No directory passed, using current working directory ({}) instead",
-               cwd.display()
-            );
-            cwd
-         });
-         build_in(&directory).map_err(|e| format!("{e}"))
+         let directory = site_directory
+            .unwrap_or_else(|| {
+               info!(
+                  "No directory passed, using current working directory ({}) instead",
+                  cwd.display()
+               );
+               cwd
+            })
+            .try_into()
+            .map_err(|e| format!("{e}"))?;
+
+         build_in(directory).map_err(|e| format!("{e}"))
       }
 
       Develop { site_directory } => {
@@ -57,8 +62,8 @@ fn main() -> Result<(), String> {
 
          if !directory.exists() {
             return Err(format!(
-               "Source directory '{directory}' does not exist",
-               directory = directory.display()
+               "Source directory '{}' does not exist",
+               directory.display()
             ));
          }
 
