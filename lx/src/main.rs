@@ -4,7 +4,9 @@ use clap::Parser;
 use cli::Cli;
 
 use log::info;
-use simplelog::{ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
+use simplelog::{
+   ColorChoice, Config, ConfigBuilder, LevelFilter, TermLogger, TerminalMode,
+};
 
 mod archive;
 mod build;
@@ -92,10 +94,19 @@ fn setup_logger(cli: &Cli) -> Result<(), log::SetLoggerError> {
       LevelFilter::Info
    };
 
-   TermLogger::init(
-      level,
-      Config::default(),
-      TerminalMode::Mixed,
-      ColorChoice::Auto,
-   )
+   // If only `--verbose`, do not trace *other* crates. If `--very-verbose`,
+   // trace everything.
+   let config = if level == LevelFilter::Trace && !cli.very_verbose {
+      let mut cfg = ConfigBuilder::new();
+      for &crate_name in CRATES {
+         cfg.add_filter_allow(crate_name.to_string());
+      }
+      cfg.build()
+   } else {
+      Config::default()
+   };
+
+   TermLogger::init(level, config, TerminalMode::Mixed, ColorChoice::Auto)
 }
+
+const CRATES: &[&str] = &["lx", "lx-md", "json-feed"];

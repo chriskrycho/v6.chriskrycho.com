@@ -22,11 +22,11 @@ pub struct Cli {
    #[command(subcommand)]
    pub command: Command,
 
-   /// Include `debug!` logs
+   /// Include debug-level logs
    #[arg(short, long, global = true, conflicts_with = "quiet")]
    pub debug: bool,
 
-   /// Include `info!` logs too.
+   /// Include trace-level logs from lx.
    #[arg(
       short,
       long,
@@ -36,13 +36,18 @@ pub struct Cli {
    )]
    pub verbose: bool,
 
+   /// Include trace-level logs from *everything*.
+   #[arg(long, global = true, conflicts_with = "quiet")]
+   pub very_verbose: bool,
+
    /// Don't include *any* logging. None. Zip. Zero. Nada.
    #[arg(
       short,
       long,
       global = true,
       conflicts_with = "debug",
-      conflicts_with = "verbose"
+      conflicts_with = "verbose",
+      conflicts_with = "very_verbose"
    )]
    pub quiet: bool,
 }

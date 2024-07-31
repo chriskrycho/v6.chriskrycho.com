@@ -13,18 +13,17 @@ use axum::{
       State, WebSocketUpgrade,
    },
    response::Response,
-   routing::{self, trace},
+   routing,
    Router,
 };
 use futures::{
    future::{self, Either},
    SinkExt, StreamExt,
 };
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use notify::{RecursiveMode, Watcher};
 use notify_debouncer_full::DebouncedEvent;
 use serde::Serialize;
-use simplelog::trace;
 use tokio::{
    net::TcpListener,
    runtime::Runtime,

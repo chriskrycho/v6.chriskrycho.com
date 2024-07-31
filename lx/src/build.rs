@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use log::{debug, error, info};
+use log::{debug, error, trace};
 use rayon::iter::Either;
 use rayon::prelude::*;
 use syntect::highlighting::ThemeSet;
@@ -35,15 +35,8 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
    let input_dir = directory.path();
 
    let site_files = files_to_load(input_dir);
-   debug!(
-      "Loaded templates:\n{}",
-      site_files
-         .templates
-         .iter()
-         .map(|template| template.display().to_string())
-         .collect::<Vec<_>>()
-         .join("\n\t")
-   );
+   trace!("Site files: {site_files}");
+
    let ThemeSet { themes } = ThemeSet::load_defaults();
 
    // TODO: generate these as a one-and-done with the themes I *actually* want,
@@ -69,7 +62,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
 
    let sources = load_sources(&site_files)?;
 
-   info!("loaded {count} pages", count = sources.len());
+   debug!("loaded {count} pages", count = sources.len());
 
    let cascade =
       Cascade::new(&site_files.data).map_err(|source| Error::Cascade { source })?;
@@ -114,7 +107,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
       return Err(Error::Page(PageErrors(errors)));
    }
 
-   info!("processed {count} pages", count = pages.len());
+   debug!("processed {count} pages", count = pages.len());
 
    // TODO: get standalone pages.
 
@@ -171,7 +164,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
       })?;
 
       let mut buf = Vec::new();
-      templates::render(&tera, page, &config, &mut buf)?;
+      templates::render(&tera, page, config, &mut buf)?;
 
       std::fs::write(&path, buf).map_err(|source| Error::WriteFile {
          path: path.to_owned(),
@@ -296,11 +289,42 @@ struct SiteFiles {
    templates: Vec<PathBuf>,
 }
 
+impl std::fmt::Display for SiteFiles {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      let sep = String::from("\n      ");
+      let empty = String::from(" (none)");
+
+      let display = |paths: &[PathBuf]| {
+         if paths.is_empty() {
+            return empty.clone();
+         }
+
+         let path_strings = paths
+            .iter()
+            .map(|path| path.display().to_string())
+            .collect::<Vec<_>>()
+            .join(&sep);
+
+         sep.clone() + &path_strings
+      };
+
+      // Yes, I could do these alignments with format strings; maybe at some
+      // point I will switch to that.
+      writeln!(f)?;
+      writeln!(f, "    config files:{}", display(&self.configs))?;
+      writeln!(f, "   content files:{}", display(&self.content))?;
+      writeln!(f, "      data files:{}", display(&self.data))?;
+      writeln!(f, "  template files:{}", display(&self.templates))?;
+      Ok(())
+   }
+}
+
 fn files_to_load(in_dir: &Path) -> SiteFiles {
    let root = in_dir.display();
 
    let content_dir = in_dir.join("content");
    let content_dir = content_dir.display();
+   trace!("{content_dir}");
 
    SiteFiles {
       configs: resolved_paths_for(&format!("{root}/**/config.lx.yaml")),
