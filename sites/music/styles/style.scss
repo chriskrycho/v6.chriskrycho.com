@@ -4,33 +4,33 @@
 
 // Not bothering extracting this until I have a *reason* to do so.
 .avatar {
-   @include grid.span(2);
+   grid-column-end: span 2;
 }
 
 .about,
 .featured-item,
 .sketch-to-sound {
-   @include grid.span(4);
+   grid-column-end: span 4;
 }
 
 .subscribe {
-   @include grid.span-all();
+   grid-column: 1 / -1;
    @include grid.subgrid;
 
    h1 {
-      @include grid.span-all();
+      grid-column: 1 / -1;
    }
 }
 
 .options {
-   @include grid.span-all();
+   grid-column: 1 / -1;
    @include grid.subgrid();
 }
 
 .newsletter,
 .music-services,
 .social-media {
-   @include grid.span(4);
+   grid-column-end: span 4;
 }
 
 .option h2 {
@@ -43,13 +43,13 @@
 }
 
 .featured {
-   @include grid.span-all();
+   grid-column: 1 / -1;
    @include grid.subgrid();
    grid-template-columns: subgrid;
 }
 
 .featured-item {
-   @include grid.span-all();
+   grid-column: 1 / -1;
    @include grid.subgrid();
    grid-template-columns: subgrid;
    grid-auto-rows: min-content;
@@ -57,7 +57,7 @@
    header,
    .embed,
    .links {
-      @include grid.span-all();
+      grid-column: 1 / -1;
       grid-row-end: span 1;
    }
 
@@ -75,19 +75,19 @@
 @media screen {
    @media (min-width: breakpoints.$six-col) {
       .about {
-         @include grid.span-all();
+         grid-column: 1 / -1;
       }
 
       .sketch-to-sound {
-         @include grid.span(6);
+         grid-column-end: span 6;
       }
 
       .featured-item {
-         @include grid.span(5);
+         grid-column-end: span 5;
       }
 
       .featured-item:nth-of-type(2) {
-         @include grid.start(2);
+         grid-column-start: 2;
       }
 
       .subscribe h1 {
@@ -95,42 +95,42 @@
       }
 
       .newsletter {
-         @include grid.span(6);
+         grid-column-end: span 6;
       }
 
       .music-services,
       .social-media {
-         @include grid.span(3);
+         grid-column-end: span 3;
       }
    }
 
    @media (min-width: breakpoints.$medium) {
       .avatar {
-         @include grid.span(2);
+         grid-column-end: span 2;
       }
 
       .about {
-         @include grid.start(auto);
-         @include grid.span(4);
+         grid-column-start: auto;
+         grid-column-end: span 4;
       }
    }
 
    @media (min-width: breakpoints.$eight-col) {
       .avatar {
-         @include grid.start(2);
+         grid-column-start: 2;
       }
 
       .about {
-         @include grid.start(auto);
-         @include grid.span(4);
+         grid-column-start: auto;
+         grid-column-end: span 4;
       }
 
       .sketch-to-sound {
-         @include grid.start(2);
+         grid-column-start: 2;
       }
 
       .featured-item:nth-of-type(2) {
-         @include grid.start(auto);
+         grid-column-start: auto;
       }
 
       .featured {
@@ -139,7 +139,7 @@
       }
 
       .featured-item {
-         @include grid.span(4);
+         grid-column-end: span 4;
          @include grid.subgrid();
          grid-row: 1 / -1;
          grid-template-columns: subgrid;
@@ -148,18 +148,18 @@
          header,
          .embed,
          .links {
-            @include grid.span-all();
+            grid-column: 1 / -1;
             grid-row-end: span 1;
          }
       }
 
       .newsletter {
-         @include grid.span(6);
-         @include grid.start(2);
+         grid-column-end: span 6;
+         grid-column-start: 2;
       }
 
       .music-services {
-         @include grid.start(2);
+         grid-column-start: 2;
       }
 
       .option h2 {
@@ -169,32 +169,31 @@
 
    @media (min-width: breakpoints.$twelve-col) {
       .avatar {
-         @include grid.start(3);
-         @include grid.span(3);
+         grid-column: 3 / span 3;
       }
 
       .about {
-         @include grid.span(5);
+         grid-column-end: span 5;
       }
 
       .sketch-to-sound {
-         @include grid.start(4);
-         @include grid.span(6);
+         grid-column-start: 4;
+         grid-column-end: span 6;
       }
 
       .featured {
-         @include grid.span-all();
+         grid-column: 1 / -1;
          @include grid.subgrid();
          grid-template-columns: subgrid;
          grid-template-rows: repeat(3, auto);
       }
 
       .featured-item {
-         @include grid.span(5);
+         grid-column-end: span 5;
       }
 
       .featured-item:nth-of-type(1) {
-         @include grid.start(2);
+         grid-column-start: 2;
       }
 
       .featured-item {
@@ -205,27 +204,37 @@
          header,
          .embed,
          .links {
-            @include grid.span-all();
+            grid-column: 1 / -1;
             grid-row-end: span 1;
          }
       }
 
       .subscribe {
-         @include grid.start(2);
-         @include grid.span(10);
+         grid-column-start: 2;
+         grid-column-end: span 10;
       }
 
       .newsletter {
-         @include grid.span(5);
+         grid-column-end: span 5;
       }
 
       .music-services,
       .social-media {
-         @include grid.span(2);
+         grid-column-end: span 2;
       }
 
       .music-services {
-         @include grid.start(auto);
+         grid-column-start: auto;
+      }
+   }
+
+   @media (min-width: breakpoints.$extra-large) {
+      .avatar {
+         grid-column: 4 / span 2;
+      }
+
+      .about {
+         grid-column-end: span 4;
       }
    }
 }

@@ -2,33 +2,32 @@
 @use 'styles/foundations/grid';
 
 .home {
-   @include grid.span(4);
    @include grid.subgrid;
    row-gap: calc(var(--grid-base) * 1.5);
 
    .software {
-      @include grid.span(5);
-      @include grid.start(2);
+      grid-column-end: span 5;
+      grid-column-start: 2;
    }
 
    .music {
-      @include grid.span(5);
+      grid-column-end: span 5;
    }
 
    .speaking {
-      @include grid.span(8);
+      grid-column-end: span 4;
       @include grid.subgrid;
       grid-row-end: span 2;
       align-content: start;
       row-gap: calc(var(--grid-base) / 2);
 
       h1 {
-         @include grid.span(8);
+         grid-column: 1/-1;
       }
 
       .previously,
       .upcoming {
-         @include grid.span(4);
+         grid-column-end: span 4;
 
          h2 {
             margin-top: 0;
@@ -37,78 +36,108 @@
    }
 
    .essays {
-      @include grid.span(4);
+      grid-column-end: span 4;
    }
 
    .journal {
-      @include grid.span(4);
+      grid-column-end: span 4;
    }
 
    .about {
-      @include grid.span(6);
-      @include grid.start(3);
-      justify-self: end;
+      grid-column: 1 / -1;
    }
 
    .avatar {
-      @include grid.span(3);
-      max-width: calc(var(--lw) / 2);
+      grid-colun-start: auto;
+      grid-column-end: span 2;
+      // max-width: calc(var(--lw) / 2);
    }
 
    .library {
-      @include grid.span(12);
+      grid-column-end: span 12;
    }
 
    .projects {
-      @include grid.span(4);
+      grid-column-end: span 4;
    }
 
    .photography {
-      @include grid.span(8);
+      grid-column-end: span 8;
       @include grid.subgrid;
 
       .header {
-         @include grid.span(8);
+         grid-column-end: span 8;
       }
 
       .gallery {
-         @include grid.span(8);
+         grid-column-end: span 8;
          @include grid.subgrid;
       }
    }
 
    .subscribe {
-      @include grid.span(6);
-      @include grid.start(4);
+      grid-column-end: span 6;
+      grid-column-start: 4;
       @include grid.grid(6);
       @include grid.subgrid;
 
       h1 {
-         @include grid.span(6);
+         grid-column-end: span 6;
       }
 
       .options {
-         @include grid.span(6);
+         grid-column-end: span 6;
 
          @include grid.grid(6);
          @include grid.subgrid;
 
          .feeds,
          .newsletter {
-            @include grid.span(3);
+            grid-column-end: span 3;
          }
       }
    }
 }
 
-@media screen and (min-width: breakpoints.$eight-col) {
-   .home {
-      @include grid.grid-cols(8);
+@media screen {
+   @media (min-width: breakpoints.$medium) {
+      .home {
+         .about {
+            grid-column-end: span 4;
+         }
+      }
    }
-}
 
-@media screen and (min-width: breakpoints.$twelve-col) {
-   .home {
-      @include grid.grid-cols(12);
+   @media (min-width: breakpoints.$eight-col) {
+      .home {
+         .about {
+            grid-column-start: 2;
+         }
+      }
+   }
+
+   @media (min-width: breakpoints.$twelve-col) {
+      .home {
+         .about {
+            grid-column-start: 3;
+            grid-column-end: span 5;
+         }
+
+         .avatar {
+            grid-column-end: span 3;
+         }
+      }
+   }
+
+   @media (min-width: breakpoints.$extra-large) {
+      .home {
+         .about {
+            grid-column: 4 / span 4;
+         }
+
+         .avatar {
+            grid-column-end: span 2;
+         }
+      }
    }
 }

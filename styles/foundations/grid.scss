@@ -17,10 +17,6 @@
    grid-column: 1 / -1;
 }
 
-@mixin span($n) {
-   grid-column-end: span $n;
-}
-
 @mixin start($n) {
    grid-column-start: $n;
 }
