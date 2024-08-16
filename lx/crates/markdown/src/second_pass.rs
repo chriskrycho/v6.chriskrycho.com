@@ -174,7 +174,7 @@ impl<'e> std::iter::IntoIterator for State<'e, '_> {
             .enumerate()
             .map(|(index, (name, evts))| (index + 1, name, evts))
          {
-            events.push(Html(format!(r#"<li id="{index}">"#).into()));
+            events.push(Html(format!(r#"<li id="fn{index}">"#).into()));
 
             let backref = Html(
                format!(
