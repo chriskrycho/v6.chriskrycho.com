@@ -83,11 +83,7 @@ impl<'e, 's> State<'e, 's> {
                      Ok(None)
                   }
                   None => {
-                     let text = rewrite(text.as_ref());
-                     // TODO: find some other latex handler, or do it myself. This library
-                     // is... not great.
-                     // let text = latex2mathml::replace(&text)?;
-                     self.events.push(Html(text.into()));
+                     self.events.push(Html(rewrite(text.as_ref()).into()));
                      Ok(None)
                   }
                }
@@ -105,6 +101,24 @@ impl<'e, 's> State<'e, 's> {
                }
                None => Err(Error::FinishedNonStartedCodeBlock),
             },
+
+            DisplayMath(content) => {
+               let math = latex2mathml::latex_to_mathml(
+                  content.as_ref(),
+                  latex2mathml::DisplayStyle::Block,
+               )?;
+               self.events.push(Html(math.into()));
+               Ok(None)
+            }
+
+            InlineMath(content) => {
+               let math = latex2mathml::latex_to_mathml(
+                  content.as_ref(),
+                  latex2mathml::DisplayStyle::Inline,
+               )?;
+               self.events.push(Html(math.into()));
+               Ok(None)
+            }
 
             // If we find a footnote reference here, something has gone wrong: we should
             // have handled them all during `first_pass`.

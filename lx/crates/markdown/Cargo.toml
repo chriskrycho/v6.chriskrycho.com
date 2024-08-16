@@ -19,13 +19,12 @@ dirs = { workspace = true }
 log = { workspace = true }
 latex2mathml = "0.2"
 lazy_static = { workspace = true }
+pulldown-cmark = { version = "0.11", default_features = false, features = [
+    "simd",
+    "html",
+] }
 simplelog = { workspace = true }
 syntect = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
-
-[dependencies.pulldown-cmark]
-git = "https://github.com/raphlinus/pulldown-cmark.git"
-default-features = false
-features = ["simd", "html"]

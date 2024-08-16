@@ -2028,8 +2028,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.10.0"
-source = "git+https://github.com/raphlinus/pulldown-cmark.git#1a5e54546b40d79eec8001d4e268b436571a78bb"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb4e75767fbc9d92b90e4d0c011f61358cde9513b31ef07ea3631b15ffc3b4fd"
 dependencies = [
  "bitflags 2.4.2",
  "memchr",
@@ -2039,8 +2040,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark-escape"
-version = "0.10.0"
-source = "git+https://github.com/raphlinus/pulldown-cmark.git#1a5e54546b40d79eec8001d4e268b436571a78bb"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "007d8adb5ddab6f8e3f491ac63566a7d5002cc7ed73901f72057943fa71ae1ae"
 
 [[package]]
 name = "quick-xml"
