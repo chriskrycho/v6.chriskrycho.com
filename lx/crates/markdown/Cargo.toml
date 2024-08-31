@@ -19,7 +19,7 @@ dirs = { workspace = true }
 log = { workspace = true }
 latex2mathml = "0.2"
 lazy_static = { workspace = true }
-pulldown-cmark = { version = "0.11", default_features = false, features = [
+pulldown-cmark = { version = "0.11", default-features = false, features = [
     "simd",
     "html",
 ] }

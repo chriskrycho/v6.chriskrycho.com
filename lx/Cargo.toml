@@ -30,6 +30,7 @@ json-feed = { path = "./crates/json-feed" }
 lazy_static = { workspace = true }
 log = { workspace = true }
 lx-md = { path = "./crates/markdown" }
+minijinja = { version = "2", features = ["loader", "macros"] }
 normalize-path = "0.2"
 notify = { version = "6.1.1", default-features = false, features = [
     "macos_kqueue",
@@ -43,7 +44,6 @@ serde_yaml = { workspace = true }
 simplelog = { workspace = true }
 slug = "0.1"
 syntect = { workspace = true }
-tera = { git = "https://github.com/chriskrycho/tera.git", branch = "render_one_off" }
 thiserror = { workspace = true }
 tokio = { version = "1.36.0", features = ["full"] }
 tower = "0.4.13"
@@ -73,7 +73,6 @@ resolver = "2"
 members = ["crates/*"]
 
 [workspace.package]
-name = "lx"
 version = "1.0.0"
 authors = ["Chris Krycho <hello@chriskrycho.com>"]
 edition = "2021"

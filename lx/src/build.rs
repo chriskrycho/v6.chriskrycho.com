@@ -52,7 +52,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
 
    // TODO: pull from config?
    let ui_root = input_dir.join("_ui");
-   let tera = templates::load(&site_files.templates, &ui_root).map_err(Error::from)?;
+   let jinja_env = templates::load(&ui_root).map_err(Error::from)?;
 
    std::fs::create_dir_all(&config.output).expect("Can create output dir");
 
@@ -75,28 +75,18 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
             &input_dir.join("content"),
             &cascade,
             |text, metadata| {
-               tera::Context::from_serialize(metadata)
-                  // While this creates a new Tera instance on every document, the other
-                  // option here is to do exactly the same thing but using `.clone()`,
-                  // which will actually be *more* expensive because that has to clone the
-                  // entirety of the struct, which includes all of its underlying hash
-                  // maps and therefore the elements it has in them. This has the same
-                  // *base* amount of allocation, it gets to skip all the additional
-                  // copies *and* any additional allocations of e.g. template instances
-                  // which *also* need to be cloned.
-                  .and_then(|ctx| tera.render_one_off(text, &ctx))
-                  .unwrap_or_else(|e| {
-                     // NOTE: another way of handling this would be to collect these in a
-                     // per-par-iter vec and surface them later and either fail (in CI) or
-                     // just print all the problems (for local dev) as I have done in a
-                     // previous version of this. Using `debug!()` means I can just dump
-                     // the errors here, and not be worried about `Send + Sync` causing
-                     // blow-ups when doing parallel iteration across threads. (Fine to
-                     // deal with this in some other way later, if I so desire!)
-                     debug!("{e}");
+               jinja_env.render_str(text, metadata).unwrap_or_else(|e| {
+                  // NOTE: another way of handling this would be to collect these in a
+                  // per-par-iter vec and surface them later and either fail (in CI) or
+                  // just print all the problems (for local dev) as I have done in a
+                  // previous version of this. Using `debug!()` means I can just dump
+                  // the errors here, and not be worried about `Send + Sync` causing
+                  // blow-ups when doing parallel iteration across threads. (Fine to
+                  // deal with this in some other way later, if I so desire!)
+                  debug!("{e}");
 
-                     text.to_string()
-                  })
+                  text.to_string()
+               })
             },
          )
          .map_err(|e| (source.path.clone(), e))
@@ -164,7 +154,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
       })?;
 
       let mut buf = Vec::new();
-      templates::render(&tera, page, config, &mut buf)?;
+      templates::render(&jinja_env, page, config, &mut buf)?;
 
       std::fs::write(&path, buf).map_err(|source| Error::WriteFile {
          path: path.to_owned(),
@@ -206,8 +196,11 @@ pub enum Error {
       source: templates::Error,
    },
 
-   #[error("could not rewrite {text} with tera")]
-   Rewrite { text: String, source: tera::Error },
+   #[error("could not rewrite {text} with minijinja")]
+   Rewrite {
+      text: String,
+      source: minijinja::Error,
+   },
 
    #[error("could not load data cascade")]
    Cascade {
@@ -260,7 +253,7 @@ impl std::fmt::Display for PageErrors {
 }
 
 #[derive(Error, Debug)]
-pub struct RewriteErrors(Vec<(PathBuf, tera::Error)>);
+pub struct RewriteErrors(Vec<(PathBuf, minijinja::Error)>);
 
 impl std::fmt::Display for RewriteErrors {
    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -330,7 +323,7 @@ fn files_to_load(in_dir: &Path) -> SiteFiles {
       configs: resolved_paths_for(&format!("{root}/**/config.lx.yaml")),
       content: resolved_paths_for(&format!("{content_dir}/**/*.md")),
       data: resolved_paths_for(&format!("{content_dir}/**/*.data.yaml")),
-      templates: resolved_paths_for(&format!("{root}/**/*.tera")),
+      templates: resolved_paths_for(&format!("{root}/**/*.jinja")),
    }
 }
 

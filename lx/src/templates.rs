@@ -1,80 +1,76 @@
 use std::{
    io::Write,
-   path::{Path, PathBuf, StripPrefixError},
+   path::{Path, PathBuf},
 };
 
-use tera::Tera;
+use minijinja::Environment;
+use serde::Serialize;
 use thiserror::Error;
 
-use crate::{config::Config, page::Page};
+use crate::{config::Config, metadata::Metadata, page::Page};
 
 #[derive(Error, Debug)]
 pub enum Error {
    #[error("could not load templates: {source}")]
-   Load { source: tera::Error },
-
-   #[error("could not render template for {path}")]
-   Render { source: tera::Error, path: PathBuf },
-
-   #[error("tried to load template '{template}' which was not in '{prefix}'.")]
-   BadPrefix {
-      template: PathBuf,
-      prefix: PathBuf,
-      source: StripPrefixError,
+   Load {
+      #[from]
+      source: std::io::Error,
    },
 
-   #[error("invalid string in '{template}' after removing prefix '{prefix}'")]
-   InvalidUnicode { template: PathBuf, prefix: PathBuf },
+   #[error("could not render template for {path}")]
+   Render {
+      source: minijinja::Error,
+      path: PathBuf,
+   },
+
+   #[error("could not load template for {path}: {source}")]
+   MissingTemplate {
+      source: minijinja::Error,
+      path: PathBuf,
+   },
 }
 
-pub fn load(templates: &[PathBuf], ui_dir: &Path) -> Result<Tera, Error> {
-   let with_names = templates
-      .iter()
-      .map(|template| {
-         let to_load = template.as_path();
-         let name = template
-            .strip_prefix(ui_dir)
-            .map_err(|e| Error::BadPrefix {
-               template: template.to_owned(),
-               prefix: ui_dir.to_owned(),
-               source: e,
-            })?
-            .to_str()
-            .ok_or_else(|| Error::InvalidUnicode {
-               template: template.to_owned(),
-               prefix: ui_dir.to_owned(),
-            })?;
+pub fn load(ui_dir: &Path) -> Result<Environment<'static>, Error> {
+   let mut env = Environment::new();
+   env.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
+   env.set_loader(minijinja::path_loader(ui_dir));
 
-         Ok((to_load, Some(name)))
-      })
-      .collect::<Result<Vec<_>, Error>>()?;
-
-   let mut tera = Tera::default();
-   tera
-      .add_template_files(with_names)
-      .map_err(|source| Error::Load { source })?;
-
-   Ok(tera)
+   Ok(env)
 }
 
 pub fn render(
-   tera: &Tera,
+   env: &Environment,
    page: &Page,
    site: &Config,
    into: impl Write,
 ) -> Result<(), Error> {
-   tera
-      .render_to(&page.data.layout, &context(page, site), into)
-      .map_err(|source| Error::Render {
-         source,
-         path: page.source.path.clone(),
-      })
-}
+   /// Local struct because I just need a convenient way to provide serializable data to
+   /// pass as the context for minijinja, and all of these pieces need to be in it.
+   #[derive(Serialize)]
+   struct Context<'a> {
+      content: &'a str,
+      data: &'a Metadata,
+      config: &'a Config,
+   }
 
-fn context(page: &Page, site: &Config) -> tera::Context {
-   let mut ctx = tera::Context::new();
-   ctx.insert("content", &page.content);
-   ctx.insert("data", &page.data);
-   ctx.insert("site", site);
-   ctx
+   let tpl =
+      env.get_template(&page.data.layout)
+         .map_err(|source| Error::MissingTemplate {
+            source,
+            path: page.source.path.to_owned(),
+         })?;
+
+   tpl.render_to_write(
+      Context {
+         content: &page.content,
+         data: &page.data,
+         config: site,
+      },
+      into,
+   )
+   .map(|_state| { /* throw it away for now; return it if we need it later */ })
+   .map_err(|source| Error::Render {
+      source,
+      path: page.source.path.to_owned(),
+   })
 }
