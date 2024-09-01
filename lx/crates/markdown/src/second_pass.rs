@@ -36,13 +36,19 @@ pub enum Error {
       #[from]
       source: latex2mathml::LatexError,
    },
+
+   #[error("Could not rewrite text")]
+   Rewrite {
+      source: Box<dyn std::error::Error + Send + Sync>,
+      original: String,
+   },
 }
 
 pub(super) fn second_pass<'e>(
    footnote_definitions: FootnoteDefinitions<'e>,
    syntax_set: &SyntaxSet,
    events: Vec<first_pass::Event<'e>>,
-   rewrite: impl Fn(&str) -> String,
+   rewrite: impl Fn(&str) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
 ) -> Result<impl Iterator<Item = pulldown_cmark::Event<'e>>, Error> {
    let mut state = State {
       footnote_definitions,
@@ -69,7 +75,7 @@ impl<'e, 's> State<'e, 's> {
    fn handle(
       &mut self,
       event: first_pass::Event<'e>,
-      rewrite: &impl Fn(&str) -> String,
+      rewrite: &impl Fn(&str) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
    ) -> Result<Option<String>, Error> {
       use pulldown_cmark::Event::*;
 
@@ -83,7 +89,12 @@ impl<'e, 's> State<'e, 's> {
                      Ok(None)
                   }
                   None => {
-                     self.events.push(Html(rewrite(text.as_ref()).into()));
+                     let rewritten =
+                        rewrite(text.as_ref()).map_err(|source| Error::Rewrite {
+                           source,
+                           original: text.to_string(),
+                        })?;
+                     self.events.push(Html(rewritten.into()));
                      Ok(None)
                   }
                }

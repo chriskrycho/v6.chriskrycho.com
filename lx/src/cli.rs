@@ -182,7 +182,7 @@ pub fn convert(paths: Paths, include_metadata: bool) -> Result<(), CliError> {
       .map_err(|source| CliError::ReadToString { source })?;
 
    let (meta, rendered) = lx_md::Markdown::new()
-      .render(&s, |s| s.to_string())
+      .render(&s, |s| Ok(s.to_string()))
       .map_err(CliError::from)?;
 
    let metadata = match (include_metadata, meta) {

@@ -75,17 +75,11 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
             &input_dir.join("content"),
             &cascade,
             |text, metadata| {
-               jinja_env.render_str(text, metadata).unwrap_or_else(|e| {
-                  // NOTE: another way of handling this would be to collect these in a
-                  // per-par-iter vec and surface them later and either fail (in CI) or
-                  // just print all the problems (for local dev) as I have done in a
-                  // previous version of this. Using `debug!()` means I can just dump
-                  // the errors here, and not be worried about `Send + Sync` causing
-                  // blow-ups when doing parallel iteration across threads. (Fine to
-                  // deal with this in some other way later, if I so desire!)
-                  debug!("{e}");
-
-                  text.to_string()
+               jinja_env.render_str(text, metadata).map_err(|source| {
+                  Box::new(Error::Rewrite {
+                     source,
+                     text: text.to_owned(),
+                  }) as Box<dyn std::error::Error + Send + Sync>
                })
             },
          )

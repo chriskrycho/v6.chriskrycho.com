@@ -132,7 +132,7 @@ pub struct Rendered(String);
 
 impl Rendered {
    fn as_markdown(src: &str, md: &Markdown) -> Result<Rendered, Error> {
-      md.render(src, |s| s.to_string())
+      md.render(src, |s| Ok(s.to_string()))
          .map(|(_, rendered)| Rendered(rendered.html()))
          .map_err(Error::from)
    }

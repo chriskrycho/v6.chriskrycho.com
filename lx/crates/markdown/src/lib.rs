@@ -98,7 +98,7 @@ impl Markdown {
    pub fn render(
       &self,
       src: &str,
-      rewrite: impl Fn(&str) -> String,
+      rewrite: impl Fn(&str) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
    ) -> Result<(Option<String>, Rendered), Error> {
       let Prepared {
          metadata_src,
@@ -113,7 +113,7 @@ impl Markdown {
    pub fn emit(
       &self,
       to_render: ToRender,
-      rewrite: impl Fn(&str) -> String,
+      rewrite: impl Fn(&str) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
    ) -> Result<Rendered, RenderError> {
       let ToRender {
          first_pass_events,
