@@ -39,7 +39,7 @@ services:
       cp ./sites/music/static/* ./sites/music/public
 
       # copy the HTML to the target directory
-      cp ./sites/music/index.html ./sites/music/public/index.html
+      cp ./sites/music/content/* ./sites/music/public/
 
     staticPublishPath: './sites/music/public'
     domain: music.chriskrycho.com

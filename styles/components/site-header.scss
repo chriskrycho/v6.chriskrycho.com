@@ -4,7 +4,20 @@
 .site-header {
    // I don't love having these here, but it beats repeating them elsewhere.
    @include grid.margin-bottom-grid;
-   @include grid.span-all();
+   grid-column: 1 / -1;
+
+   a,
+   a:link,
+   a:visited {
+      color: var(--blue-n);
+      text-decoration: none;
+   }
+
+   a:hover,
+   a:active {
+      color: var(--gold);
+      text-decoration: underline;
+   }
 
    h1 {
       font-family: var(--site-header);

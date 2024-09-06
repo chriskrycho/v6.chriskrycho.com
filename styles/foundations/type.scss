@@ -1,5 +1,10 @@
 :root {
    // TODO: make a stack for each of these.
+   --frame-head-stack: 'Frame Head';
+   --frame-stack: 'Frame';
+   --sanomat-stack: 'Sanomat';
+   --sanomat-sans-stack: 'Sanomat Sans Text';
+
    --text: 'Frame';
    --text-lh: 1.4;
    --text-weight: 400;
@@ -12,8 +17,11 @@
 
    --mono: 'Berkeley Mono';
 
-   --site-header: 'Frame Head';
-   --site-subhead: 'Sanomat';
+   --site-header: 'Sanomat';
+   --site-subhead: 'Frame Head';
+
+   --work: var(--frame-head-stack);
+   --work-info: var(--frame-head-stack);
 
    --heading: 'Sanomat';
    --heading-weight: 300;

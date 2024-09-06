@@ -1,17 +1,6 @@
 @use '../foundations/grid.scss';
 @use '../foundations/breakpoints.scss';
 
-.container {
-   margin: var(--grid-base);
-
-   @include grid.grid(4);
-}
-
-.splash {
-   @include grid.subgrid();
-   @include grid.span-all();
-}
-
 @media screen and (min-width: breakpoints.$six-col) {
    .container {
       @include grid.grid-cols(6);

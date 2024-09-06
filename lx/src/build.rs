@@ -57,6 +57,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
    std::fs::create_dir_all(&config.output).expect("Can create output dir");
 
    // TODO: replace with `grass`.
+
    std::fs::write(config.output.join("light.css"), light).expect("can write output yo!");
    std::fs::write(config.output.join("dark.css"), dark).expect("can write output yo!");
 
@@ -274,6 +275,7 @@ struct SiteFiles {
    content: Vec<PathBuf>,
    data: Vec<PathBuf>,
    templates: Vec<PathBuf>,
+   styles: Vec<PathBuf>,
 }
 
 impl std::fmt::Display for SiteFiles {
@@ -318,6 +320,7 @@ fn files_to_load(in_dir: &Path) -> SiteFiles {
       content: resolved_paths_for(&format!("{content_dir}/**/*.md")),
       data: resolved_paths_for(&format!("{content_dir}/**/*.data.yaml")),
       templates: resolved_paths_for(&format!("{root}/**/*.jinja")),
+      styles: resolved_paths_for(&format!("{root}/**/*.scss")),
    }
 }
 

@@ -46,6 +46,10 @@ sites/*/public
 !sites/www/public/.gitkeep
 !sites/music/public/.gitkeep
 !sites/links/public/.gitkeep
+site/*/public
+!site/www/public/.gitkeep
+!site/music/public/.gitkeep
+!site/links/public/.gitkeep
 
 # node nonsense
 node_modules

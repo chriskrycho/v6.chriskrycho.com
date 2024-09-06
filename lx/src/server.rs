@@ -59,7 +59,7 @@ pub fn serve(site_dir: &Path) -> Result<(), Error> {
    trace!("Computed config: {config:?}");
    build::build(site_dir, &config).map_err(Error::from)?;
 
-   // I only need the tx side, since we are going to take advantage of the fact that it
+   // I only need the tx side, since I am going to take advantage of the fact that
    // `broadcast::Sender` implements `Clone` to pass it around and get easy and convenient
    // access to local receivers with `tx.subscribe()`.
    let (tx, _rx) = broadcast::channel(10);
@@ -86,8 +86,8 @@ pub fn serve(site_dir: &Path) -> Result<(), Error> {
       while let Some(result) = set.join_next().await {
          match result {
             Ok(Ok(_)) => {
+               trace!("completed an item from the serve join_set");
                // ignore it and keep waiting for the rest to complete
-               // in the future, trace it
                // maybe: if one of them *completes* doesn’t that mean we should shut down?
             }
             Ok(Err(reason)) => return Err(reason),

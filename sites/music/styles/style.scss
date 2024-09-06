@@ -56,7 +56,8 @@
 
    header,
    .embed,
-   .links {
+   .links,
+   p {
       grid-column: 1 / -1;
       grid-row-end: span 1;
    }
@@ -141,7 +142,6 @@
       .featured-item {
          grid-column-end: span 4;
          @include grid.subgrid();
-         grid-row: 1 / -1;
          grid-template-columns: subgrid;
          grid-auto-rows: min-content;
 
@@ -197,7 +197,6 @@
       }
 
       .featured-item {
-         grid-row: 1 / -1;
          grid-template-columns: subgrid;
          grid-auto-rows: min-content;
 
