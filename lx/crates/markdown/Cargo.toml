@@ -1,5 +1,5 @@
 [package]
-name = "lx-md"
+name = "markdown"
 
 authors.workspace = true
 version.workspace = true

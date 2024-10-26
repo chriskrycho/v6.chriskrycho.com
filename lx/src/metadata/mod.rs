@@ -7,7 +7,7 @@ use std::path::StripPrefixError;
 
 use chrono::DateTime;
 use chrono::FixedOffset;
-use lx_md::Markdown;
+use markdown::Markdown;
 use serde::Serialize;
 use slug::slugify;
 use thiserror::Error;
@@ -19,16 +19,10 @@ use self::serial::*;
 
 /// Fully resolved metadata for an item, after merging the data from the item's
 /// own header with all items in its data cascade.
-///
-/// **NOTE:** Although `title` and `date` are optional here, this is a function
-/// of the fact that minijinja has no notion of pattern-matching, and therefore
-/// no easy way to deal with a nested sum type. One or the other *is* required,
-/// but this is handled by way of runtime validation. (Nothing makes me want so
-/// badly to implement my own type-safe template language…)
 #[derive(Debug, Serialize)]
 pub struct Metadata {
    /// The title of the item.
-   pub title: Option<String>,
+   pub title: String,
 
    /// The date the item was published.
    pub date: Option<DateTime<FixedOffset>>,
@@ -59,7 +53,7 @@ impl Metadata {
       cascade: &Cascade,
       default_template_name: String,
       md: &Markdown,
-   ) -> Result<Self, Error> {
+   ) -> Result<(Self, Option<String>), Error> {
       let permalink: Option<PathBuf> = item.permalink.map(|permalink| {
          permalink
             .trim_start_matches('/')
@@ -79,8 +73,6 @@ impl Metadata {
                source: Some(e),
             })?;
 
-      let render = |s: String| Rendered::as_markdown(&s, md);
-
       let updated = item.updated.into_iter().try_fold(
          Vec::new(),
          |mut acc, serial::Update { at, changes }| match at {
@@ -92,9 +84,9 @@ impl Metadata {
          },
       )?;
 
-      if matches!((&item.title, &item.date), (None, None)) {
-         return Err(Error::MissingRequiredField);
-      }
+      let image = item.image.or(cascade.image(path_from_root));
+
+      let render = |s| Rendered::as_markdown(s, md);
 
       let metadata = Metadata {
          title: item.title,
@@ -123,18 +115,30 @@ impl Metadata {
          subscribe: cascade.subscribe(path_from_root),
       };
 
-      Ok(metadata)
+      Ok((metadata, image))
    }
 }
 
 #[derive(Debug, Serialize)]
-pub struct Rendered(String);
+pub struct Rendered {
+   src: String,
+   as_md: String,
+}
 
 impl Rendered {
-   fn as_markdown(src: &str, md: &Markdown) -> Result<Rendered, Error> {
-      md.render(src, |s| Ok(s.to_string()))
-         .map(|(_, rendered)| Rendered(rendered.html()))
+   fn as_markdown(src: String, md: &Markdown) -> Result<Rendered, Error> {
+      md.render(&src, |s| Ok(s.to_string()))
+         .map(|(_, rendered)| Rendered {
+            src,
+            as_md: rendered.html(),
+         })
          .map_err(Error::from)
+   }
+
+   // Note: this is somewhat wrong; I probablye want to implement another pass which takes
+   // a given item and *strips* all the Markdown syntax from it.
+   pub(crate) fn plain(&self) -> String {
+      self.src.clone()
    }
 }
 
@@ -144,6 +148,7 @@ pub struct Update {
    pub changes: Option<String>,
 }
 
+#[repr(transparent)]
 #[derive(Debug, Serialize)]
 pub struct Slug(String);
 
@@ -209,7 +214,7 @@ pub enum Error {
    #[error(transparent)]
    Markdown {
       #[from]
-      source: lx_md::Error,
+      source: markdown::Error,
    },
 }
 

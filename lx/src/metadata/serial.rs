@@ -8,7 +8,7 @@ use thiserror::Error;
 
 #[derive(Deserialize, Debug, Default)]
 pub struct Item {
-   pub title: Option<String>,
+   pub title: String,
    pub subtitle: Option<String>,
    pub summary: Option<String>,
    pub date: Option<DateTime<FixedOffset>>,
@@ -18,8 +18,9 @@ pub struct Item {
    #[serde(default)]
    pub updated: Vec<Update>,
    pub permalink: Option<String>,
-   pub qualifiers: Option<Qualifiers>,
    // --- Begin section of fields also available in AmbientMetadata --- //
+   pub image: Option<String>, // TODO: `Option<Url>` instead?
+   pub qualifiers: Option<Qualifiers>,
    pub thanks: Option<String>,
    pub tags: Option<Vec<String>>,
    pub featured: Option<bool>,
@@ -57,6 +58,7 @@ pub struct Ambient {
    pub qualifiers: Option<Qualifiers>,
    pub thanks: Option<String>,
    pub tags: Option<Vec<String>>,
+   pub image: Option<String>, // TODO: `Option<Url>` instead?
    pub featured: Option<bool>,
    pub layout: Option<String>,
    pub book: Option<Book>,

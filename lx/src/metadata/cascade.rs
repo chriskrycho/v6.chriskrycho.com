@@ -65,6 +65,12 @@ impl Cascade {
       self
    }
 
+   // TODO: consider returning references instead of cloning. It’s probably an over-
+   // optimization at this point, but it could be useful for contexts where the caller
+   // doesn't actually *require* ownership; the caller can always `.clone()` itself when
+   // that is appropriate. Note that this may require a bit of work to get lifetimes to
+   // line up correctly, though!
+
    pub fn layout<P: AsRef<Path>>(&self, p: P) -> Option<String> {
       self.find_map(p.as_ref(), &|m| m.layout.clone())
    }
@@ -91,6 +97,10 @@ impl Cascade {
 
    pub fn series<P: AsRef<Path>>(&self, p: P) -> Option<Series> {
       self.find_map(p.as_ref(), &|m| m.series.clone())
+   }
+
+   pub fn image<P: AsRef<Path>>(&self, p: P) -> Option<String> {
+      self.find_map(p.as_ref(), &|m| m.image.clone())
    }
 
    fn find_map<T, F>(&self, path: &Path, f: &F) -> Option<T>
