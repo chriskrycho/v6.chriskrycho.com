@@ -109,4 +109,4 @@ fn setup_logger(cli: &Cli) -> Result<(), log::SetLoggerError> {
    TermLogger::init(level, config, TerminalMode::Mixed, ColorChoice::Auto)
 }
 
-const CRATES: &[&str] = &["lx", "lx-md", "json-feed"];
+const CRATES: &[&str] = &["lx", "markdown", "json-feed"];

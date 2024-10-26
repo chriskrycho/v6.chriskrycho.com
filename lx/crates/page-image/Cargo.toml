@@ -1,0 +1,16 @@
+[package]
+name = "page-image"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+license.workspace = true
+
+[dependencies]
+ril = { workspace = true }
+thiserror = { workspace = true }

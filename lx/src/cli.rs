@@ -92,7 +92,7 @@ pub enum CliError {
    #[error(transparent)]
    RenderError {
       #[from]
-      source: lx_md::Error,
+      source: markdown::Error,
    },
 
    #[error(transparent)]
@@ -181,7 +181,7 @@ pub fn convert(paths: Paths, include_metadata: bool) -> Result<(), CliError> {
       .read_to_string(&mut s)
       .map_err(|source| CliError::ReadToString { source })?;
 
-   let (meta, rendered) = lx_md::Markdown::new()
+   let (meta, rendered) = markdown::Markdown::new()
       .render(&s, |s| Ok(s.to_string()))
       .map_err(CliError::from)?;
 

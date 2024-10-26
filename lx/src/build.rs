@@ -12,7 +12,7 @@ use crate::canonicalized::Canonicalized;
 use crate::config::{self, Config};
 use crate::error::write_to_fmt;
 use crate::metadata::cascade::{Cascade, CascadeLoadError};
-use crate::page::{self, Page, Source};
+use crate::page::{self, Page, PageBuilder, Source};
 use crate::templates;
 
 pub fn build_in(directory: Canonicalized) -> Result<(), Error> {
@@ -68,23 +68,21 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
    let cascade =
       Cascade::new(&site_files.data).map_err(|source| Error::Cascade { source })?;
 
+   let builder = PageBuilder::new(input_dir.join("content"))?;
+
    let (errors, pages): (Vec<_>, Vec<_>) = sources
       .par_iter()
       .map(|source| {
-         Page::build(
-            source,
-            &input_dir.join("content"),
-            &cascade,
-            |text, metadata| {
+         builder
+            .build(source, &cascade, |text, metadata| {
                jinja_env.render_str(text, metadata).map_err(|source| {
                   Box::new(Error::Rewrite {
                      source,
                      text: text.to_owned(),
                   }) as Box<dyn std::error::Error + Send + Sync>
                })
-            },
-         )
-         .map_err(|e| (source.path.clone(), e))
+            })
+            .map_err(|e| (source.path.clone(), e))
       })
       .partition_map(Either::from);
 
@@ -211,6 +209,9 @@ pub enum Error {
 
    #[error("could not load one or more site content sources")]
    Content(Vec<ContentError>),
+
+   #[error("could not create page builder")]
+   PageBuilder(#[from] page::Error),
 
    #[error(transparent)]
    Page(PageErrors),

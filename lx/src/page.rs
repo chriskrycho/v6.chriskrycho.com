@@ -6,7 +6,8 @@ use std::{
 };
 
 use chrono::{DateTime, FixedOffset};
-use lx_md::{self, RenderError};
+use markdown::{self, RenderError};
+use page_image::{Subtitle, Title};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
@@ -47,48 +48,57 @@ pub struct Page {
    pub content: String,
 
    pub source: Source,
+
+   pub image: Image,
 }
 
-#[derive(Error, Debug)]
-pub enum Error {
-   #[error("could not prepare Markdown for parsing")]
-   Preparation {
-      #[from]
-      source: lx_md::Error,
-   },
+pub enum Image {
+   Url(String), // TODO: `Url(Url)` instead?
 
-   #[error("no metadata")]
-   MissingMetadata,
-
-   #[error(transparent)]
-   MetadataParsing {
-      #[from]
-      source: serial::ItemParseError,
-   },
-
-   #[error("could not resolve metadata")]
-   MetadataResolution {
-      #[from]
-      source: metadata::Error,
-   },
-
-   #[error(transparent)]
-   Render {
-      #[from]
-      source: RenderError,
+   // Optimization: only bother with `text` in debug?
+   Rendered {
+      text: String,
+      image: page_image::Image,
    },
 }
 
-impl Page {
+impl std::fmt::Debug for Image {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      match self {
+         Image::Url(url) => write!(f, "Image::Url({url})"),
+         Image::Rendered { text, .. } => write!(f, "Image::Rendered({text} <as PNG>)"),
+      }
+   }
+}
+
+pub struct PageBuilder {
+   root_dir: PathBuf,
+   image_builder: page_image::Builder,
+}
+
+impl PageBuilder {
+   pub fn new(root_dir: PathBuf) -> Result<PageBuilder, Error> {
+      let font_dir = root_dir
+         .join("..")
+         .join("..")
+         .join("resources")
+         .join("fonts");
+      let image_builder = page_image::Builder::new(font_dir)?;
+      Ok(PageBuilder {
+         root_dir,
+         image_builder,
+      })
+   }
+
    pub fn build(
+      &self,
       source: &Source,
-      root_dir: &Path,
       cascade: &Cascade,
       rewrite: impl Fn(
          &str,
          &Metadata,
       ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
-   ) -> Result<Self, Error> {
+   ) -> Result<Page, Error> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
       // don't want to do it based on the source path (or if I do, *only* initially as
       // a way of generating it to start). It'll go in the database, so more likely I'll
@@ -99,11 +109,11 @@ impl Page {
          source.path.as_os_str().as_bytes(),
       ));
 
-      let md = lx_md::Markdown::new();
+      let md = markdown::Markdown::new();
 
-      let prepared = lx_md::prepare(&source.contents).map_err(Error::from)?;
+      let prepared = markdown::prepare(&source.contents).map_err(Error::from)?;
 
-      let metadata = prepared
+      let (metadata, image) = prepared
          .metadata_src
          .ok_or(Error::MissingMetadata)
          .and_then(|metadata| serial::Item::try_parse(&metadata).map_err(Error::from))
@@ -111,7 +121,7 @@ impl Page {
             Metadata::resolved(
                item_metadata,
                source,
-               root_dir,
+               self.root_dir,
                cascade,
                String::from("base.jinja"), // TODO: not this
                &md,
@@ -123,14 +133,34 @@ impl Page {
          .emit(prepared.to_render, |text| rewrite(text, &metadata))
          .map_err(Error::from)?;
 
+      let image = match image {
+         Some(url) => Image::Url(url.clone()),
+
+         None => Image::Rendered {
+            text: metadata.title.clone()
+               + &(metadata
+                  .subtitle
+                  .as_ref()
+                  .map(|r| r.plain())
+                  .unwrap_or_default()),
+
+            image: self
+               .image_builder
+               .for_page_with(Title(&metadata.title), Subtitle(None)),
+         },
+      };
+
       Ok(Page {
          id,
          data: metadata,
          content: rendered.html(),
          source: source.clone(), // TODO: might be able to just take ownership?
+         image,
       })
    }
+}
 
+impl Page {
    pub fn path_from_root(&self, root_dir: &Path) -> PathBuf {
       root_dir.join(&self.data.slug)
    }
@@ -170,4 +200,37 @@ impl Updated for [Page] {
          .max()
          .expect("should always be a latest date!")
    }
+}
+
+#[derive(Error, Debug)]
+pub enum Error {
+   #[error("could not prepare Markdown for parsing")]
+   Preparation {
+      #[from]
+      source: markdown::Error,
+   },
+
+   #[error("no metadata")]
+   MissingMetadata,
+
+   #[error(transparent)]
+   MetadataParsing {
+      #[from]
+      source: serial::ItemParseError,
+   },
+
+   #[error("could not resolve metadata")]
+   MetadataResolution {
+      #[from]
+      source: metadata::Error,
+   },
+
+   #[error(transparent)]
+   Render {
+      #[from]
+      source: RenderError,
+   },
+
+   #[error(transparent)]
+   PageImage(#[from] page_image::Error),
 }

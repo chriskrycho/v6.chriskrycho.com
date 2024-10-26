@@ -29,13 +29,14 @@ grass = "0.13.2"
 json-feed = { path = "./crates/json-feed" }
 lazy_static = { workspace = true }
 log = { workspace = true }
-lx-md = { path = "./crates/markdown" }
+markdown = { path = "./crates/markdown" }
 minijinja = { version = "2", features = ["loader", "macros"] }
 normalize-path = "0.2"
 notify = { version = "6.1.1", default-features = false, features = [
     "macos_kqueue",
 ] }
 notify-debouncer-full = { version = "0.3.1", default-features = false }
+page-image = { path = "./crates/page-image" }
 rayon = { workspace = true }
 regex = "1"
 serde = { workspace = true }
@@ -91,11 +92,12 @@ dirs = "5"
 lazy_static = "1.4"
 log = "0.4.20"
 rayon = "1"
+ril = { version = "0.10.3", features = ["png"] }
 serde = { version = "1.0.185", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
-thiserror = "1"
 simplelog = { version = "0.12.1", features = ["paris"] }
+thiserror = "1"
 
 [workspace.dependencies.clap]
 version = "4"
