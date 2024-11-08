@@ -215,9 +215,6 @@ pub enum Error {
    #[error(transparent)]
    Page(PageErrors),
 
-   #[error(transparent)]
-   RewritePage(RewriteErrors),
-
    #[error("could not create output directory '{path}'")]
    CreateOutputDirectory {
       path: PathBuf,

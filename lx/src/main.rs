@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 use clap::{Args, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate_to, shells::Fish};
-use convert::convert;
 use log::info;
 use simplelog::{
    ColorChoice, Config, ConfigBuilder, LevelFilter, TermLogger, TerminalMode,
@@ -18,9 +17,9 @@ mod build;
 mod canonicalized;
 mod collection;
 mod config;
-mod convert;
 mod error;
 mod feed;
+mod md;
 mod metadata;
 mod page;
 mod sass;
@@ -82,8 +81,8 @@ fn main() -> Result<(), anyhow::Error> {
          include_metadata,
       } => {
          let (input, output, dest) = parse_paths(paths)?;
-         convert(input, output, include_metadata)
-            .map_err(|source| Error::Convert { dest, source })?;
+         md::convert(input, output, include_metadata)
+            .map_err(|source| Error::Markdown { dest, source })?;
 
          Ok(())
       }
@@ -206,7 +205,7 @@ pub enum Error {
    LoggerError(#[from] log::SetLoggerError),
 
    #[error("Could not convert (for {dest})")]
-   Convert { dest: Dest, source: convert::Error },
+   Markdown { dest: Dest, source: md::Error },
 }
 
 impl Cli {
