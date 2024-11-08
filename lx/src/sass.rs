@@ -1,27 +1,20 @@
-use std::io::Write;
+use std::io::{Read, Write};
 
-use crate::cli::Paths;
+pub fn convert(
+   mut input: Box<dyn Read>,
+   mut output: Box<dyn Write>,
+) -> Result<(), Error> {
+   let mut src = String::new();
+   input.read_to_string(&mut src)?;
 
-pub fn convert(paths: Paths) -> Result<(), Error> {
-   let input = paths.input.ok_or_else(|| Error::Cli {
-      message: String::from("Cannot compile without"),
-   })?;
+   let css = grass::from_string(src, &Default::default()).map_err(|e| Error::from(*e))?;
 
-   let css = grass::from_path(input, &Default::default()).map_err(|e| Error::from(*e))?;
-   let css = css.as_bytes();
-
-   match paths.output {
-      Some(path) => std::fs::File::open(path).and_then(|mut fd| fd.write_all(css)),
-      None => std::io::stdout().write_all(css),
-   }
-   .map_err(Error::from)
+   output.write_all(css.as_bytes())?;
+   Ok(())
 }
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-   #[error("{message}")]
-   Cli { message: String },
-
    #[error(transparent)]
    Compile(#[from] grass::Error),
 
