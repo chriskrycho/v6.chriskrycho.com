@@ -1,11 +1,14 @@
 use std::io::{Read, Write};
 
-use serde_yaml::Value;
+pub struct Include {
+   pub metadata: bool,
+   pub wrapping_html: bool,
+}
 
 pub fn convert(
    mut input: Box<dyn Read>,
    mut output: Box<dyn Write>,
-   include_metadata: bool,
+   include: Include,
 ) -> Result<(), Error> {
    let mut src = String::new();
    input
@@ -16,83 +19,37 @@ pub fn convert(
       .render(&src, |s| Ok(s.to_string()))
       .map_err(Error::from)?;
 
-   let metadata = match (include_metadata, meta) {
-      (true, Some(metadata)) => yaml_to_table(&metadata)?,
-      _ => None,
+   if include.wrapping_html {
+      write(
+         r#"<html>
+          <head>
+              <link rel="stylesheet" href="/light.css" media="(prefers-color-scheme: light)" />
+              <link rel="stylesheet" href="/dark.css" media="(prefers-color-scheme: dark)" />
+          </head>
+          <body>"#,
+         &mut output,
+      )?;
    }
-   .unwrap_or_default();
 
-   let content = metadata + &rendered.html();
+   if include.metadata {
+      if let Some(metadata) = meta {
+         write(&metadata, &mut output)?;
+      }
+   }
 
-   output
-      .write(content.as_bytes())
-      .map_err(|source| Error::WriteBuffer { source })?;
+   write(&rendered.html(), &mut output)?;
+
+   if include.wrapping_html {
+      write("</body></html>", &mut output)?;
+   }
 
    Ok(())
 }
 
-pub(crate) fn yaml_to_table(src: &str) -> Result<Option<String>, Error> {
-   let parsed: Value = serde_yaml::from_str(src).map_err(Error::from)?;
-
-   match parsed {
-      Value::Mapping(mapping) => handle_mapping(mapping),
-      _ => Err(Error::MeaninglessYaml(src.to_string())),
-   }
-}
-
-pub(crate) fn handle_yaml(value: Value) -> Result<Option<String>, Error> {
-   match value {
-      Value::Null => Ok(None),
-
-      Value::Bool(b) => Ok(Some(b.to_string())),
-
-      Value::Number(n) => Ok(Some(n.to_string())),
-
-      Value::String(s) => Ok(Some(s)),
-
-      Value::Sequence(seq) => {
-         let mut buf = String::from("<ul>");
-         for item in seq {
-            if let Some(string) = handle_yaml(item)? {
-               buf.push_str(&format!("<li>{string}</li>"));
-            }
-         }
-         buf.push_str("</ul>");
-         Ok(Some(buf))
-      }
-
-      Value::Mapping(mapping) => handle_mapping(mapping),
-
-      Value::Tagged(_) => unimplemented!("Intentionally ignore YAML Tagged"),
-   }
-}
-
-pub(crate) fn handle_mapping(
-   mapping: serde_yaml::Mapping,
-) -> Result<Option<String>, Error> {
-   let mut headers = Vec::new();
-   let mut contents = Vec::new();
-   for (key, value) in mapping {
-      match key {
-         Value::String(key) => headers.push(key),
-         _ => return Err(Error::MeaninglessYaml(format!("{:?}", key))),
-      }
-
-      // no empty `content`s!
-      let content = handle_yaml(value)?.unwrap_or_default();
-      contents.push(content);
-   }
-
-   let mut buf = String::from("<table><thead><tr>");
-   for header in headers {
-      buf.push_str(&format!("<th>{header}</th>"));
-   }
-   buf.push_str("</tr></thead><tbody><tr>");
-   for content in contents {
-      buf.push_str(&format!("<td>{content}</td>"));
-   }
-   buf.push_str("</tr></tbody></table>");
-   Ok(Some(buf))
+fn write(src: &str, dest: &mut Box<dyn Write>) -> Result<(), Error> {
+   dest
+      .write_all(src.as_bytes())
+      .map_err(|source| Error::WriteBuffer { source })
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -108,9 +65,6 @@ pub enum Error {
       #[from]
       source: serde_yaml::Error,
    },
-
-   #[error("meaningless (even if valid) YAML: {0}")]
-   MeaninglessYaml(String),
 
    #[error(transparent)]
    RenderError {

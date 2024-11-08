@@ -79,10 +79,18 @@ fn main() -> Result<(), anyhow::Error> {
       Command::Convert {
          paths,
          include_metadata,
+         full_html_output,
       } => {
          let (input, output, dest) = parse_paths(paths)?;
-         md::convert(input, output, include_metadata)
-            .map_err(|source| Error::Markdown { dest, source })?;
+         md::convert(
+            input,
+            output,
+            md::Include {
+               metadata: include_metadata,
+               wrapping_html: full_html_output,
+            },
+         )
+         .map_err(|source| Error::Markdown { dest, source })?;
 
          Ok(())
       }
@@ -133,13 +141,13 @@ const CRATES: &[&str] = &["lx", "lx-md", "json-feed"];
    author = "Chris Krycho <hello@chriskrycho.com>"
 )]
 #[command(author, version, about, arg_required_else_help(true))]
-pub struct Cli {
+struct Cli {
    #[command(subcommand)]
-   pub command: Command,
+   command: Command,
 
    /// Include debug-level logs
    #[arg(short, long, global = true, conflicts_with = "quiet")]
-   pub debug: bool,
+   debug: bool,
 
    /// Include trace-level logs from lx.
    #[arg(
@@ -149,11 +157,11 @@ pub struct Cli {
       requires = "debug",
       conflicts_with = "quiet"
    )]
-   pub verbose: bool,
+   verbose: bool,
 
    /// Include trace-level logs from *everything*.
    #[arg(long, global = true, conflicts_with = "quiet")]
-   pub very_verbose: bool,
+   very_verbose: bool,
 
    /// Don't include *any* logging. None. Zip. Zero. Nada.
    #[arg(
@@ -164,11 +172,11 @@ pub struct Cli {
       conflicts_with = "verbose",
       conflicts_with = "very_verbose"
    )]
-   pub quiet: bool,
+   quiet: bool,
 }
 
 #[derive(Error, Debug)]
-pub enum Error {
+enum Error {
    #[error("Somehow you don't have a home dir. lolwut")]
    NoHomeDir,
 
@@ -209,7 +217,7 @@ pub enum Error {
 }
 
 impl Cli {
-   pub fn completions(&mut self) -> Result<(), Error> {
+   fn completions(&mut self) -> Result<(), Error> {
       let mut config_dir = dirs::home_dir().ok_or_else(|| Error::NoHomeDir)?;
       config_dir.extend([".config", "fish", "completions"]);
       let mut cmd = Self::command();
@@ -220,7 +228,7 @@ impl Cli {
 }
 
 #[derive(Subcommand, Debug, PartialEq, Clone)]
-pub enum Command {
+enum Command {
    /// Go live
    Publish {
       /// The root of the site (if different from the current directory).
@@ -242,6 +250,13 @@ pub enum Command {
       /// Output any supplied metadata as a table (a la GitHub).
       #[arg(short = 'm', long = "metadata", default_value("false"))]
       include_metadata: bool,
+
+      #[arg(
+         long = "full-html",
+         default_value("false"),
+         default_missing_value("true")
+      )]
+      full_html_output: bool,
    },
 
    /// Process one or more Sass/SCSS files exactly the same way `lx` does.
@@ -255,22 +270,22 @@ pub enum Command {
 }
 
 #[derive(Args, Debug, PartialEq, Clone)]
-pub struct Paths {
+struct Paths {
    /// Path to the file to convert. Will use `stdin` if not supplied.
    #[arg(short, long)]
-   pub input: Option<PathBuf>,
+   input: Option<PathBuf>,
 
    /// Where to print the output. Will use `stdout` if not supplied.
    #[arg(short, long)]
-   pub output: Option<PathBuf>,
+   output: Option<PathBuf>,
 
    /// If the supplied `output` file is present, overwrite it.
    #[arg(long, default_missing_value("true"), num_args(0..=1), require_equals(true))]
-   pub force: Option<bool>,
+   force: Option<bool>,
 }
 
 #[derive(Debug)]
-pub enum Dest {
+enum Dest {
    File(PathBuf),
    Stdout,
 }
@@ -361,7 +376,7 @@ fn output_buffer(dest_cfg: DestCfg) -> Result<(Box<dyn Write>, Dest), Error> {
 }
 
 #[derive(Debug)]
-pub enum FileOpenReason {
+enum FileOpenReason {
    Read,
    Write,
 }
