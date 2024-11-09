@@ -37,29 +37,13 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
    let site_files = files_to_load(input_dir);
    trace!("Site files: {site_files}");
 
-   let ThemeSet { themes } = ThemeSet::load_defaults();
-
-   // TODO: generate these as a one-and-done with the themes I *actually* want,
-   // and build a tool that lets me trivially do that on command, but which I
-   // don't need to do unless I'm changing those themes! The output from that
-   // tool (which basically just does this) can just be checked into the repo
-   // and then updated only when needed.
-   let style = ClassStyle::Spaced;
-   let light = css_for_theme_with_class_style(&themes["InspiredGitHub"], style)
-      .expect("Missing InspiredGithub theme");
-   let dark = css_for_theme_with_class_style(&themes["base16-ocean.dark"], style)
-      .expect("Missing base16-ocean.dark theme");
-
    // TODO: pull from config?
    let ui_root = input_dir.join("_ui");
    let jinja_env = templates::load(&ui_root).map_err(Error::from)?;
 
    std::fs::create_dir_all(&config.output).expect("Can create output dir");
 
-   // TODO: replace with `grass`.
-
-   std::fs::write(config.output.join("light.css"), light).expect("can write output yo!");
-   std::fs::write(config.output.join("dark.css"), dark).expect("can write output yo!");
+   // TODO: integrate `grass` into build.
 
    let sources = load_sources(&site_files)?;
 
