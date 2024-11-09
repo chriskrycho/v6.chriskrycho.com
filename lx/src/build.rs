@@ -88,7 +88,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
    let archive = Archive::new(&pages, Order::NewFirst);
 
    // TODO: replace with the templating engine approach below!
-   pages.iter().try_for_each(|page| {
+   pages.par_iter().try_for_each(|page| {
       let path = page.path_from_root(&config.output).with_extension("html");
       let containing_dir = path
          .parent()

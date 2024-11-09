@@ -280,6 +280,10 @@ summary {
 // ----- reset ---- //
 // From this point, these my additional “resets”. I am treating these as
 // distinct from actual definite *style* choices.
+html {
+   -webkit-font-smoothing: antialiased;
+}
+
 h1,
 h2,
 h3,

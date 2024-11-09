@@ -1,0 +1,7 @@
+{% macro note(type='note') %}
+<section class='note' aria-label='{{ type }}' aria-role='note'>
+
+{{ caller() }}
+
+</section>
+{% endmacro %}

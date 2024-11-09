@@ -1,8 +1,12 @@
+mod filters;
+
 use std::{
    io::Write,
    path::{Path, PathBuf},
 };
 
+use filters::add_filters;
+use log::debug;
 use minijinja::Environment;
 use serde::Serialize;
 use thiserror::Error;
@@ -34,6 +38,7 @@ pub fn load(ui_dir: &Path) -> Result<Environment<'static>, Error> {
    let mut env = Environment::new();
    env.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
    env.set_loader(minijinja::path_loader(ui_dir));
+   add_filters(&mut env);
 
    Ok(env)
 }
@@ -52,6 +57,17 @@ pub fn render(
       data: &'a Metadata,
       config: &'a Config,
    }
+
+   debug!(
+      "Rendering page '{}' with layout '{}'",
+      page
+         .data
+         .title
+         .as_ref()
+         .map(|s| s.as_str())
+         .unwrap_or("untitled"),
+      page.data.layout
+   );
 
    let tpl =
       env.get_template(&page.data.layout)

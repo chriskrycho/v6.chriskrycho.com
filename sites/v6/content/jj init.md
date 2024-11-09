@@ -34,8 +34,7 @@ discuss:
 date: 2024-02-02T11:30:00-0700
 started: 2023-07-01T18:42:00-0600
 
-updated: 2024-09-09T08:15:00-0600
-updates:
+updated:
   - at: 2024-09-09T08:15:00-0600
     changes: >
       Fixed some typos and added a note about out of date content.
@@ -201,11 +200,7 @@ Time to become a Jedi Knight. Jujutsu Knight? Jujutsu Master? Jujutsu apprentice
 
 ## Using Jujutsu
 
-{% note %}
-
 Since I published this in early 2024, many details about Jujutsu have changed—especially around specific <abbr title="command line interface">CLI</abbr> invocations—, and a fair number of the papercuts have been fixed. The big picture is the same as it was, but I can *even more* strongly recommend it than I did originally.
-
-{% endnote %}
 
 That is all interesting enough philosophically, but for a tool that, if successful, will end up being one of a software developer’s most-used tools, there is an even more important question: *What is it actually like to use?*
 
@@ -704,8 +699,6 @@ Jujutsu has become my version control tool of choice since I picked it up over t
 
 Is Jujutsu ready for you to roll out at your Fortune 500 company? Probably not. While it is improving at a steady clip—most of the rough edges I hit in mid-2023 are long since fixed—it is still undergoing breaking changes in design here and there, and there is effectively no material out there about how to use it yet. (This essay exists, in part, as an attempt to change that!) Beyond Jujutsu itself, there is a lot of work to be done to build an ecosystem around it. Most of the remaining rough edges are squarely to do with the lack of understanding from other tools.  The project is marching steadily toward a 1.0 release… someday. As for when that might be, there are as far as I know no plans: there is still too much to do. Above all, I am very eager to see what a native Jujutsu backend would look like. Today, it is “just” a much better model for working with Git repos. A world where the same level of smarts being applied to the front end goes into the backend too is a world well worth looking forward to.
 
-{% callout %}
-
 Thoughts, comments, or questions? Discuss:
 
 - [Hacker News]({{discuss.hn}})
@@ -716,8 +709,6 @@ Thoughts, comments, or questions? Discuss:
 - [Bluesky]({{discuss.bluesky}})
 - [Twitter/X]({{discuss.twitter}})
 
-
-{% endcallout %}
 
 [^death-by-google]: Google is famous for killing *products*, but less so developer tools.
 

@@ -29,7 +29,7 @@ pub struct Item {
 }
 
 #[derive(Error, Debug)]
-#[error("could not parse YAML metadata: {unparseable}")]
+#[error("could not parse YAML metadata")]
 pub struct ItemParseError {
    unparseable: String,
    source: serde_yaml::Error,

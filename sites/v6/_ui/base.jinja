@@ -1,13 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    {% block title %}{% endblock %}
+   <head>
+      <meta charset="utf-8" />
 
-    {% block meta %}{% endblock %}
+      <meta name='viewport' content='width=device-width, initial-scale=1'>
 
-    {% block feeds %}{% endblock %}
+      <title>{{data.title | page_title}}</title>
+
+      <link rel="stylesheet" href="/style.css">
+
+      {% block meta %}{% endblock %}
+
+      {% block feeds %}{% endblock %}
   </head>
   <body>
-    {% block body %}{% endblock %}
+      {% block body %}
+         {{ content }}
+      {% endblock %}
   </body>
 </html>

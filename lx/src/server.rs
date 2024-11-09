@@ -13,8 +13,7 @@ use axum::{
       State, WebSocketUpgrade,
    },
    response::Response,
-   routing,
-   Router,
+   routing, Router,
 };
 use futures::{
    future::{self, Either},
@@ -101,7 +100,7 @@ pub fn serve(site_dir: &Path) -> Result<(), Error> {
 
 async fn serve_in(path: PathBuf, state: Tx) -> Result<(), Error> {
    // This could be extracted into its own function.
-   let serve_dir = ServeDir::new(path).append_index_html_on_directories(true);
+   let serve_dir = ServeDir::new(&path).append_index_html_on_directories(true);
    let router = Router::new()
       .route_service("/*asset", serve_dir)
       .route("/live-reload", routing::get(websocket_upgrade))
@@ -115,7 +114,7 @@ async fn serve_in(path: PathBuf, state: Tx) -> Result<(), Error> {
          source: e,
       })?;
 
-   info!("→ Serving at: http://{addr}");
+   info!("→ Serving\n\tat: http://{addr}\n\tfrom {}", path.display());
 
    axum::serve(listener, router)
       .await
