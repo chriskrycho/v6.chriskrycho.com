@@ -10,6 +10,8 @@ use log::info;
 use simplelog::{
    ColorChoice, Config, ConfigBuilder, LevelFilter, TermLogger, TerminalMode,
 };
+use syntect::highlighting::ThemeSet;
+use syntect::html::{css_for_theme_with_class_style, ClassStyle};
 use thiserror::Error;
 
 mod archive;
@@ -91,13 +93,49 @@ fn main() -> Result<(), anyhow::Error> {
             },
          )
          .map_err(|source| Error::Markdown { dest, source })?;
-
          Ok(())
       }
 
       Command::Sass { paths } => {
          let (input, output, _dest) = parse_paths(paths)?;
          sass::convert(input, output)?;
+         Ok(())
+      }
+
+      Command::Theme(Theme::List) => {
+         let ThemeSet { themes } = ThemeSet::load_defaults();
+         println!("Available themes:");
+         for theme_name in themes.keys() {
+            println!("\t{theme_name}");
+         }
+         Ok(())
+      }
+
+      Command::Theme(Theme::Emit { name, path, force }) => {
+         let theme_set = ThemeSet::load_defaults();
+         let theme = theme_set
+            .themes
+            .get(&name)
+            .ok_or_else(|| Error::InvalidThemeName(name))?;
+
+         let css = css_for_theme_with_class_style(theme, ClassStyle::Spaced)
+            .map_err(|source| Error::SyntectCSS { source })?;
+
+         let dest_cfg = path
+            .map(|path| DestCfg::Path { buf: path, force })
+            .unwrap_or(DestCfg::Stdout);
+
+         let (mut output, _dest) = output_buffer(&dest_cfg)?;
+         output
+            .write_all(css.as_bytes())
+            .map_err(|source| Error::Io {
+               target: match dest_cfg {
+                  DestCfg::Path { buf, .. } => format!("{}", buf.display()),
+                  DestCfg::Stdout => String::from("<stdout>"),
+               },
+               source,
+            })?;
+
          Ok(())
       }
 
@@ -212,8 +250,20 @@ enum Error {
    #[error(transparent)]
    LoggerError(#[from] log::SetLoggerError),
 
-   #[error("Could not convert (for {dest})")]
+   #[error("could not convert (for {dest})")]
    Markdown { dest: Dest, source: md::Error },
+
+   #[error("invalid theme name: {0}")]
+   InvalidThemeName(String),
+
+   #[error(transparent)]
+   SyntectCSS { source: syntect::Error },
+
+   #[error("IO (for {target})")]
+   Io {
+      target: String,
+      source: std::io::Error,
+   },
 }
 
 impl Cli {
@@ -259,6 +309,10 @@ enum Command {
       full_html_output: bool,
    },
 
+   /// Work with theme SCSS.
+   #[command(subcommand)]
+   Theme(Theme),
+
    /// Process one or more Sass/SCSS files exactly the same way `lx` does.
    ///
    /// (Does not compress styles the way a prod build does.)
@@ -266,6 +320,27 @@ enum Command {
       /// The entry points to process.
       #[clap(flatten)]
       paths: Paths,
+   },
+}
+
+#[derive(Debug, PartialEq, Clone, Subcommand)]
+enum Theme {
+   /// List all themes,
+   List,
+
+   /// Emit a named theme
+   #[arg()]
+   Emit {
+      /// The theme name to use. To see all themes, use `lx theme list`.
+      name: String,
+
+      /// Where to emit the theme CSS. If absent, will use `stdout`.
+      #[arg(long = "to")]
+      path: Option<PathBuf>,
+
+      /// Overwrite any existing file at the path specified.
+      #[arg(long, requires = "path")]
+      force: bool,
    },
 }
 
@@ -313,7 +388,7 @@ fn parse_paths(
       (None, true) => return Err(Error::InvalidArgs)?,
    };
    let input = input_buffer(paths.input.as_ref())?;
-   let (output, dest) = output_buffer(dest_cfg)?;
+   let (output, dest) = output_buffer(&dest_cfg)?;
    Ok((input, output, dest))
 }
 
@@ -335,7 +410,7 @@ pub(crate) fn input_buffer(path: Option<&PathBuf>) -> Result<Box<dyn Read>, Erro
    Ok(buf)
 }
 
-fn output_buffer(dest_cfg: DestCfg) -> Result<(Box<dyn Write>, Dest), Error> {
+fn output_buffer(dest_cfg: &DestCfg) -> Result<(Box<dyn Write>, Dest), Error> {
    match dest_cfg {
       DestCfg::Stdout => {
          Ok((Box::new(std::io::stdout()) as Box<dyn Write>, Dest::Stdout))
@@ -370,7 +445,7 @@ fn output_buffer(dest_cfg: DestCfg) -> Result<(Box<dyn Write>, Dest), Error> {
                source,
             })?;
 
-         Ok((Box::new(file) as Box<dyn Write>, Dest::File(path)))
+         Ok((Box::new(file) as Box<dyn Write>, Dest::File(path.clone())))
       }
    }
 }
