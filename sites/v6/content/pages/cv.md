@@ -2,7 +2,7 @@
 title: Curriculum Vitae
 subtitle: >
     A senior engineering leader, lately focused on frameworks and languages as ratchets: tools which help other developers to build better software.
-
+permalink: /cv/
 ---
 
 [My résumé][resume] has the short version. This page is the *long* version. Why? Because even the best résumés leave a lot to be desired: they lack context and narrative. If you’d like a better idea of how I work, I think you’ll find the rest of this page a lot more helpful.

@@ -72,9 +72,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
 
    debug!("processed {count} pages", count = pages.len());
 
-   // TODO: get standalone pages.
-
-   // TODO: get taxonomy pages. Structurally, I *think* the best thing to do is
+   // TODO: build taxonomies. Structurally, I *think* the best thing to do is
    // provide a top-level `Archive` and then filter on its results, since that
    // avoids having to do the sorting more than once. So build the taxonomies
    // *second*, as filtered versions of the Archive?

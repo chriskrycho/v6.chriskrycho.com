@@ -137,18 +137,17 @@ impl Page {
    }
 
    pub fn path_from_root(&self, root_dir: &Path) -> Result<RootedPath, Error> {
-      let path = match &self.data.slug {
-         Slug::Permalink(str) => Ok(root_dir.join(str)),
+      match &self.data.slug {
+         Slug::Permalink(str) => Ok(RootedPath(PathBuf::from(str))),
          Slug::FromPath(path_buf) => path_buf
             .strip_prefix(root_dir)
-            .map(|path| path.to_owned())
+            .map(|path| RootedPath(path.to_owned()))
             .map_err(|source| Error::BadSlugRoot {
                source,
                root: root_dir.to_owned(),
                slug: path_buf.to_owned(),
             }),
-      }?;
-      Ok(RootedPath(path))
+      }
    }
 }
 
