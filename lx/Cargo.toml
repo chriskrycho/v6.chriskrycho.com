@@ -12,17 +12,19 @@ documentation.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
+atom_syndication = { version = "0.12", features = ["with-serde"] }
 axum = { version = "0.7.4", default-features = true, features = [
-    "http2",
-    "ws",
+   "http2",
+   "ws",
 ] }
+chrono = { version = "0.4", features = ["serde"] }
 clap = { workspace = true }
 clap_complete = { workspace = true }
 dirs = { workspace = true }
 futures = { version = "0.3", default-features = false, features = [
-    "alloc",
-    "std",
-    "async-await",
+   "alloc",
+   "std",
+   "async-await",
 ] }
 glob = "0.3"
 grass = "0.13.2"
@@ -32,10 +34,10 @@ log = { workspace = true }
 lx-md = { path = "./crates/markdown" }
 minijinja = { version = "2", features = ["loader", "macros"] }
 normalize-path = "0.2"
-notify = { version = "6.1.1", default-features = false, features = [
-    "macos_kqueue",
+notify = { version = "7", default-features = false, features = [
+   "macos_kqueue",
 ] }
-notify-debouncer-full = { version = "0.3.1", default-features = false }
+notify-debouncer-full = { version = "0.4", default-features = false }
 rayon = { workspace = true }
 regex = "1"
 serde = { workspace = true }
@@ -45,23 +47,12 @@ simplelog = { workspace = true }
 slug = "0.1"
 syntect = { workspace = true }
 thiserror = { workspace = true }
-tokio = { version = "1.36.0", features = ["full"] }
-tower = "0.4.13"
-tower-http = { version = "0.5.2", features = ["fs", "default"] }
-watchexec = "3.0.1"
-watchexec-signals = "2.1.0"
-
-[dependencies.atom_syndication]
-version = "0.12"
-features = ["with-serde"]
-
-[dependencies.chrono]
-version = "0.4"
-features = ["serde"]
-
-[dependencies.uuid]
-version = "1"
-features = ["serde", "v5"]
+tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs", "default"] }
+uuid = { version = "1", features = ["serde", "v5"] }
+watchexec = "3"
+watchexec-signals = "2"
 
 
 ################################################################################
@@ -86,25 +77,20 @@ license = "BlueOak-1.0.0"
 
 [workspace.dependencies]
 anyhow = "1"
+clap = { version = "4", features = ["unicode", "cargo", "derive"] }
 clap_complete = "4"
 dirs = "5"
 lazy_static = "1.4"
 log = "0.4.20"
 rayon = "1"
-serde = { version = "1.0.185", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
-thiserror = "1"
-simplelog = { version = "0.12.1", features = ["paris"] }
-
-[workspace.dependencies.clap]
-version = "4"
-features = ["unicode", "cargo", "derive"]
-
-[workspace.dependencies.syntect]
-version = "5"
-default-features = false
-features = ["default-fancy"]
+simplelog = { version = "0.12", features = ["paris"] }
+syntect = { version = "5", default-features = false, features = [
+   "default-fancy",
+] }
+thiserror = "2"
 
 [profile.dev]
 split-debuginfo = "unpacked"

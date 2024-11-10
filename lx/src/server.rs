@@ -20,7 +20,7 @@ use futures::{
    SinkExt, StreamExt,
 };
 use log::{debug, error, info, trace};
-use notify::{RecursiveMode, Watcher};
+use notify::RecursiveMode;
 use notify_debouncer_full::DebouncedEvent;
 use serde::Serialize;
 use tokio::{
@@ -276,8 +276,7 @@ async fn watch_in(dir: PathBuf, change_tx: Tx) -> Result<(), Error> {
       },
    )?;
 
-   let watcher = debouncer.watcher();
-   watcher.watch(&dir, RecursiveMode::Recursive)?;
+   debouncer.watch(&dir, RecursiveMode::Recursive)?;
 
    while let Some(result) = rx.recv().await {
       let paths = result
