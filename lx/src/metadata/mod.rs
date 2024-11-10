@@ -41,7 +41,7 @@ pub struct Metadata {
 
    pub subtitle: Option<Rendered>,
    pub summary: Option<Rendered>,
-   pub qualifiers: Option<Qualifiers>,
+   pub qualifiers: Qualifiers,
    pub updated: Vec<Update>,
    pub thanks: Option<Rendered>,
    pub tags: Vec<String>,
@@ -55,42 +55,23 @@ impl Metadata {
    pub(super) fn resolved(
       item: serial::Item,
       source: &page::Source,
-      root_dir: &Path,
       cascade: &Cascade,
       default_template_name: String,
       md: &Markdown,
    ) -> Result<Self, Error> {
-      let permalink: Option<PathBuf> = item.permalink.map(|permalink| {
+      let permalink = item.permalink.map(|permalink| {
          permalink
             .trim_start_matches('/')
             .trim_end_matches('/')
-            .into()
+            .to_string()
       });
 
-      let path_from_root =
-         source
-            .path
-            .strip_prefix(root_dir)
-            .map_err(|e| Error::BadPermalink {
-               reason: format!(
-                  "Could not strip prefix from root dir {}",
-                  root_dir.display()
-               ),
-               source: Some(e),
-            })?;
+      let dir = source.path.parent().ok_or_else(|| Error::BadPermalink {
+         reason: format!("Missing parent for file at {}", source.path.display()),
+         source: None,
+      })?;
 
       let render = |s: String| Rendered::as_markdown(&s, md);
-
-      let updated = item.updated.into_iter().try_fold(
-         Vec::new(),
-         |mut acc, serial::Update { at, changes }| match at {
-            Some(at) => {
-               acc.push(Update { at, changes });
-               Ok(acc)
-            }
-            None => Error::bad_field(FieldError::Update),
-         },
-      )?;
 
       if matches!((&item.title, &item.date), (None, None)) {
          return Err(Error::MissingRequiredField);
@@ -99,28 +80,46 @@ impl Metadata {
       let metadata = Metadata {
          title: item.title,
          date: item.date,
-         slug: Slug::new(permalink.as_ref(), source)?,
+         slug: Slug::new(permalink.as_deref(), &source.path)?,
          subtitle: item.subtitle.map(render).transpose()?,
          layout: item
             .layout
-            .or(cascade.layout(path_from_root))
+            .or(cascade.layout(dir))
             .unwrap_or(default_template_name),
          summary: item.summary.map(render).transpose()?,
-         qualifiers: item.qualifiers.or(cascade.qualifiers(path_from_root)),
-         updated,
+         qualifiers: {
+            let from_item = item.qualifiers.unwrap_or_default();
+            let from_cascade = cascade.qualifiers(dir).unwrap_or_default();
+
+            Qualifiers {
+               audience: from_item.audience.or(from_cascade.audience),
+               epistemic: from_item.epistemic.or(from_cascade.epistemic),
+            }
+         },
+         updated: item.updated.into_iter().try_fold(
+            Vec::new(),
+            |mut acc, serial::Update { at, changes }| match at {
+               Some(at) => {
+                  acc.push(Update { at, changes });
+                  Ok(acc)
+               }
+               None => Error::bad_field(FieldError::Update),
+            },
+         )?,
          thanks: item
             .thanks
-            .or(cascade.thanks(path_from_root))
+            .or(cascade.thanks(dir))
             .map(render)
             .transpose()?,
-         tags: item
-            .tags
-            .or(cascade.tags(path_from_root))
-            .unwrap_or_default(),
+         tags: {
+            let mut tags = item.tags.unwrap_or_default();
+            tags.extend(cascade.tags(dir));
+            tags
+         },
          featured: item.featured.unwrap_or_default(),
-         book: item.book.or(cascade.book(path_from_root)),
-         series: item.series.or(cascade.series(path_from_root)),
-         subscribe: cascade.subscribe(path_from_root),
+         book: item.book.or(cascade.book(dir)),
+         series: item.series.or(cascade.series(dir)),
+         subscribe: cascade.subscribe(dir),
       };
 
       Ok(metadata)
@@ -144,19 +143,10 @@ pub struct Update {
    pub changes: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
-pub struct Slug(String);
-
-impl AsRef<Path> for Slug {
-   fn as_ref(&self) -> &Path {
-      self.0.as_ref()
-   }
-}
-
-impl AsRef<str> for Slug {
-   fn as_ref(&self) -> &str {
-      self.0.as_ref()
-   }
+#[derive(Debug, Serialize, PartialEq)]
+pub enum Slug {
+   Permalink(String),
+   FromPath(PathBuf),
 }
 
 impl Slug {
@@ -168,23 +158,28 @@ impl Slug {
    /// # Errors
    ///
    /// This function will return an error if .
-   fn new(permalink: Option<&PathBuf>, source: &page::Source) -> Result<Slug, Error> {
+   fn new(permalink: Option<&str>, source: &Path) -> Result<Slug, Error> {
       match permalink {
-         Some(p) => p
-            .to_str()
-            .ok_or_else(|| Error::bad_permalink(p, None))
-            .map(|s| Slug(s.to_owned())),
+         Some(s) => Ok(Slug::Permalink(s.to_owned())),
 
-         None => source
-            .path
-            .file_stem()
-            .ok_or_else(|| Error::BadPermalink {
-               reason: format!("missing file stem on '{}'?!?", source.path.display()),
+         None => {
+            let start = source.parent().ok_or_else(|| Error::BadPermalink {
+               reason: format!("missing parent on '{}'?!?", source.display()),
                source: None,
-            })?
-            .to_str()
-            .ok_or_else(|| Error::bad_permalink(&source.path, None))
-            .map(|s| Slug(slugify(s))),
+            })?;
+
+            let end = source
+               .file_stem()
+               .ok_or_else(|| Error::BadPermalink {
+                  reason: format!("missing file stem on '{}'?!?", source.display()),
+                  source: None,
+               })?
+               .to_str()
+               .ok_or_else(|| Error::bad_permalink(source, None))
+               .map(slugify)?;
+
+            Ok(Slug::FromPath(start.join(end)))
+         }
       }
    }
 }
@@ -238,57 +233,45 @@ mod tests {
 
    #[test]
    fn slug_from_explicit_permalink() {
-      let permalink = PathBuf::from("Hello There");
-      let permalink = Some(&permalink);
-      let source = page::Source {
-         path: PathBuf::default(),
-         contents: String::new(),
-      };
+      let permalink = "Hello There";
+      let source = PathBuf::default();
 
       assert_eq!(
-         &Slug::new(permalink, &source).unwrap().0,
-         "Hello There",
+         Slug::new(Some(permalink), &source).unwrap(),
+         Slug::Permalink(String::from(permalink)),
          "The provided permalink is always respected"
       );
    }
 
    #[test]
    fn slug_from_simple_relative_path_with_simple_title() {
-      let source = page::Source {
-         path: PathBuf::from("a/b/c/q.rs"),
-         contents: String::new(),
-      };
+      let source = PathBuf::from("a/b/c/q.rs");
+      let expected = PathBuf::from("a/b/c/q");
 
-      assert_eq!(&Slug::new(None, &source).unwrap().0, "q");
+      assert_eq!(Slug::new(None, &source).unwrap(), Slug::FromPath(expected));
    }
 
    #[test]
    fn slug_from_simple_relative_path_with_complicated_title() {
-      let source = page::Source {
-         path: PathBuf::from("a/b/c/Q R S.rs"),
-         contents: String::new(),
-      };
+      let source = PathBuf::from("a/b/c/Q R S.rs");
+      let expected = PathBuf::from("a/b/c/q-r-s");
 
-      assert_eq!(&Slug::new(None, &source).unwrap().0, "q-r-s");
+      assert_eq!(Slug::new(None, &source).unwrap(), Slug::FromPath(expected));
    }
 
    #[test]
    fn slug_from_compelx_relative_path_with_simple_title() {
-      let source = page::Source {
-         path: PathBuf::from("a/B C/d/q.rs"),
-         contents: String::new(),
-      };
+      let source = PathBuf::from("a/B C/d/q.rs");
+      let expected = PathBuf::from("a/B C/d/q");
 
-      assert_eq!(&Slug::new(None, &source).unwrap().0, "q");
+      assert_eq!(Slug::new(None, &source).unwrap(), Slug::FromPath(expected));
    }
 
    #[test]
    fn slug_from_compelx_relative_path_with_complex_title() {
-      let source = page::Source {
-         path: PathBuf::from("a/B C/d/Q R S.rs"),
-         contents: String::new(),
-      };
+      let source = PathBuf::from("a/B C/d/Q R S.rs");
+      let expected = PathBuf::from("a/B C/d/q-r-s");
 
-      assert_eq!(&Slug::new(None, &source).unwrap().0, "q-r-s");
+      assert_eq!(Slug::new(None, &source).unwrap(), Slug::FromPath(expected));
    }
 }

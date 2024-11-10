@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::{
    config::Config,
-   metadata::{self, cascade::Cascade, serial, Metadata},
+   metadata::{self, cascade::Cascade, serial, Metadata, Slug},
 };
 
 /// Source data for a file: where it came from, and its original contents.
@@ -77,12 +77,18 @@ pub enum Error {
       #[from]
       source: RenderError,
    },
+
+   #[error("Invalid combination of root '{root}' and slug '{slug}'")]
+   BadSlugRoot {
+      source: std::path::StripPrefixError,
+      root: PathBuf,
+      slug: PathBuf,
+   },
 }
 
 impl Page {
    pub fn build(
       source: &Source,
-      root_dir: &Path,
       cascade: &Cascade,
       rewrite: impl Fn(
          &str,
@@ -101,7 +107,7 @@ impl Page {
 
       let md = lx_md::Markdown::new();
 
-      let prepared = lx_md::prepare(&source.contents).map_err(Error::from)?;
+      let prepared = lx_md::prepare(&source.contents)?;
 
       let metadata = prepared
          .metadata_src
@@ -111,7 +117,6 @@ impl Page {
             Metadata::resolved(
                item_metadata,
                source,
-               root_dir,
                cascade,
                String::from("base.jinja"), // TODO: not this
                &md,
@@ -131,13 +136,36 @@ impl Page {
       })
    }
 
-   pub fn path_from_root(&self, root_dir: &Path) -> PathBuf {
-      root_dir.join(&self.data.slug)
+   pub fn path_from_root(&self, root_dir: &Path) -> Result<RootedPath, Error> {
+      let path = match &self.data.slug {
+         Slug::Permalink(str) => Ok(root_dir.join(str)),
+         Slug::FromPath(path_buf) => path_buf
+            .strip_prefix(root_dir)
+            .map(|path| path.to_owned())
+            .map_err(|source| Error::BadSlugRoot {
+               source,
+               root: root_dir.to_owned(),
+               slug: path_buf.to_owned(),
+            }),
+      }?;
+      Ok(RootedPath(path))
    }
+}
 
-   /// Given a config, generate the (canonicalized) URL for the page
-   pub fn _url(&self, config: &Config) -> String {
-      String::from(config.url.trim_end_matches('/')) + "/" + self.data.slug.as_ref()
+pub struct RootedPath(PathBuf);
+
+impl RootedPath {
+   /// Given a config, generate the (canonicalized) URL for the rooted path
+   pub fn url(&self, config: &Config) -> String {
+      String::from(config.url.trim_end_matches('/'))
+         + "/"
+         + self.0.to_str().expect("All paths are UTF-8")
+   }
+}
+
+impl AsRef<Path> for RootedPath {
+   fn as_ref(&self) -> &Path {
+      &self.0
    }
 }
 

@@ -64,10 +64,10 @@ pub struct Ambient {
    pub subscribe: Option<Subscribe>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Qualifiers {
-   audience: Option<String>,
-   epistemic: Option<String>,
+   pub audience: Option<String>,
+   pub epistemic: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

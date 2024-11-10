@@ -59,13 +59,9 @@ pub fn render(
    }
 
    debug!(
-      "Rendering page '{}' with layout '{}'",
-      page
-         .data
-         .title
-         .as_ref()
-         .map(|s| s.as_str())
-         .unwrap_or("untitled"),
+      "Rendering page '{}' ({:?}) with layout '{}'",
+      page.data.title.as_deref().unwrap_or("[untitled]"),
+      page.source.path.display(),
       page.data.layout
    );
 

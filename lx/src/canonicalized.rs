@@ -8,9 +8,9 @@ pub struct Canonicalized {
    path: PathBuf,
 }
 
-impl Canonicalized {
-   pub fn path(&self) -> &Path {
-      self.path.as_path()
+impl AsRef<Path> for Canonicalized {
+   fn as_ref(&self) -> &Path {
+      &self.path
    }
 }
 

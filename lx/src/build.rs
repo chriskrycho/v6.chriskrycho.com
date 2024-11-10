@@ -3,8 +3,6 @@ use std::path::{Path, PathBuf};
 use log::{debug, error, trace};
 use rayon::iter::Either;
 use rayon::prelude::*;
-use syntect::highlighting::ThemeSet;
-use syntect::html::{css_for_theme_with_class_style, ClassStyle};
 use thiserror::Error;
 
 use crate::archive::{Archive, Order};
@@ -23,8 +21,8 @@ pub fn build_in(directory: Canonicalized) -> Result<(), Error> {
 }
 
 pub fn config_for(source_dir: &Canonicalized) -> Result<Config, Error> {
-   let config_path = source_dir.path().join("_data/config.lx.yaml");
-   debug!("source path: {}", source_dir.path().display());
+   let config_path = source_dir.as_ref().join("_data/config.lx.yaml");
+   debug!("source path: {}", source_dir.as_ref().display());
    debug!("config path: {}", config_path.display());
    let config = Config::from_file(&config_path)?;
    Ok(config)
@@ -32,9 +30,10 @@ pub fn config_for(source_dir: &Canonicalized) -> Result<Config, Error> {
 
 // TODO: further split this apart.
 pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
-   let input_dir = directory.path();
+   let input_dir = directory.as_ref();
+   trace!("Building in {}", input_dir.display());
 
-   let site_files = files_to_load(input_dir);
+   let site_files = files_to_load(input_dir)?;
    trace!("Site files: {site_files}");
 
    // TODO: pull from config?
@@ -55,19 +54,14 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
    let (errors, pages): (Vec<_>, Vec<_>) = sources
       .par_iter()
       .map(|source| {
-         Page::build(
-            source,
-            &input_dir.join("content"),
-            &cascade,
-            |text, metadata| {
-               jinja_env.render_str(text, metadata).map_err(|source| {
-                  Box::new(Error::Rewrite {
-                     source,
-                     text: text.to_owned(),
-                  }) as Box<dyn std::error::Error + Send + Sync>
-               })
-            },
-         )
+         Page::build(source, &cascade, |text, metadata| {
+            jinja_env.render_str(text, metadata).map_err(|source| {
+               Box::new(Error::Rewrite {
+                  source,
+                  text: text.to_owned(),
+               }) as Box<dyn std::error::Error + Send + Sync>
+            })
+         })
          .map_err(|e| (source.path.clone(), e))
       })
       .partition_map(Either::from);
@@ -87,40 +81,21 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
 
    let archive = Archive::new(&pages, Order::NewFirst);
 
-   // TODO: replace with the templating engine approach below!
-   pages.par_iter().try_for_each(|page| {
-      let path = page.path_from_root(&config.output).with_extension("html");
-      let containing_dir = path
-         .parent()
-         .unwrap_or_else(|| panic!("{} should have a containing dir!", path.display()));
+   // TODO: this can and probably should use async?
+   for page in pages {
+      let relative_path = page
+         .path_from_root(&input_dir.join("content"))
+         .map_err(|source| Error::Path { source })?
+         .as_ref()
+         .join("index.html");
 
-      std::fs::create_dir_all(containing_dir)
-         .map_err(|e| Error::CreateOutputDirectory {
-            path: containing_dir.to_owned(),
-            source: e
-         })?;
+      let path = config.output.join(relative_path);
 
-       std::fs::write(
-           &path,
-           format!(
-               r#"<html>
-                   <head>
-                       <link rel="stylesheet" href="/light.css" media="(prefers-color-scheme: light)" />
-                       <link rel="stylesheet" href="/dark.css" media="(prefers-color-scheme: dark)" />
-                   </head>
-                   <body>
-                       {body}
-                   </body>
-               </html>"#,
-               body = page.content
-           ),
-       )
-       .map_err(|e| Error::WriteFile { path: path.to_owned(), source: e })
-   })?;
-
-   // TODO: design a strategy for the output paths.
-   for page in &pages {
-      let path = page.path_from_root(&config.output).with_extension("html");
+      trace!(
+         "writing page {} to {}",
+         page.data.title.as_deref().unwrap_or("[untitled]"),
+         path.display()
+      );
       let containing_dir = path
          .parent()
          .unwrap_or_else(|| panic!("{} should have a containing dir!", path.display()));
@@ -133,7 +108,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
       })?;
 
       let mut buf = Vec::new();
-      templates::render(&jinja_env, page, config, &mut buf)?;
+      templates::render(&jinja_env, &page, config, &mut buf)?;
 
       std::fs::write(&path, buf).map_err(|source| Error::WriteFile {
          path: path.to_owned(),
@@ -210,6 +185,18 @@ pub enum Error {
       path: PathBuf,
       source: std::io::Error,
    },
+
+   #[error("bad glob pattern: '{pattern}'")]
+   GlobPattern {
+      pattern: String,
+      source: glob::PatternError,
+   },
+
+   #[error(transparent)]
+   Glob { source: glob::GlobError },
+
+   #[error("bad path for page")]
+   Path { source: page::Error },
 }
 
 #[derive(Error, Debug)]
@@ -281,39 +268,43 @@ impl std::fmt::Display for SiteFiles {
       // Yes, I could do these alignments with format strings; maybe at some
       // point I will switch to that.
       writeln!(f)?;
-      writeln!(f, "    config files:{}", display(&self.configs))?;
-      writeln!(f, "   content files:{}", display(&self.content))?;
-      writeln!(f, "      data files:{}", display(&self.data))?;
+      writeln!(f, "  config files:{}", display(&self.configs))?;
+      writeln!(f, "  content files:{}", display(&self.content))?;
+      writeln!(f, "  data files:{}", display(&self.data))?;
       writeln!(f, "  template files:{}", display(&self.templates))?;
       Ok(())
    }
 }
 
-fn files_to_load(in_dir: &Path) -> SiteFiles {
+fn files_to_load(in_dir: &Path) -> Result<SiteFiles, Error> {
    let root = in_dir.display();
 
    let content_dir = in_dir.join("content");
    let content_dir = content_dir.display();
-   trace!("{content_dir}");
+   trace!("content_dir: {content_dir}");
 
-   SiteFiles {
-      configs: resolved_paths_for(&format!("{root}/**/config.lx.yaml")),
-      content: resolved_paths_for(&format!("{content_dir}/**/*.md")),
-      data: resolved_paths_for(&format!("{content_dir}/**/*.data.yaml")),
-      templates: resolved_paths_for(&format!("{root}/**/*.jinja")),
-      styles: resolved_paths_for(&format!("{root}/**/*.scss")),
-   }
+   let site_files = SiteFiles {
+      configs: resolved_paths_for(&format!("{root}/**/config.lx.yaml"))?,
+      content: resolved_paths_for(&format!("{content_dir}/**/*.md"))?,
+      data: resolved_paths_for(&format!("{content_dir}/**/lx.data.yaml"))?,
+      templates: resolved_paths_for(&format!("{root}/**/*.jinja"))?,
+      styles: resolved_paths_for(&format!("{root}/**/*.scss"))?,
+   };
+
+   Ok(site_files)
 }
 
-fn resolved_paths_for(glob_src: &str) -> Vec<PathBuf> {
+fn resolved_paths_for(glob_src: &str) -> Result<Vec<PathBuf>, Error> {
    glob::glob(glob_src)
-      .unwrap_or_else(|_| panic!("bad glob: '{}'", glob_src))
-      .fold(Vec::new(), |mut good, result| {
-         match result {
-            Ok(path) => good.push(path),
-            Err(e) => error!("glob problem (globlem?): '{}'", e),
-         };
-
-         good
+      .map_err(|source| Error::GlobPattern {
+         pattern: glob_src.to_string(),
+         source,
+      })?
+      .try_fold(Vec::new(), |mut good, result| match result {
+         Ok(path) => {
+            good.push(path);
+            Ok(good)
+         }
+         Err(source) => Err(Error::Glob { source }),
       })
 }

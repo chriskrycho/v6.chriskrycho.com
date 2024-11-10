@@ -1,8 +1,13 @@
+//! Manage the “data cascade”, i.e. data provided at various points in the
+//! project hierarchy, which can then be merged with the metadata for a given
+//! post.
+
 use std::{
    collections::HashMap,
    path::{Path, PathBuf},
 };
 
+use log::trace;
 use thiserror::Error;
 
 use super::{serial::Ambient, Book, Qualifiers, Series, Subscribe};
@@ -56,10 +61,11 @@ impl Cascade {
    }
 
    pub fn add_at<P: AsRef<Path>>(&mut self, path: P, value: Ambient) -> &mut Self {
-      let key = path.as_ref().display();
+      trace!("Inserting {:?} at {}", value, path.as_ref().display());
       if let Some(existing) = self.inner.insert(path.as_ref().to_owned(), value) {
          panic!(
             "Bug: inserting data into `Cascade` for existing key: {key}.\nExisting data: {existing:?}",
+            key = path.as_ref().display()
          );
       }
       self
@@ -77,8 +83,10 @@ impl Cascade {
       self.find_map(p.as_ref(), &|m| m.thanks.clone())
    }
 
-   pub fn tags<P: AsRef<Path>>(&self, p: P) -> Option<Vec<String>> {
-      self.find_map(p.as_ref(), &|m| m.tags.clone())
+   pub fn tags<P: AsRef<Path>>(&self, p: P) -> Vec<String> {
+      self
+         .find_map(p.as_ref(), &|m| m.tags.clone())
+         .unwrap_or_default()
    }
 
    pub fn subscribe<P: AsRef<Path>>(&self, p: P) -> Option<Subscribe> {
