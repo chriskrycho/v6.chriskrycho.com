@@ -26,6 +26,7 @@ pub struct Item {
    pub layout: Option<String>,
    pub book: Option<Book>,
    pub series: Option<Series>,
+   pub work: Option<MusicalWork>,
 }
 
 #[derive(Error, Debug)]
@@ -62,6 +63,7 @@ pub struct Ambient {
    pub book: Option<Book>,
    pub series: Option<Series>,
    pub subscribe: Option<Subscribe>,
+   pub work: Option<MusicalWork>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -150,7 +152,21 @@ impl std::fmt::Display for Rating {
 pub struct Series {
    // The name is optional: it could be supplied via the data file somewhere up
    // the tree.
-   name: Option<String>,
+   pub name: Option<String>,
    // The *part* has to be supplied, though.
-   part: u8,
+   pub part: u8,
+}
+
+// All fields here are optional because they may be supplied either ambiently or via the
+// item itself.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct MusicalWork {
+   /// The title of the work.
+   pub title: Option<String>,
+   /// An intentionally unformatted string describing the instrumentation.
+   pub instrumentation: Option<String>,
+   /// A subtitle for the work, if any.
+   pub subtitle: Option<String>,
+   /// When the work was published.
+   pub date: Option<DateTime<FixedOffset>>,
 }

@@ -10,7 +10,7 @@ use std::{
 use log::trace;
 use thiserror::Error;
 
-use super::{serial::Ambient, Book, Qualifiers, Series, Subscribe};
+use super::{serial::Ambient, Book, MusicalWork, Qualifiers, Series, Subscribe};
 
 // NOTE: this is currently quite naïve and in fact *wrong* as a result: what I
 // will actually need is a *tree*, where each point in the tree has two pieces
@@ -101,9 +101,13 @@ impl Cascade {
       self.find_map(p.as_ref(), &|m| m.series.clone())
    }
 
-   fn find_map<T, F>(&self, path: &Path, f: &F) -> Option<T>
+   pub fn work<P: AsRef<Path>>(&self, path: P) -> Option<MusicalWork> {
+      self.find_map(path.as_ref(), &|m| m.work.clone())
+   }
+
+   fn find_map<'a, T, F>(&'a self, path: &Path, f: &F) -> Option<T>
    where
-      F: Fn(&Ambient) -> Option<T>,
+      F: Fn(&'a Ambient) -> Option<T>,
    {
       let path = path.to_owned();
       self

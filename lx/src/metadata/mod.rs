@@ -8,6 +8,7 @@ use std::path::StripPrefixError;
 use chrono::DateTime;
 use chrono::FixedOffset;
 use lx_md::Markdown;
+use serde::Deserialize;
 use serde::Serialize;
 use slug::slugify;
 use thiserror::Error;
@@ -49,6 +50,7 @@ pub struct Metadata {
    pub book: Option<Book>,
    pub series: Option<Series>,
    pub subscribe: Option<Subscribe>,
+   pub work: Option<Work>,
 }
 
 impl Metadata {
@@ -103,7 +105,7 @@ impl Metadata {
                   acc.push(Update { at, changes });
                   Ok(acc)
                }
-               None => Error::bad_field(FieldError::Update),
+               None => Err(FieldError::Update),
             },
          )?,
          thanks: item
@@ -120,6 +122,87 @@ impl Metadata {
          book: item.book.or(cascade.book(dir)),
          series: item.series.or(cascade.series(dir)),
          subscribe: cascade.subscribe(dir),
+         work: match (item.work, cascade.work(dir)) {
+            (Some(from_item), Some(from_cascade)) => {
+               let title = from_item
+                  .title
+                  .or(from_cascade.title)
+                  .ok_or(FieldError::Work(WorkError::Title, WorkMissingFrom::Both))?;
+
+               let subtitle = from_item.subtitle.or(from_cascade.subtitle);
+
+               let date = from_item
+                  .date
+                  .or(from_cascade.date)
+                  .ok_or(FieldError::Work(WorkError::Date, WorkMissingFrom::Both))?;
+
+               let instrumentation = from_item
+                  .instrumentation
+                  .or(from_cascade.instrumentation)
+                  .ok_or(FieldError::Work(
+                     WorkError::Instrumentation,
+                     WorkMissingFrom::Both,
+                  ))?;
+
+               Some(Work {
+                  title,
+                  date,
+                  instrumentation,
+                  subtitle,
+               })
+            }
+
+            (Some(from_item), None) => {
+               let title = from_item
+                  .title
+                  .ok_or(FieldError::Work(WorkError::Title, WorkMissingFrom::Item))?;
+
+               let subtitle = from_item.subtitle;
+
+               let date = from_item
+                  .date
+                  .ok_or(FieldError::Work(WorkError::Date, WorkMissingFrom::Item))?;
+
+               let instrumentation = from_item.instrumentation.ok_or(
+                  FieldError::Work(WorkError::Instrumentation, WorkMissingFrom::Item),
+               )?;
+
+               Some(Work {
+                  title,
+                  subtitle,
+                  date,
+                  instrumentation,
+               })
+            }
+
+            (None, Some(from_cascade)) => {
+               let title = from_cascade.title.ok_or(Error::bad_field(
+                  FieldError::Work(WorkError::Title, WorkMissingFrom::Cascade),
+               ))?;
+
+               let subtitle = from_cascade.subtitle;
+
+               let date = from_cascade.date.ok_or(Error::bad_field(FieldError::Work(
+                  WorkError::Date,
+                  WorkMissingFrom::Cascade,
+               )))?;
+
+               let instrumentation = from_cascade.instrumentation.ok_or(
+                  Error::bad_field(FieldError::Work(
+                     WorkError::Instrumentation,
+                     WorkMissingFrom::Cascade,
+                  )),
+               )?;
+
+               Some(Work {
+                  title,
+                  subtitle,
+                  date,
+                  instrumentation,
+               })
+            }
+            (None, None) => None,
+         },
       };
 
       Ok(metadata)
@@ -184,6 +267,18 @@ impl Slug {
    }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Work {
+   /// The title of the work.
+   pub title: String,
+   /// An intentionally unformatted string describing the instrumentation.
+   pub instrumentation: String,
+   /// A subtitle for the work, if any.
+   pub subtitle: Option<String>,
+   /// When the work was published.
+   pub date: DateTime<FixedOffset>,
+}
+
 #[derive(Error, Debug)]
 pub enum Error {
    #[error("missing both date and time")]
@@ -216,8 +311,8 @@ impl Error {
       }
    }
 
-   fn bad_field<T>(source: FieldError) -> Result<T, Error> {
-      Err(Error::BadField { source })
+   fn bad_field(source: FieldError) -> Error {
+      Error::BadField { source }
    }
 }
 
@@ -225,6 +320,43 @@ impl Error {
 pub enum FieldError {
    #[error("missing `updated.at` field")]
    Update,
+
+   #[error("missing `{0}` in {1}")]
+   Work(WorkError, WorkMissingFrom),
+}
+
+#[derive(Debug)]
+pub enum WorkError {
+   Title,
+   Instrumentation,
+   Date,
+}
+
+impl std::fmt::Display for WorkError {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      match self {
+         WorkError::Title => write!(f, "title"),
+         WorkError::Instrumentation => write!(f, "instrumentation"),
+         WorkError::Date => write!(f, "date"),
+      }
+   }
+}
+
+#[derive(Debug)]
+pub enum WorkMissingFrom {
+   Item,
+   Cascade,
+   Both,
+}
+
+impl std::fmt::Display for WorkMissingFrom {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      match self {
+         WorkMissingFrom::Item => write!(f, "item (not present in cascade)"),
+         WorkMissingFrom::Cascade => write!(f, "cascade (not present on item)"),
+         WorkMissingFrom::Both => write!(f, "both item and cascade"),
+      }
+   }
 }
 
 #[cfg(test)]
