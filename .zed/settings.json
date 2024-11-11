@@ -5,5 +5,8 @@
 {
    "tab_size": 3,
    "wrap_guides": [90],
-   "languages": { "TOML": { "tab_size": 4 } }
+   "languages": {
+      "TOML": { "tab_size": 4 },
+      "YAML": { "tab_size": 2 }
+   }
 }
