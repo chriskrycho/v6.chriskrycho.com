@@ -1,17 +1,20 @@
 url: 'https://music.chriskrycho.com/'
 repo: 'https://github.com/chriskrycho/v6.chriskrycho.com'
-title: { normal: 'Chris Krycho – Composer' }
+title: { normal: 'Chris Krycho' }
+subtitle: 'Composer'
 description: 'Learning in public: on theology, technology, ethics, software, politics, art, and more.'
 author:
   name: 'Chris Krycho'
   email: 'hello@chriskrycho.com'
   links:
-    - mailto:hello@chriskrycho.com
-    - https://github.com/chriskrycho
-    - https://patreon.com/chriskrycho
-    - https://soundcloud.com/chriskrycho
-    - https://vimeo.com/chriskrycho
-    - https://www.linkedin.com/in/chriskrycho
-    - https://x.com/chriskrycho
-    - https://stackoverflow.com/users/564181/chris-krycho
+    email: mailto:hello@chriskrycho.com
+    Bluesky: https://bsky.app/profile/music.chriskrycho.com
+    Mastodon: https://mastodon.social/@chriskrycho
+    GitHub: https://github.com/chriskrycho
+    Patreon: https://patreon.com/chriskrycho
+    Soundcloud: https://soundcloud.com/chriskrycho
+    Vimeo: https://vimeo.com/chriskrycho
+    LinkedIn: https://www.linkedin.com/in/chriskrycho
+    X: https://x.com/chriskrycho
+    StackOverflow: https://stackoverflow.com/users/564181/chris-krycho
 output: ../public
