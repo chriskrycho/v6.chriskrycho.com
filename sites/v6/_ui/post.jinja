@@ -1,7 +1,20 @@
 {% extends 'page.jinja' %}
 
 {% block article_footer %}
-   <section class="footer">
-      lol!
-   </section>
+   <footer class="post-meta">
+      <section>
+         <div class="label">Subscribe</div>
+         <div class="content">
+            <p>
+               Like what you just read? Add the <a href="/feed.xml">feed</a> to your
+               feed reader!
+            </p>
+            <form action="https://buttondown.com/api/emails/embed-subscribe/sympolymathesy" method="post" target="popupwindow" onsubmit="window.open('https://buttondown.com/sympolymathesy', 'popupwindow')" class="embeddable-buttondown-form post-subscribe">
+            <label for="bd-email" class="post-subscribe__label">Or subscribe via email:</label>
+            <input type="email" name="email" id="bd-email" class="post-subscribe__input">
+            <button type="submit" class="post-subscribe__submit">Subscribe</button>
+            </form>
+         </div>
+      </section>
+   </footer>
 {% endblock %}
