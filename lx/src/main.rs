@@ -242,13 +242,13 @@ enum Error {
    },
 
    #[error(transparent)]
-   CheckFileExistsError { source: std::io::Error },
+   CheckFileExists { source: std::io::Error },
 
    #[error("the file '{0}' already exists")]
    FileExists(PathBuf),
 
    #[error(transparent)]
-   LoggerError(#[from] log::SetLoggerError),
+   Logger(#[from] log::SetLoggerError),
 
    #[error("could not convert (for {dest})")]
    Markdown { dest: Dest, source: md::Error },
@@ -379,9 +379,9 @@ pub(crate) enum DestCfg {
    Stdout,
 }
 
-fn parse_paths(
-   paths: Paths,
-) -> Result<(Box<dyn Read>, Box<dyn Write>, Dest), anyhow::Error> {
+type ParsedPaths = (Box<dyn Read>, Box<dyn Write>, Dest);
+
+fn parse_paths(paths: Paths) -> Result<ParsedPaths, anyhow::Error> {
    let dest_cfg = match (paths.output, paths.force.unwrap_or(false)) {
       (Some(buf), force) => DestCfg::Path { buf, force },
       (None, false) => DestCfg::Stdout,
@@ -432,14 +432,14 @@ fn output_buffer(dest_cfg: &DestCfg) -> Result<(Box<dyn Write>, Dest), Error> {
          // learn, I want to learn that.)
          let file_exists = path
             .try_exists()
-            .map_err(|source| Error::CheckFileExistsError { source })?;
+            .map_err(|source| Error::CheckFileExists { source })?;
 
          if file_exists && !force {
             return Err(Error::FileExists(path.to_owned()));
          }
 
          let file =
-            std::fs::File::create(&path).map_err(|source| Error::CouldNotOpenFile {
+            std::fs::File::create(path).map_err(|source| Error::CouldNotOpenFile {
                path: path.clone(),
                reason: FileOpenReason::Write,
                source,

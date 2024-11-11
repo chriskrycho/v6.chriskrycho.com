@@ -67,7 +67,7 @@ pub enum Error {
    },
 
    #[error(transparent)]
-   RenderError {
+   Render {
       #[from]
       source: lx_md::Error,
    },
