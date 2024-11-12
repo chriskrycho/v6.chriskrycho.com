@@ -268,15 +268,17 @@ impl Slug {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Work {
+pub struct Work {
    /// The title of the work.
    pub title: String,
    /// An intentionally unformatted string describing the instrumentation.
    pub instrumentation: String,
    /// A subtitle for the work, if any.
    pub subtitle: Option<String>,
+
+   // TODO: parse this, at minimum into a known-valid form (`\d{4}`).
    /// When the work was published.
-   pub date: DateTime<FixedOffset>,
+   pub date: String,
 }
 
 #[derive(Error, Debug)]
