@@ -168,5 +168,5 @@ pub struct MusicalWork {
    /// A subtitle for the work, if any.
    pub subtitle: Option<String>,
    /// When the work was published.
-   pub date: Option<DateTime<FixedOffset>>,
+   pub date: Option<String>,
 }
