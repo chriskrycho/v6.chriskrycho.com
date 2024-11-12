@@ -21,7 +21,7 @@ pub fn build_in(directory: Canonicalized) -> Result<(), Error> {
 }
 
 pub fn config_for(source_dir: &Canonicalized) -> Result<Config, Error> {
-   let config_path = source_dir.as_ref().join("_data/config.lx.yaml");
+   let config_path = source_dir.as_ref().join("config.lx.yaml");
    debug!("source path: {}", source_dir.as_ref().display());
    debug!("config path: {}", config_path.display());
    let config = Config::from_file(&config_path)?;
@@ -237,7 +237,7 @@ pub struct ContentError {
 }
 
 struct SiteFiles {
-   configs: Vec<PathBuf>,
+   config: PathBuf,
    content: Vec<PathBuf>,
    data: Vec<PathBuf>,
    templates: Vec<PathBuf>,
@@ -266,7 +266,7 @@ impl std::fmt::Display for SiteFiles {
       // Yes, I could do these alignments with format strings; maybe at some
       // point I will switch to that.
       writeln!(f)?;
-      writeln!(f, "  config files:{}", display(&self.configs))?;
+      writeln!(f, "  config files:{}", self.config.display())?;
       writeln!(f, "  content files:{}", display(&self.content))?;
       writeln!(f, "  data files:{}", display(&self.data))?;
       writeln!(f, "  template files:{}", display(&self.templates))?;
@@ -282,7 +282,7 @@ fn files_to_load(in_dir: &Path) -> Result<SiteFiles, Error> {
    trace!("content_dir: {content_dir}");
 
    let site_files = SiteFiles {
-      configs: resolved_paths_for(&format!("{root}/**/config.lx.yaml"))?,
+      config: in_dir.join("config.lx.yaml"),
       content: resolved_paths_for(&format!("{content_dir}/**/*.md"))?,
       data: resolved_paths_for(&format!("{content_dir}/**/lx.data.yaml"))?,
       templates: resolved_paths_for(&format!("{root}/**/*.jinja"))?,
