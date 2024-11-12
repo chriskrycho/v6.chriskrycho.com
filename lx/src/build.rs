@@ -284,9 +284,9 @@ fn files_to_load(in_dir: &Path) -> Result<SiteFiles, Error> {
    let site_files = SiteFiles {
       config: in_dir.join("config.lx.yaml"),
       content: resolved_paths_for(&format!("{content_dir}/**/*.md"))?,
-      data: resolved_paths_for(&format!("{content_dir}/**/lx.data.yaml"))?,
-      templates: resolved_paths_for(&format!("{root}/**/*.jinja"))?,
-      styles: resolved_paths_for(&format!("{root}/**/*.scss"))?,
+      data: resolved_paths_for(&format!("{content_dir}/**/data.lx.yaml"))?,
+      templates: resolved_paths_for(&format!("{root}/_ui/*.jinja"))?,
+      styles: resolved_paths_for(&format!("{root}/_styles/**/*.scss"))?,
    };
 
    Ok(site_files)
