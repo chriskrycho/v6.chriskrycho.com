@@ -1,6 +1,9 @@
 mod email;
 
-use std::path::{Path, PathBuf};
+use std::{
+   collections::HashMap,
+   path::{Path, PathBuf},
+};
 
 use normalize_path::NormalizePath;
 use serde::{Deserialize, Serialize};
@@ -17,6 +20,8 @@ pub struct Config {
    pub description: String,
    pub author: Author,
    pub output: PathBuf,
+   #[serde(default)]
+   pub nav: Vec<NavItem>,
 }
 
 #[derive(Error, Debug)]
@@ -65,7 +70,7 @@ impl Config {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Title {
    normal: String,
-   stylized: String,
+   stylized: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -73,5 +78,12 @@ pub struct Author {
    pub name: String,
    #[serde(deserialize_with = "Email::de_from_str")]
    pub email: Email,
-   pub links: Vec<String>,
+   pub links: HashMap<String, String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum NavItem {
+   Separator,
+   Page { title: String, path: String },
 }
