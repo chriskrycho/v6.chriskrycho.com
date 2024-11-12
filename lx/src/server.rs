@@ -81,6 +81,8 @@ pub fn serve(site_dir: &Path) -> Result<(), Error> {
       rt.handle(),
    );
 
+   // TODO: this currently reports an *error* when the Ctrl-C signal comes through, but
+   // that is an expected condition, not an error condition.
    rt.block_on(async {
       while let Some(result) = set.join_next().await {
          match result {
