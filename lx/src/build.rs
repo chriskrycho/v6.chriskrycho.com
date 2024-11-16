@@ -42,8 +42,6 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
 
    std::fs::create_dir_all(&config.output).expect("Can create output dir");
 
-   // TODO: integrate `grass` into build.
-
    let sources = load_sources(&site_files)?;
 
    debug!("loaded {count} pages", count = sources.len());
@@ -109,6 +107,25 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
       templates::render(&jinja_env, &page, config, &mut buf)?;
 
       std::fs::write(&path, buf).map_err(|source| Error::WriteFile { path, source })?;
+   }
+
+   for sass_file in site_files
+      .styles
+      .into_iter()
+      .filter(|path| !path.starts_with("_"))
+   {
+      let converted = grass::from_path(&sass_file, &grass::Options::default())?;
+      let relative_path =
+         sass_file
+            .strip_prefix(input_dir.join("_styles"))
+            .map_err(|_| Error::StripPrefix {
+               prefix: input_dir.to_owned(),
+               path: sass_file.clone(),
+            })?;
+
+      let path = config.output.join(relative_path);
+      std::fs::write(&path, converted)
+         .map_err(|source| Error::WriteFile { path, source })?;
    }
 
    Ok(())
@@ -192,6 +209,15 @@ pub enum Error {
 
    #[error("bad path for page")]
    PagePath { source: page::Error },
+
+   #[error("could not strip prefix '{prefix}' from path '{path}'")]
+   StripPrefix { prefix: PathBuf, path: PathBuf },
+
+   #[error("error compiling SCSS")]
+   Sass {
+      #[from]
+      source: Box<grass::Error>,
+   },
 }
 
 #[derive(Error, Debug)]
