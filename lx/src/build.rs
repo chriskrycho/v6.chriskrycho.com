@@ -51,6 +51,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
 
    let (errors, pages): (Vec<_>, Vec<_>) = sources
       .par_iter()
+      .filter(|source| source.path.extension().is_some_and(|ext| ext == "md"))
       .map(|source| {
          Page::build(source, &cascade, |text, metadata| {
             jinja_env.render_str(text, metadata).map_err(|source| {
@@ -304,10 +305,16 @@ fn files_to_load(in_dir: &Path) -> Result<SiteFiles, Error> {
    let content_dir = content_dir.display();
    trace!("content_dir: {content_dir}");
 
+   let data = resolved_paths_for(&format!("{content_dir}/**/_data.lx.yaml"))?;
+   let content = resolved_paths_for(&format!("{content_dir}/**/*.md"))?
+      .into_iter()
+      .filter(|p| !data.contains(p))
+      .collect();
+
    let site_files = SiteFiles {
       config: in_dir.join("config.lx.yaml"),
-      content: resolved_paths_for(&format!("{content_dir}/**/*.md"))?,
-      data: resolved_paths_for(&format!("{content_dir}/**/data.lx.yaml"))?,
+      content,
+      data,
       templates: resolved_paths_for(&format!("{root}/_ui/*.jinja"))?,
       styles: resolved_paths_for(&format!("{root}/_styles/**/*.scss"))?,
    };
