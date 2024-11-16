@@ -83,7 +83,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
    for page in pages {
       let relative_path = page
          .path_from_root(&input_dir.join("content"))
-         .map_err(|source| Error::Path { source })?
+         .map_err(|source| Error::PagePath { source })?
          .as_ref()
          .join("index.html");
 
@@ -108,10 +108,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
       let mut buf = Vec::new();
       templates::render(&jinja_env, &page, config, &mut buf)?;
 
-      std::fs::write(&path, buf).map_err(|source| Error::WriteFile {
-         path: path.to_owned(),
-         source,
-      })?;
+      std::fs::write(&path, buf).map_err(|source| Error::WriteFile { path, source })?;
    }
 
    Ok(())
@@ -194,7 +191,7 @@ pub enum Error {
    Glob { source: glob::GlobError },
 
    #[error("bad path for page")]
-   Path { source: page::Error },
+   PagePath { source: page::Error },
 }
 
 #[derive(Error, Debug)]
