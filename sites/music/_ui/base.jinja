@@ -5,6 +5,49 @@
       <meta http-equiv="X-UA-Compatible" content="IE=edge" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+      <link rel="stylesheet" href="/style.css" media="screen" />
+      <link rel="stylesheet" href="/lite-yt-embed.css" media="screen" />
+
+      {# TODO: extract this -#}
+      <meta property="og:type" content="website" />
+      {# TODO: build per-page URL; use config for site URL -#}
+      <meta property="og:url" content="https://music.chriskrycho.com/" />
+      <meta
+         property="og:image"
+         content="https://cdn.chriskrycho.com/images/music-banner-1200%C3%97800.jpg"
+      />
+      {# TODO: use config for site URL -#}
+      <meta name="article:author" content="https://music.chriskrycho.com/" />
+      <meta
+         name="twitter:description"
+         content="Contemporary classical works for orchestras and chamber ensembles, congregational church songs, and the occasional bit of electronica."
+      />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@chriskrycho" />
+      <meta name="twitter:creator" content="@chriskrycho" />
+      {# TODO: use config for site URL -#}
+      <meta name="article:author" content="https://music.chriskrycho.com/" />
+      {# TODO: build dynamically from page image -#}
+      <meta
+         name="twitter:image"
+         content="https://cdn.chriskrycho.com/images/music-banner-1200%C3%97800.jpg"
+      />
+
+      <meta name="fediverse:creator" content="@chriskrycho@mastodon.social" />
+      <meta name="fediverse:creator" content="@chriskrycho@threads.net" />
+
+      <link rel="stylesheet" href="./style.css" media="screen" />
+      <link rel="stylesheet" href="./lite-yt-embed.css" media="screen" />
+
+      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=1" />
+      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=1" />
+      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=1" />
+      <link rel="manifest" href="/site.webmanifest" />
+      <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#005fb2" />
+      <meta name="msapplication-TileColor" content="#afc7de" />
+      <meta name="theme-color" content="#314557" />
+
+      <script defer src="./lite-yt-embed.js"></script>
    </head>
 
    <body>
@@ -18,6 +61,12 @@
                --><span class="header-work">Composer</span>
             </h1>
          </header>
+
+         {# TODO: page vs. index etc. here. -#}
+         {% block body -%}
+         <main class="splash">
+         </main>
+         {%- endblock body %}
       </div>
    </body
 </html>
