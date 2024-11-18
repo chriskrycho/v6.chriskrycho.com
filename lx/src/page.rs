@@ -16,6 +16,79 @@ use crate::{
    metadata::{self, cascade::Cascade, serial, Metadata, Slug},
 };
 
+pub fn prepare<'e>(
+   md: &Markdown,
+   source: &'e Source,
+   cascade: &Cascade,
+) -> Result<Prepared<'e>, Error> {
+   // TODO: This is the right idea for where I want to take this, but ultimately I
+   // don't want to do it based on the source path (or if I do, *only* initially as
+   // a way of generating it to start). It'll go in the database, so more likely I'll
+   // just use an SQLite id for it! However, this is a fine intermediate point since it
+   // can be used for a weaker form of caching for now.
+   let id = Id(Uuid::new_v5(
+      &Uuid::NAMESPACE_OID,
+      source.path.as_os_str().as_bytes(),
+   ));
+
+   let lx_md::Prepared {
+      metadata_src,
+      to_render,
+   } = lx_md::prepare(&source.contents)?;
+
+   let metadata = metadata_src
+      .ok_or(Error::MissingMetadata)
+      .and_then(|src| serial::Item::try_parse(&src).map_err(Error::from))
+      .and_then(|item_metadata| {
+         Metadata::resolved(
+            item_metadata,
+            source,
+            cascade,
+            String::from("base.jinja"), // TODO: not this
+            &md,
+         )
+         .map_err(Error::from)
+      })?;
+
+   Ok(Prepared {
+      id,
+      metadata,
+      to_render,
+      source: source.clone(),
+   })
+}
+
+pub struct Prepared<'e> {
+   pub id: Id,
+
+   /// The fully-parsed metadata associated with the page.
+   pub metadata: Metadata,
+
+   pub source: Source,
+
+   to_render: ToRender<'e>,
+}
+
+impl Prepared<'_> {
+   pub fn render(
+      self,
+      md: &Markdown,
+      rewrite: impl Fn(
+         &str,
+         &Metadata,
+      ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
+   ) -> Result<Page, Error> {
+      Ok(Page {
+         id: self.id,
+         content: md
+            .emit(self.to_render, |text| rewrite(text, &self.metadata))?
+            .html(),
+         metadata: self.metadata,
+         source: self.source,
+      })
+   }
+}
+
 /// Source data for a file: where it came from, and its original contents.
 #[derive(Clone, Debug)]
 pub struct Source {
@@ -40,7 +113,7 @@ pub struct Page {
    pub id: Id,
 
    /// The fully-parsed metadata associated with the page.
-   pub data: Metadata,
+   pub metadata: Metadata,
 
    /// The fully-rendered contents of the page.
    pub content: String,
@@ -86,87 +159,8 @@ pub enum Error {
 }
 
 impl Page {
-   // Consider: if I want to make it possible to use *all* the page data (including, most
-   // interestingly and importantly, different kinds of taxonomies) while rendering the
-   // page (e.g. “related posts”), I might need to split this into two phases, roughly
-   // matching the two phases in the Markdown render pass: extract the metadata, return
-   // it along with the otherwise-prepared structure, then *render*. See the spiked-out
-   // version of this in `fn render` below!
-   pub fn build(
-      md: &Markdown,
-      source: &Source,
-      cascade: &Cascade,
-      rewrite: impl Fn(
-         &str,
-         &Metadata,
-      ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
-   ) -> Result<Self, Error> {
-      // TODO: This is the right idea for where I want to take this, but ultimately I
-      // don't want to do it based on the source path (or if I do, *only* initially as
-      // a way of generating it to start). It'll go in the database, so more likely I'll
-      // just use an SQLite id for it! However, this is a fine intermediate point since it
-      // can be used for a weaker form of caching for now.
-      let id = Id(Uuid::new_v5(
-         &Uuid::NAMESPACE_OID,
-         source.path.as_os_str().as_bytes(),
-      ));
-
-      let prepared = lx_md::prepare(&source.contents)?;
-
-      let metadata = prepared
-         .metadata_src
-         .ok_or(Error::MissingMetadata)
-         .and_then(|metadata| serial::Item::try_parse(&metadata).map_err(Error::from))
-         .and_then(|item_metadata| {
-            Metadata::resolved(
-               item_metadata,
-               source,
-               cascade,
-               String::from("base.jinja"), // TODO: not this
-               &md,
-            )
-            .map_err(Error::from)
-         })?;
-
-      let rendered = md.emit(prepared.to_render, |text| rewrite(text, &metadata))?;
-
-      Ok(Page {
-         id,
-         data: metadata,
-         content: rendered.html(),
-         source: source.clone(), // TODO: might be able to just take ownership?
-      })
-   }
-
-   // TODO: something like this, though almost certainly not *exactly* this. Note that in
-   // principle this could all be lifted up to the caller, or possibly the approach is
-   // simply to have the `build` method return a function which does the rendering part of
-   // this.
-   pub fn render(
-      &self,
-      id: Id,
-      to_render: ToRender,
-      data: Metadata,
-      source: Source,
-      rewrite: impl Fn(
-         &str,
-         &Metadata,
-      ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
-   ) -> Result<Page, Error> {
-      let md = lx_md::Markdown::new();
-
-      let content = md.emit(to_render, |text| rewrite(text, &data))?.html();
-
-      Ok(Page {
-         id,
-         data,
-         content,
-         source,
-      })
-   }
-
    pub fn path_from_root(&self, root_dir: &Path) -> Result<RootedPath, Error> {
-      match &self.data.slug {
+      match &self.metadata.slug {
          Slug::Permalink(str) => Ok(RootedPath(PathBuf::from(str))),
          Slug::FromPath(path_buf) => path_buf
             .strip_prefix(root_dir)
@@ -214,7 +208,7 @@ impl Updated for [Page] {
    fn updated(&self) -> chrono::DateTime<chrono::FixedOffset> {
       self
          .iter()
-         .map(|p| &p.data)
+         .map(|p| &p.metadata)
          .map(|m| {
             m.updated
                .iter()

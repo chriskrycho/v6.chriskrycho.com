@@ -11,7 +11,7 @@ use crate::canonicalized::Canonicalized;
 use crate::config::{self, Config};
 use crate::error::write_to_fmt;
 use crate::metadata::cascade::{Cascade, CascadeLoadError};
-use crate::page::{self, Page, Source};
+use crate::page::{self, Source};
 use crate::templates;
 
 pub fn build_in(directory: Canonicalized) -> Result<(), Error> {
@@ -55,32 +55,52 @@ pub fn build(
    let cascade =
       Cascade::new(&site_files.data).map_err(|source| Error::Cascade { source })?;
 
-   let (errors, pages): (Vec<_>, Vec<_>) = sources
+   let (errors, prepared_pages): (Vec<_>, Vec<_>) = sources
       .par_iter()
+      // NOTE: this is where I will want to add handling for `<page>.lx.yaml` files; when
+      // I add support for that this will not be a filter but will do different things in
+      // the map call depending on what kind of file it is.
       .filter(|source| source.path.extension().is_some_and(|ext| ext == "md"))
       .map(|source| {
-         Page::build(&md, source, &cascade, |text, metadata| {
-            let after_jinja = jinja_env
-               .render_str(text, metadata)
-               .map_err(|source| Error::rewrite(source, text))?;
-            // TODO: smarten the typography!
-            Ok(after_jinja)
-         })
-         .map_err(|e| (source.path.clone(), e))
+         page::prepare(&md, source, &cascade).map_err(|e| (source.path.clone(), e))
       })
       .partition_map(Either::from);
 
    if !errors.is_empty() {
-      return Err(Error::Page(PageErrors(errors)));
+      return Err(Error::preparing_page(errors));
    }
 
-   debug!("processed {count} pages", count = pages.len());
+   debug!("prepared {count} pages", count = prepared_pages.len());
 
    // TODO: build taxonomies. Structurally, I *think* the best thing to do is
    // provide a top-level `Archive` and then filter on its results, since that
    // avoids having to do the sorting more than once. So build the taxonomies
    // *second*, as filtered versions of the Archive?
 
+   let (errors, pages): (Vec<_>, Vec<_>) = prepared_pages
+      .into_par_iter()
+      .map(|prepared| {
+         let source = prepared.source.path.clone(); // for error path only
+
+         // TODO: once the taxonomies exist, pass them here.
+         prepared
+            .render(&md, |text, metadata| {
+               let after_jinja = jinja_env
+                  .render_str(text, metadata)
+                  .map_err(|source| Error::rewrite(source, text))?;
+               // TODO: smarten the typography!
+               Ok(after_jinja)
+            })
+            .map_err(|e| (source, e))
+      })
+      .partition_map(Either::from);
+
+   if !errors.is_empty() {
+      return Err(Error::rendering_page(errors));
+   }
+
+   // TODO: this is the wrong spot for this. There is enough info to generate this and
+   // other such views above, now that I have split the phases apart.
    let archive = Archive::new(&pages, Order::NewFirst);
 
    // TODO: this can and probably should use async?
@@ -95,7 +115,7 @@ pub fn build(
 
       trace!(
          "writing page {} to {}",
-         page.data.title.as_deref().unwrap_or("[untitled]"),
+         page.metadata.title.as_deref().unwrap_or("[untitled]"),
          path.display()
       );
       let containing_dir = path
@@ -190,7 +210,7 @@ pub enum Error {
    Content(Vec<ContentError>),
 
    #[error(transparent)]
-   Page(PageErrors),
+   Page(PageError),
 
    #[error("could not create output directory '{path}'")]
    CreateOutputDirectory {
@@ -236,16 +256,45 @@ impl Error {
          text: text.to_owned(),
       })
    }
+
+   fn preparing_page(errors: Vec<(PathBuf, page::Error)>) -> Error {
+      Error::Page(PageError {
+         errors,
+         kind: PageErrorKind::Prepare,
+      })
+   }
+
+   fn rendering_page(errors: Vec<(PathBuf, page::Error)>) -> Error {
+      Error::Page(PageError {
+         errors,
+         kind: PageErrorKind::Render,
+      })
+   }
+}
+
+#[derive(Debug)]
+enum PageErrorKind {
+   Prepare,
+   Render,
 }
 
 #[derive(Error, Debug)]
-pub struct PageErrors(Vec<(PathBuf, page::Error)>);
+pub struct PageError {
+   errors: Vec<(PathBuf, page::Error)>,
+   kind: PageErrorKind,
+}
 
-impl std::fmt::Display for PageErrors {
+impl std::fmt::Display for PageError {
    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      let errors = &self.0;
-      writeln!(f, "could not render {} pages", errors.len())?;
-      for (path, error) in errors {
+      let count = self.errors.len();
+      match self.kind {
+         PageErrorKind::Prepare => {
+            writeln!(f, "could not prepare {} pages for rendering", count)?
+         }
+         PageErrorKind::Render => writeln!(f, "could not render {} pages", count)?,
+      };
+
+      for (path, error) in &self.errors {
          writeln!(f, "{}:\n\t{error}", path.display())?;
          write_to_fmt(f, error)?;
       }
