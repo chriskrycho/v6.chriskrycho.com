@@ -210,13 +210,25 @@ impl Metadata {
 }
 
 #[derive(Debug, Serialize)]
-pub struct Rendered(String);
+pub struct Rendered {
+   source: String,
+   html: String,
+}
 
 impl Rendered {
    fn as_markdown(src: &str, md: &Markdown) -> Result<Rendered, Error> {
       md.render(src, |s| Ok(s.to_string()))
-         .map(|(_, rendered)| Rendered(rendered.html()))
+         .map(|(_, rendered)| Rendered {
+            source: src.to_owned(),
+            html: rendered.html(),
+         })
          .map_err(Error::from)
+   }
+
+   pub fn plain(&self) -> String {
+      // TODO: at construction above, create a plain text version as well as an HTML
+      // version of the text.
+      self.source.clone()
    }
 }
 
