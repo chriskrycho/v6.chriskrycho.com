@@ -6,7 +6,7 @@ use std::{
 };
 
 use chrono::{DateTime, FixedOffset};
-use lx_md::{self, RenderError};
+use lx_md::{self, RenderError, ToRender};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
@@ -25,17 +25,16 @@ pub struct Source {
    pub contents: String,
 }
 
-/// A unique identifier
+/// A unique identifier for an item (page, post, etc.).
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Deserialize, Serialize)]
 pub struct Id(Uuid);
 
 /// A fully-resolved representation of a page.
 ///
-/// In this struct, the metadata has been parsed and resolved, and the content
-/// has been converted from Markdown to HTML and preprocessed with both the
-/// templating engine and my typography tooling. It is ready to render into the
-/// target layout template specified by its `metadata: ResolvedMetadata` and
-/// then to print to the file system.
+/// In this struct, the metadata has been parsed and resolved, and the content has been
+/// converted from Markdown to HTML and preprocessed with both the templating engine and
+/// my typography tooling. It is ready to render into the target layout template specified
+/// by its `metadata: Metadata` and then to print to the file system.
 #[derive(Debug)]
 pub struct Page {
    pub id: Id,
@@ -87,6 +86,12 @@ pub enum Error {
 }
 
 impl Page {
+   // Consider: if I want to make it possible to use *all* the page data (including, most
+   // interestingly and importantly, different kinds of taxonomies) while rendering the
+   // page (e.g. “related posts”), I might need to split this into two phases, roughly
+   // matching the two phases in the Markdown render pass: extract the metadata, return
+   // it along with the otherwise-prepared structure, then *render*. See the spiked-out
+   // version of this in `fn render` below!
    pub fn build(
       source: &Source,
       cascade: &Cascade,
@@ -105,6 +110,7 @@ impl Page {
          source.path.as_os_str().as_bytes(),
       ));
 
+      // TODO: pass this in so I don’t reload the syntaxes every time!
       let md = lx_md::Markdown::new();
 
       let prepared = lx_md::prepare(&source.contents)?;
@@ -124,15 +130,40 @@ impl Page {
             .map_err(Error::from)
          })?;
 
-      let rendered = md
-         .emit(prepared.to_render, |text| rewrite(text, &metadata))
-         .map_err(Error::from)?;
+      let rendered = md.emit(prepared.to_render, |text| rewrite(text, &metadata))?;
 
       Ok(Page {
          id,
          data: metadata,
          content: rendered.html(),
          source: source.clone(), // TODO: might be able to just take ownership?
+      })
+   }
+
+   // TODO: something like this, though almost certainly not *exactly* this. Note that in
+   // principle this could all be lifted up to the caller, or possibly the approach is
+   // simply to have the `build` method return a function which does the rendering part of
+   // this.
+   pub fn render(
+      &self,
+      id: Id,
+      to_render: ToRender,
+      data: Metadata,
+      source: Source,
+      rewrite: impl Fn(
+         &str,
+         &Metadata,
+      ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
+   ) -> Result<Page, Error> {
+      let md = lx_md::Markdown::new();
+
+      let content = md.emit(to_render, |text| rewrite(text, &data))?.html();
+
+      Ok(Page {
+         id,
+         data,
+         content,
+         source,
       })
    }
 
