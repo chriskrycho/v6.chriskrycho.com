@@ -236,7 +236,7 @@ pub struct RenderError {
 pub struct Rendered(String);
 
 impl Rendered {
-   #[inline]
+   #[inline(always)]
    pub fn html(self) -> String {
       self.0
    }
