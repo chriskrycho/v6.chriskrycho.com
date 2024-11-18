@@ -60,22 +60,22 @@ pub fn render(
 
    debug!(
       "Rendering page '{}' ({:?}) with layout '{}'",
-      page.data.title.as_deref().unwrap_or("[untitled]"),
+      page.metadata.title.as_deref().unwrap_or("[untitled]"),
       page.source.path.display(),
-      page.data.layout
+      page.metadata.layout
    );
 
-   let tpl =
-      env.get_template(&page.data.layout)
-         .map_err(|source| Error::MissingTemplate {
-            source,
-            path: page.source.path.to_owned(),
-         })?;
+   let tpl = env.get_template(&page.metadata.layout).map_err(|source| {
+      Error::MissingTemplate {
+         source,
+         path: page.source.path.to_owned(),
+      }
+   })?;
 
    tpl.render_to_write(
       Context {
          content: &page.content,
-         data: &page.data,
+         data: &page.metadata,
          config: site,
       },
       into,
