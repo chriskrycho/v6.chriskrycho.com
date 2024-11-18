@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use log::{debug, error, trace};
+use lx_md::Markdown;
 use rayon::iter::Either;
 use rayon::prelude::*;
 use thiserror::Error;
@@ -15,9 +16,10 @@ use crate::templates;
 
 pub fn build_in(directory: Canonicalized) -> Result<(), Error> {
    let config = config_for(&directory)?;
+   let md = Markdown::new();
 
    // TODO: further split this apart.
-   build(directory, &config)
+   build(directory, &config, &md)
 }
 
 pub fn config_for(source_dir: &Canonicalized) -> Result<Config, Error> {
@@ -29,7 +31,11 @@ pub fn config_for(source_dir: &Canonicalized) -> Result<Config, Error> {
 }
 
 // TODO: further split this apart.
-pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
+pub fn build(
+   directory: Canonicalized,
+   config: &Config,
+   md: &Markdown,
+) -> Result<(), Error> {
    let input_dir = directory.as_ref();
    trace!("Building in {}", input_dir.display());
 
@@ -53,7 +59,7 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
       .par_iter()
       .filter(|source| source.path.extension().is_some_and(|ext| ext == "md"))
       .map(|source| {
-         Page::build(source, &cascade, |text, metadata| {
+         Page::build(&md, source, &cascade, |text, metadata| {
             let after_jinja = jinja_env.render_str(text, metadata).map_err(|source| {
                Box::new(Error::Rewrite {
                   source,

@@ -6,7 +6,7 @@ use std::{
 };
 
 use chrono::{DateTime, FixedOffset};
-use lx_md::{self, RenderError, ToRender};
+use lx_md::{self, Markdown, RenderError, ToRender};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
@@ -93,6 +93,7 @@ impl Page {
    // it along with the otherwise-prepared structure, then *render*. See the spiked-out
    // version of this in `fn render` below!
    pub fn build(
+      md: &Markdown,
       source: &Source,
       cascade: &Cascade,
       rewrite: impl Fn(
@@ -109,9 +110,6 @@ impl Page {
          &Uuid::NAMESPACE_OID,
          source.path.as_os_str().as_bytes(),
       ));
-
-      // TODO: pass this in so I don’t reload the syntaxes every time!
-      let md = lx_md::Markdown::new();
 
       let prepared = lx_md::prepare(&source.contents)?;
 

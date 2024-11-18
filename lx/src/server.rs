@@ -20,6 +20,7 @@ use futures::{
    SinkExt, StreamExt,
 };
 use log::{debug, error, info, trace};
+use lx_md::Markdown;
 use notify::RecursiveMode;
 use notify_debouncer_full::DebouncedEvent;
 use serde::Serialize;
@@ -47,6 +48,11 @@ pub fn serve(site_dir: &Path) -> Result<(), Error> {
    // would be to do this same basic wrapping in `main` but only for this.
    let rt = Runtime::new().map_err(|e| Error::Io { source: e })?;
 
+   // This does not presently change for any reason. In principle it *could*, e.g. if I
+   // wanted to reload it when config changed to support reloading syntaxes. For now,
+   // though, this is sufficient.
+   let md = Markdown::new();
+
    // 1. Run an initial build.
    // 2. Create a watcher on the *input* directory, *not* the output directory.
    // 3. When the watcher signals a change, use that to trigger a new *build*, not a
@@ -56,7 +62,7 @@ pub fn serve(site_dir: &Path) -> Result<(), Error> {
    trace!("Building in {site_dir:?}");
    let config = config_for(&site_dir)?; // TODO: watch this separately?
    trace!("Computed config: {config:?}");
-   build::build(site_dir, &config).map_err(Error::from)?;
+   build::build(site_dir, &config, &md).map_err(Error::from)?;
 
    // I only need the tx side, since I am going to take advantage of the fact that
    // `broadcast::Sender` implements `Clone` to pass it around and get easy and convenient
