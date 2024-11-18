@@ -107,6 +107,8 @@ impl Markdown {
 
       let rendered = self.emit(to_render, rewrite).map_err(Error::from)?;
 
+      // TODO: return named types instead of anonymous tuple values. Maybe just attach the
+      // metadata to the `Rendered` type?
       Ok((metadata_src, rendered))
    }
 

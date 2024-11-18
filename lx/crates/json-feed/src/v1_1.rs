@@ -164,7 +164,7 @@ pub struct FeedItem {
    /// Any plain text values you want. Tags tend to be just one word, but they
    /// may be anything. Note: they are not the equivalent of Twitter hashtags.
    /// Some blogging systems and other feed formats call these categories.
-   pub tags: Option<String>,
+   pub tags: Option<Vec<String>>,
 
    /// An individual item may have one or more attachments. List related
    /// resources. Podcasts, for instance, would include an attachment that’s an

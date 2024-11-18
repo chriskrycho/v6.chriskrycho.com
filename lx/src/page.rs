@@ -102,6 +102,12 @@ pub struct Source {
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Deserialize, Serialize)]
 pub struct Id(Uuid);
 
+impl Id {
+   fn to_string(&self) -> String {
+      self.0.to_string()
+   }
+}
+
 /// A fully-resolved representation of a page.
 ///
 /// In this struct, the metadata has been parsed and resolved, and the content has been
@@ -192,13 +198,32 @@ impl AsRef<Path> for RootedPath {
 }
 
 impl From<&Page> for json_feed::FeedItem {
-   fn from(_: &Page) -> Self {
-      unimplemented!()
+   fn from(page: &Page) -> Self {
+      json_feed::FeedItem {
+         id: page.id.to_string(),
+         url: None,          // TODO: this *definitely* needs to be set!
+         external_url: None, // TODO: support for page.link etc.
+         title: page.metadata.title.clone(),
+         content_text: None, // TODO: use this for microblogging?
+         content_html: Some(page.content.clone()),
+         summary: page
+            .metadata
+            .summary
+            .as_ref()
+            .map(|summary| summary.plain()),
+         image: None,        // TODO: add support for images to metadata
+         banner_image: None, // TODO: add support for these if I care?
+         date_published: page.metadata.date.map(|date| date.to_rfc3339()),
+         date_modified: None, // TODO: from `page.metadata.updated` in some way
+         author: None,        // TODO: it me!
+         tags: Some(page.metadata.tags.clone()),
+         attachments: None,
+      }
    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PageCollections(HashMap<Id, crate::collection::Id>);
+pub struct Collections(HashMap<Id, crate::collection::Id>);
 
 pub trait Updated {
    fn updated(&self) -> DateTime<FixedOffset>;
