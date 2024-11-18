@@ -60,14 +60,11 @@ pub fn build(
       .filter(|source| source.path.extension().is_some_and(|ext| ext == "md"))
       .map(|source| {
          Page::build(&md, source, &cascade, |text, metadata| {
-            let after_jinja = jinja_env.render_str(text, metadata).map_err(|source| {
-               Box::new(Error::Rewrite {
-                  source,
-                  text: text.to_owned(),
-               }) as Box<dyn std::error::Error + Send + Sync>
-            });
+            let after_jinja = jinja_env
+               .render_str(text, metadata)
+               .map_err(|source| Error::rewrite(source, text))?;
             // TODO: smarten the typography!
-            after_jinja
+            Ok(after_jinja)
          })
          .map_err(|e| (source.path.clone(), e))
       })
@@ -227,6 +224,18 @@ pub enum Error {
       #[from]
       source: Box<grass::Error>,
    },
+}
+
+impl Error {
+   fn rewrite(
+      source: minijinja::Error,
+      text: &str,
+   ) -> Box<dyn std::error::Error + Send + Sync> {
+      Box::new(Error::Rewrite {
+         source,
+         text: text.to_owned(),
+      })
+   }
 }
 
 #[derive(Error, Debug)]
