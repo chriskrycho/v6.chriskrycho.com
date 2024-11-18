@@ -54,12 +54,14 @@ pub fn build(directory: Canonicalized, config: &Config) -> Result<(), Error> {
       .filter(|source| source.path.extension().is_some_and(|ext| ext == "md"))
       .map(|source| {
          Page::build(source, &cascade, |text, metadata| {
-            jinja_env.render_str(text, metadata).map_err(|source| {
+            let after_jinja = jinja_env.render_str(text, metadata).map_err(|source| {
                Box::new(Error::Rewrite {
                   source,
                   text: text.to_owned(),
                }) as Box<dyn std::error::Error + Send + Sync>
-            })
+            });
+            // TODO: smarten the typography!
+            after_jinja
          })
          .map_err(|e| (source.path.clone(), e))
       })
