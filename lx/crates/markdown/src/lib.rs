@@ -100,16 +100,12 @@ impl Markdown {
       src: &str,
       rewrite: impl Fn(&str) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
    ) -> Result<(Option<String>, Rendered), Error> {
-      let Prepared {
-         metadata_src,
-         to_render,
-      } = prepare(src).map_err(Error::from)?;
-
-      let rendered = self.emit(to_render, rewrite).map_err(Error::from)?;
+      let prepared = prepare(src)?;
+      let rendered = self.emit(prepared.to_render, rewrite)?;
 
       // TODO: return named types instead of anonymous tuple values. Maybe just attach the
       // metadata to the `Rendered` type?
-      Ok((metadata_src, rendered))
+      Ok((prepared.metadata_src, rendered))
    }
 
    pub fn emit(
@@ -137,14 +133,6 @@ impl Markdown {
    }
 }
 
-// NOTE: this may or may not make sense when I am actually loading syntaxes. I can defer
-// deciding about that till later, though!
-impl Default for Markdown {
-   fn default() -> Self {
-      Self::new()
-   }
-}
-
 pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
    let parser = Parser::new_ext(src, *OPTIONS);
 
@@ -158,7 +146,7 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
             FirstPass::Initial(initial) => {
                state = FirstPass::ExtractingMetadata(initial.parsing_metadata(kind))
             }
-            _ => return bad_prepare_state(&event, &state).map_err(Error::from),
+            _ => return bad_prepare_state(&event, &state),
          },
 
          Event::End(TagEnd::MetadataBlock(_)) => match state {
@@ -183,10 +171,9 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
                }
             },
 
-            FirstPass::Content(ref mut content) => content
-               .handle(event)
-               .map_err(PrepareError::from)
-               .map_err(Error::from)?,
+            FirstPass::Content(ref mut content) => {
+               content.handle(event).map_err(PrepareError::from)?
+            }
 
             _ => return bad_prepare_state(&event, &state),
          },
@@ -194,27 +181,21 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
          other => match state {
             FirstPass::Initial(initial) => {
                let mut content = initial.start_content();
-               content
-                  .handle(other)
-                  .map_err(PrepareError::from)
-                  .map_err(Error::from)?;
+               content.handle(other).map_err(PrepareError::from)?;
                state = FirstPass::Content(content);
             }
 
-            FirstPass::Content(ref mut content) => content
-               .handle(other)
-               .map_err(PrepareError::from)
-               .map_err(Error::from)?,
+            FirstPass::Content(ref mut content) => {
+               content.handle(other).map_err(PrepareError::from)?
+            }
 
             _ => return bad_prepare_state(&other, &state),
          },
       }
    }
 
-   let (metadata, first_pass_events, footnote_definitions) = state
-      .finalize()
-      .map_err(PrepareError::from)
-      .map_err(Error::from)?;
+   let (metadata, first_pass_events, footnote_definitions) =
+      state.finalize().map_err(PrepareError::from)?;
 
    Ok(Prepared {
       metadata_src: metadata.map(|m| m.to_string()),

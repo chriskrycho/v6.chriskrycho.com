@@ -23,7 +23,7 @@ pub struct Feed<'a> {
    /// The set of items to render in the feed. A read-only slice because I will
    /// never actually need to *write* to these. I just need the parsed metadata
    /// and rendered HTML contents of the page, to render into the template.
-   items: &'a [Page],
+   items: &'a [Page<'a>],
 }
 
 impl<'a> Feed<'a> {
