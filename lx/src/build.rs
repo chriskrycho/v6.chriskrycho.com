@@ -149,7 +149,7 @@ pub fn build(
                path: sass_file.clone(),
             })?;
 
-      let path = config.output.join(relative_path);
+      let path = config.output.join(relative_path).with_extension("css");
       std::fs::write(&path, converted)
          .map_err(|source| Error::WriteFile { path, source })?;
    }
