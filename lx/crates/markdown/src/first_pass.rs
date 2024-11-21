@@ -82,7 +82,6 @@ impl State<Initial> {
 /// Step 2 in the state machine: we start processing metadata.
 #[derive(Debug)]
 pub(super) struct ExtractingMetadata(MetadataBlockKind);
-
 impl ParseState for ExtractingMetadata {}
 
 impl State<ExtractingMetadata> {
@@ -102,7 +101,6 @@ impl State<ExtractingMetadata> {
 /// received the 'end the metadata block' event.
 #[derive(Debug)]
 pub(super) struct ExtractedMetadata<'e>(CowStr<'e>);
-
 impl<'e> ParseState for ExtractedMetadata<'e> {}
 
 impl<'e> State<ExtractedMetadata<'e>> {

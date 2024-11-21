@@ -54,7 +54,7 @@ pub fn prepare<'e>(
       id,
       metadata,
       to_render,
-      source: source.clone(),
+      source,
    })
 }
 
@@ -64,12 +64,12 @@ pub struct Prepared<'e> {
    /// The fully-parsed metadata associated with the page.
    pub metadata: Metadata,
 
-   pub source: Source,
+   pub source: &'e Source,
 
    to_render: ToRender<'e>,
 }
 
-impl Prepared<'_> {
+impl<'e> Prepared<'e> {
    pub fn render(
       self,
       md: &Markdown,
@@ -77,7 +77,7 @@ impl Prepared<'_> {
          &str,
          &Metadata,
       ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
-   ) -> Result<Page, Error> {
+   ) -> Result<Page<'e>, Error> {
       Ok(Page {
          id: self.id,
          content: md
@@ -115,7 +115,7 @@ impl Id {
 /// my typography tooling. It is ready to render into the target layout template specified
 /// by its `metadata: Metadata` and then to print to the file system.
 #[derive(Debug)]
-pub struct Page {
+pub struct Page<'e> {
    pub id: Id,
 
    /// The fully-parsed metadata associated with the page.
@@ -124,7 +124,7 @@ pub struct Page {
    /// The fully-rendered contents of the page.
    pub content: String,
 
-   pub source: Source,
+   pub source: &'e Source,
 }
 
 #[derive(Error, Debug)]
@@ -164,7 +164,7 @@ pub enum Error {
    },
 }
 
-impl Page {
+impl<'e> Page<'e> {
    pub fn path_from_root(&self, root_dir: &Path) -> Result<RootedPath, Error> {
       match &self.metadata.slug {
          Slug::Permalink(str) => Ok(RootedPath(PathBuf::from(str))),
@@ -197,7 +197,7 @@ impl AsRef<Path> for RootedPath {
    }
 }
 
-impl From<&Page> for json_feed::FeedItem {
+impl<'e> From<&Page<'e>> for json_feed::FeedItem {
    fn from(page: &Page) -> Self {
       json_feed::FeedItem {
          id: page.id.to_string(),
@@ -229,7 +229,7 @@ pub trait Updated {
    fn updated(&self) -> DateTime<FixedOffset>;
 }
 
-impl Updated for [Page] {
+impl<'e> Updated for [Page<'e>] {
    fn updated(&self) -> chrono::DateTime<chrono::FixedOffset> {
       self
          .iter()

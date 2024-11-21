@@ -42,7 +42,6 @@ pub fn build(
    let site_files = files_to_load(input_dir)?;
    trace!("Site files: {site_files}");
 
-   // TODO: pull from config?
    let ui_root = input_dir.join("_ui");
    let jinja_env = templates::load(&ui_root).map_err(Error::from)?;
 
@@ -62,7 +61,8 @@ pub fn build(
       // the map call depending on what kind of file it is.
       .filter(|source| source.path.extension().is_some_and(|ext| ext == "md"))
       .map(|source| {
-         page::prepare(&md, source, &cascade).map_err(|e| (source.path.clone(), e))
+         let path = source.path.clone();
+         page::prepare(&md, &source, &cascade).map_err(|e| (path, e))
       })
       .partition_map(Either::from);
 
@@ -84,7 +84,7 @@ pub fn build(
 
          // TODO: once the taxonomies exist, pass them here.
          prepared
-            .render(&md, |text, metadata| {
+            .render(md, |text, metadata| {
                let after_jinja = jinja_env
                   .render_str(text, metadata)
                   .map_err(|source| Error::rewrite(source, text))?;

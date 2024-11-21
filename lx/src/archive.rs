@@ -7,8 +7,8 @@ use crate::page::Page;
 
 pub struct Archive<'p>(HashMap<Year, MonthMap<'p>>);
 
-impl Archive<'_> {
-   pub fn new(pages: &[Page], order: Order) -> Result<Archive<'_>, Error> {
+impl<'e> Archive<'e> {
+   pub fn new(pages: &'e [Page<'e>], order: Order) -> Result<Archive<'e>, Error> {
       let mut pages = pages
          .iter()
          .filter(|page| page.metadata.date.is_some())
@@ -70,7 +70,7 @@ type Year = u32;
 
 type MonthMap<'p> = HashMap<Month, DayMap<'p>>;
 
-type DayMap<'p> = HashMap<Day, Vec<&'p Page>>;
+type DayMap<'p> = HashMap<Day, Vec<&'p Page<'p>>>;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Day {
