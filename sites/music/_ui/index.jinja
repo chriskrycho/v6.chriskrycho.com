@@ -1,0 +1,186 @@
+{% extends 'base.jinja' %}
+
+{# The long-term move here is: generate this from data, etc. #}
+{% block main %}
+<main class="splash">
+   <section class="featured">
+      <section class="featured-item content">
+         <header>
+            <h1><a href="/desert-2024.html">The Desert</a></h1>
+            <h2>Solo piano (2024)</h2>
+         </header>
+         <lite-youtube
+            class="embed youtube-embed"
+            videoid="CpzJO8BO64o"
+            style="
+               background-image: url('https://i.ytimg.com/vi/CpzJO8BO64o/hqdefault.jpg');
+            "
+         >
+            <a
+               href="https://youtube.com/watch?v=CpzJO8BO64o"
+               class="lty-playbtn"
+               title="Play Video"
+            >
+               <span class="lyt-visually-hidden">Play Video: The Desert</span>
+            </a>
+         </lite-youtube>
+         <p><a href="/desert-2024.html">More →</a></p>
+      </section>
+
+      <section class="featured-item content">
+         <header>
+            <h1>
+               <a href="/fanfare-2023.html"
+                  >Fanfare for a New Era of American Spaceflight</a
+               >
+            </h1>
+            <h2>Symphony orchestra (2022)</h2>
+         </header>
+         <lite-youtube
+            class="embed youtube-embed"
+            videoid="l_rRCCHczuU"
+            style="
+               background-image: url('https://i.ytimg.com/vi/l_rRCCHczuU/hqdefault.jpg');
+            "
+         >
+            <a
+               href="https://youtube.com/watch?v=l_rRCCHczuU"
+               class="lty-playbtn"
+               title="Play Video"
+            >
+               <span class="lyt-visually-hidden">Play Video: The Desert</span>
+            </a>
+         </lite-youtube>
+         <p><a href="/fanfare-2023.html">More →</a></p>
+      </section>
+   </section>
+
+   <hr class="section-break" />
+
+   <figure class="medium avatar">
+      <img
+         src="https://cdn.chriskrycho.com/images/avatars/2024%20600%C3%97600%20music.jpg"
+         alt="portrait of Chris Krycho"
+      />
+   </figure>
+
+   <article class="about content">
+      {{content}}
+   </article>
+
+   <hr class="section-break" />
+
+   <section class="sketch-to-sound content">
+      <h1>Behind the Score</h1>
+      <p>
+         Exploring the process of going from an idea to a performance or
+         recording.
+      </p>
+      <p>The latest in the series:</p>
+      <lite-youtube
+         class="embed youtube-embed"
+         videoid="awvi-KfFCyA"
+         style="
+            background-image: url('https://i.ytimg.com/vi/awvi-KfFCyA/hqdefault.jpg');
+         "
+      >
+         <a
+            href="https://www.youtube.com/watch?v=hhDNbjz0etU"
+            class="lty-playbtn"
+            title="Play Video"
+         >
+            <span class="lyt-visually-hidden">Play Video: The Desert</span>
+         </a>
+      </lite-youtube>
+      <p>
+         See
+         <a
+            href="https://www.youtube.com/watch?v=hhDNbjz0etU&list=PLgEheX3Omcc8JdED-FxuvGMT2HhfcBl-x"
+            >the playlist</a
+         >
+         for more!
+      </p>
+   </section>
+   <hr class="section-break" />
+
+   <section class="subscribe content">
+      <h1>Follow</h1>
+      <div class="options">
+         <div class="option newsletter">
+            <h2>Newsletter</h2>
+            <p>Updates in your inbox once a month or so.</p>
+            <form
+               class="email-subscribe"
+               action="https://buttondown.email/api/emails/embed-subscribe/music-by-chris-krycho"
+               method="post"
+               target="popupwindow"
+               onsubmit="window.open('https://buttondown.email/music-by-chris-krycho', 'popupwindow')"
+               class="embeddable-buttondown-form"
+            >
+               <div class="email-subscribe__row">
+                  <label for="bd-email" class="email-subscribe__label"
+                     >Enter your email:</label
+                  >
+                  <input
+                     type="email"
+                     name="email"
+                     id="bd-email"
+                     class="email-subscribe__email"
+                  />
+               </div>
+
+               <div class="email-subscribe__row">
+                  <input
+                     type="submit"
+                     value="Subscribe"
+                     class="email-subscribe__submit"
+                  />
+               </div>
+            </form>
+         </div>
+         <div class="option music-services">
+            <h2>Music</h2>
+            <ul class="services">
+               <li>
+                  <a
+                     href="https://open.spotify.com/artist/3o5cvdTdq42sUpHBYswCr1?si=F6_mNUBBQziEyXMNsh3SCw"
+                     >Spotify</a
+                  >
+               </li>
+               <li>
+                  <a
+                     href="https://music.apple.com/us/artist/chris-krycho/1576990611"
+                     >Apple Music</a
+                  >
+               </li>
+               <li><a href="https://chriskrycho.bandcamp.com">Bandcamp</a></li>
+               <li>
+                  <a href="https://soundcloud.com/chriskrycho">Soundcloud</a>
+               </li>
+            </ul>
+         </div>
+         <div class="option social-media">
+            <h2>Socials</h2>
+            <ul class="services">
+               <li>
+                  <a href="https://www.youtube.com/@chriskrycho-music"
+                     >YouTube</a
+                  >
+               </li>
+               <li>
+                  <a href="https://www.instagram.com/chriskrycho/">Instagram</a>
+               </li>
+               <li>
+                  <a href="https://www.threads.net/@chriskrycho">Threads</a>
+               </li>
+               <li>
+                  <a href="https://bsky.app/profile/music.chriskrycho.com"
+                     >Bluesky</a
+                  >
+               </li>
+            </ul>
+         </div>
+      </div>
+   </section>
+</main>
+{% endblock main %}

@@ -6,7 +6,7 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
       <link rel="stylesheet" href="/style.css" media="screen" />
-      <link rel="stylesheet" href="/lite-yt-embed.css" media="screen" />
+      <link rel="stylesheet" href="/vendor/lite-yt-embed.css" media="screen" />
 
       {# TODO: extract this -#}
       <meta property="og:type" content="website" />
@@ -47,7 +47,7 @@
       <meta name="msapplication-TileColor" content="#afc7de" />
       <meta name="theme-color" content="#314557" />
 
-      <script defer src="./lite-yt-embed.js"></script>
+      <script defer src="/vendor/lite-yt-embed.js"></script>
    </head>
 
    <body>
@@ -62,11 +62,8 @@
             </h1>
          </header>
 
-         {# TODO: page vs. index etc. here. -#}
-         {% block body -%}
-         <main class="splash">
-         </main>
-         {%- endblock body %}
+         {% block main -%}
+         {%- endblock main %}
       </div>
    </body
 </html>
