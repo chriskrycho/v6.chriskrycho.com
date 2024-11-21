@@ -138,6 +138,7 @@ pub fn build(
    for sass_file in site_files
       .styles
       .into_iter()
+      // only build the “root” files
       .filter(|path| !path.starts_with("_"))
    {
       let converted = grass::from_path(&sass_file, &grass::Options::default())?;
