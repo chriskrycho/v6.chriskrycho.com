@@ -103,6 +103,29 @@ pub fn build(
    // other such views above, now that I have split the phases apart.
    let archive = Archive::new(&pages, Order::NewFirst);
 
+   debug!("Copying {} static files", site_files.static_files.len());
+   for static_file in site_files.static_files {
+      let relative_path = static_file
+         .strip_prefix(input_dir.join("_static"))
+         .map_err(|_| Error::StripPrefix {
+            prefix: input_dir.to_owned(),
+            path: static_file.clone(),
+         })?;
+      let path = config.output.join(relative_path);
+      let output_dir = path.parent().expect("must have a real parent");
+      std::fs::create_dir_all(output_dir).map_err(|source| {
+         Error::CreateOutputDirectory {
+            path: output_dir.to_owned(),
+            source,
+         }
+      })?;
+      std::fs::copy(&static_file, &path).map_err(|source| Error::CopyFile {
+         from: static_file,
+         to: path,
+         source,
+      })?;
+   }
+
    // TODO: this can and probably should use async?
    for page in pages {
       let relative_path = page
@@ -219,6 +242,13 @@ pub enum Error {
       source: std::io::Error,
    },
 
+   #[error("could not copy from {from} to {to}")]
+   CopyFile {
+      from: PathBuf,
+      to: PathBuf,
+      source: std::io::Error,
+   },
+
    #[error("could not write to {path}")]
    WriteFile {
       path: PathBuf,
@@ -332,6 +362,7 @@ struct SiteFiles {
    content: Vec<PathBuf>,
    data: Vec<PathBuf>,
    templates: Vec<PathBuf>,
+   static_files: Vec<PathBuf>,
    styles: Vec<PathBuf>,
 }
 
@@ -383,6 +414,7 @@ fn files_to_load(in_dir: &Path) -> Result<SiteFiles, Error> {
       content,
       data,
       templates: resolved_paths_for(&format!("{root}/_ui/*.jinja"))?,
+      static_files: resolved_paths_for(&format!("{root}/_static/**/*"))?,
       styles: resolved_paths_for(&format!("{root}/_styles/**/*.scss"))?,
    };
 
@@ -402,4 +434,5 @@ fn resolved_paths_for(glob_src: &str) -> Result<Vec<PathBuf>, Error> {
          }
          Err(source) => Err(Error::Glob { source }),
       })
+      .map(|paths| paths.into_iter().filter(|path| path.is_file()).collect())
 }
