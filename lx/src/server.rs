@@ -13,7 +13,8 @@ use axum::{
       State, WebSocketUpgrade,
    },
    response::Response,
-   routing, Router,
+   routing::{self, get},
+   Router,
 };
 use futures::{
    future::{self, Either},
@@ -33,7 +34,7 @@ use tokio::{
    },
    task::JoinError,
 };
-use tower_http::services::ServeDir;
+use tower_http::services::{ServeDir, ServeFile};
 use watchexec::error::CriticalError;
 
 // Initially, just rebuild everything. This can get smarter later!
@@ -83,6 +84,7 @@ async fn serve_in(path: PathBuf, state: Tx) -> Result<(), Error> {
    // This could be extracted into its own function.
    let serve_dir = ServeDir::new(&path).append_index_html_on_directories(true);
    let router = Router::new()
+      .route_service("/", ServeFile::new(path.join("index.html")))
       .route_service("/*asset", serve_dir)
       .route("/live-reload", routing::get(websocket_upgrade))
       .with_state(state);
