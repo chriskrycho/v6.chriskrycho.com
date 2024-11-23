@@ -14,6 +14,12 @@ impl AsRef<Path> for Canonicalized {
    }
 }
 
+impl std::fmt::Display for Canonicalized {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      write!(f, "{}", self.path.display())
+   }
+}
+
 impl TryFrom<PathBuf> for Canonicalized {
    type Error = InvalidDir;
 

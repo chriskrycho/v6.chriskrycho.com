@@ -6,7 +6,7 @@ use std::{
 };
 
 use filters::add_filters;
-use log::debug;
+use log::{debug, trace};
 use minijinja::Environment;
 use serde::Serialize;
 use thiserror::Error;
@@ -27,17 +27,43 @@ pub enum Error {
       path: PathBuf,
    },
 
+   #[error("could not add template for {path}")]
+   CouldNotAddTemplate {
+      source: minijinja::Error,
+      path: PathBuf,
+   },
+
    #[error("could not load template for {path}: {source}")]
    MissingTemplate {
       source: minijinja::Error,
       path: PathBuf,
    },
+
+   #[error(transparent)]
+   Other(#[from] Box<dyn std::error::Error + Send + Sync>),
 }
 
-pub fn load(ui_dir: &Path) -> Result<Environment<'static>, Error> {
+pub fn load<I, F>(templates: I, trim_root: F) -> Result<Environment<'static>, Error>
+where
+   I: IntoIterator,
+   I::Item: AsRef<Path>,
+   for<'a> F: Fn(&'a Path) -> Result<&'a Path, Box<dyn std::error::Error + Send + Sync>>,
+{
    let mut env = Environment::new();
    env.set_undefined_behavior(minijinja::UndefinedBehavior::Strict);
-   env.set_loader(minijinja::path_loader(ui_dir));
+   for path in templates {
+      let path = path.as_ref();
+      let name = trim_root(path)?.to_string_lossy().to_string();
+      let content = std::fs::read_to_string(&path)?;
+      trace!("Adding template at {name}");
+      env.add_template_owned(name, content).map_err(|source| {
+         Error::CouldNotAddTemplate {
+            source,
+            path: path.to_owned(),
+         }
+      })?;
+   }
+
    add_filters(&mut env);
 
    Ok(env)

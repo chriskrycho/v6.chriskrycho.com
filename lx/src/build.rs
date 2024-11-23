@@ -1,10 +1,12 @@
 use std::path::{Path, PathBuf};
 
+use lazy_static::lazy_static;
 use log::{debug, error, trace};
-use lx_md::Markdown;
 use rayon::iter::Either;
 use rayon::prelude::*;
 use thiserror::Error;
+
+use lx_md::Markdown;
 
 use crate::archive::{Archive, Order};
 use crate::canonicalized::Canonicalized;
@@ -36,18 +38,58 @@ pub fn build(
    config: &Config,
    md: &Markdown,
 ) -> Result<(), Error> {
-   let input_dir = directory.as_ref();
-   trace!("Building in {}", input_dir.display());
+   trace!("Building in {directory}");
 
-   let site_files = files_to_load(input_dir)?;
+   let input_dir = directory.as_ref();
+   let site_files = SiteFiles::in_dir(input_dir)?;
    trace!("Site files: {site_files}");
 
-   let ui_root = input_dir.join("_ui");
-   let jinja_env = templates::load(&ui_root).map_err(Error::from)?;
+   let shared_dir = input_dir.parent().map(|parent| parent.join("_shared"));
+   let shared_files = shared_dir
+      .as_ref()
+      .map(|dir| SharedFiles::in_dir(&dir))
+      .transpose()?;
 
+   trace!(
+      "Shared files: {}",
+      match &shared_files {
+         Some(files) => format!("{files}"),
+         None => "none".into(),
+      }
+   );
+
+   let mut shared_templates = shared_files
+      .map(|shared| shared.templates)
+      .unwrap_or_default();
+
+   let mut all_templates = site_files.templates;
+   all_templates.append(&mut shared_templates);
+   trace!("all templates: {all_templates:?}");
+
+   let jinja_env = templates::load(all_templates, |path| {
+      let site_ui_dir = input_dir.join(&*UI_DIR);
+      if path.starts_with(&site_ui_dir) {
+         Ok(path.strip_prefix(&site_ui_dir).unwrap())
+      } else if let Some(shared_dir) = shared_dir.as_ref() {
+         let shared_ui_dir = shared_dir.join(&*UI_DIR);
+         if path.starts_with(&shared_ui_dir) {
+            Ok(path.strip_prefix(&shared_ui_dir).unwrap())
+         } else {
+            Err(Box::new(Error::TemplatePath {
+               path: path.to_owned(),
+            }))
+         }
+      } else {
+         Err(Box::new(Error::TemplatePath {
+            path: path.to_owned(),
+         }))
+      }
+   })?;
+
+   // TODO: actual error handling here, please.
    std::fs::create_dir_all(&config.output).expect("Can create output dir");
 
-   let sources = load_sources(&site_files)?;
+   let sources = load_sources(&site_files.content)?;
 
    debug!("loaded {count} pages", count = sources.len());
 
@@ -181,10 +223,15 @@ pub fn build(
    Ok(())
 }
 
-fn load_sources(site_files: &SiteFiles) -> Result<Vec<Source>, Error> {
+fn load_sources<S>(source_files: S) -> Result<Vec<Source>, Error>
+where
+   S: IntoIterator,
+   S::Item: AsRef<Path>,
+{
    let mut sources = Vec::new();
    let mut errors = Vec::new();
-   for path in &site_files.content {
+   for path in source_files {
+      let path = path.as_ref();
       match std::fs::read_to_string(path) {
          Ok(contents) => sources.push(Source {
             path: path.to_owned(),
@@ -275,6 +322,9 @@ pub enum Error {
       #[from]
       source: Box<grass::Error>,
    },
+
+   #[error("invalid template path {path}")]
+   TemplatePath { path: PathBuf },
 }
 
 impl Error {
@@ -357,6 +407,10 @@ pub struct ContentError {
    path: PathBuf,
 }
 
+lazy_static! {
+   static ref UI_DIR: PathBuf = PathBuf::from("_ui");
+}
+
 struct SiteFiles {
    config: PathBuf,
    content: Vec<PathBuf>,
@@ -364,6 +418,33 @@ struct SiteFiles {
    templates: Vec<PathBuf>,
    static_files: Vec<PathBuf>,
    styles: Vec<PathBuf>,
+}
+
+impl SiteFiles {
+   fn in_dir(in_dir: &Path) -> Result<SiteFiles, Error> {
+      let root = in_dir.display();
+
+      let content_dir = in_dir.join("content");
+      let content_dir = content_dir.display();
+      trace!("content_dir: {content_dir}");
+
+      let data = resolved_paths_for(&format!("{content_dir}/**/_data.lx.yaml"))?;
+      let content = resolved_paths_for(&format!("{content_dir}/**/*.md"))?
+         .into_iter()
+         .filter(|p| !data.contains(p))
+         .collect();
+
+      let site_files = SiteFiles {
+         config: in_dir.join("config.lx.yaml"),
+         content,
+         data,
+         templates: resolved_paths_for(&format!("{root}/{}/*.jinja", UI_DIR.display()))?,
+         static_files: resolved_paths_for(&format!("{root}/_static/**/*"))?,
+         styles: resolved_paths_for(&format!("{root}/_styles/**/*.scss"))?,
+      };
+
+      Ok(site_files)
+   }
 }
 
 impl std::fmt::Display for SiteFiles {
@@ -391,34 +472,56 @@ impl std::fmt::Display for SiteFiles {
       writeln!(f, "  config files:{}", self.config.display())?;
       writeln!(f, "  content files:{}", display(&self.content))?;
       writeln!(f, "  data files:{}", display(&self.data))?;
+      writeln!(f, "  style files:{}", display(&self.styles))?;
       writeln!(f, "  template files:{}", display(&self.templates))?;
       Ok(())
    }
 }
 
-fn files_to_load(in_dir: &Path) -> Result<SiteFiles, Error> {
-   let root = in_dir.display();
+struct SharedFiles {
+   templates: Vec<PathBuf>,
+   styles: Vec<PathBuf>,
+}
 
-   let content_dir = in_dir.join("content");
-   let content_dir = content_dir.display();
-   trace!("content_dir: {content_dir}");
+impl SharedFiles {
+   fn in_dir(dir: &Path) -> Result<SharedFiles, Error> {
+      let root = dir.display();
 
-   let data = resolved_paths_for(&format!("{content_dir}/**/_data.lx.yaml"))?;
-   let content = resolved_paths_for(&format!("{content_dir}/**/*.md"))?
-      .into_iter()
-      .filter(|p| !data.contains(p))
-      .collect();
+      let site_files = SharedFiles {
+         templates: resolved_paths_for(&format!("{root}/{}/*.jinja", UI_DIR.display()))?,
+         styles: resolved_paths_for(&format!("{root}/_styles/**/*.scss"))?,
+      };
 
-   let site_files = SiteFiles {
-      config: in_dir.join("config.lx.yaml"),
-      content,
-      data,
-      templates: resolved_paths_for(&format!("{root}/_ui/*.jinja"))?,
-      static_files: resolved_paths_for(&format!("{root}/_static/**/*"))?,
-      styles: resolved_paths_for(&format!("{root}/_styles/**/*.scss"))?,
-   };
+      Ok(site_files)
+   }
+}
 
-   Ok(site_files)
+impl std::fmt::Display for SharedFiles {
+   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      let sep = String::from("\n      ");
+      let empty = String::from(" (none)");
+
+      let display = |paths: &[PathBuf]| {
+         if paths.is_empty() {
+            return empty.clone();
+         }
+
+         let path_strings = paths
+            .iter()
+            .map(|path| path.display().to_string())
+            .collect::<Vec<_>>()
+            .join(&sep);
+
+         sep.clone() + &path_strings
+      };
+
+      // Yes, I could do these alignments with format strings; maybe at some
+      // point I will switch to that.
+      writeln!(f)?;
+      writeln!(f, "  style files:{}", display(&self.styles))?;
+      writeln!(f, "  template files:{}", display(&self.templates))?;
+      Ok(())
+   }
 }
 
 fn resolved_paths_for(glob_src: &str) -> Result<Vec<PathBuf>, Error> {

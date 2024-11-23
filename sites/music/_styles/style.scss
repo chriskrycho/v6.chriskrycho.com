@@ -1,6 +1,6 @@
-@use '../../../styles';
-@use '../../../styles/foundations/breakpoints';
-@use '../../../styles/foundations/grid';
+@use '../../_shared/_styles';
+@use '../../_shared/_styles/foundations/breakpoints';
+@use '../../_shared/_styles/foundations/grid';
 
 // Not bothering extracting this until I have a *reason* to do so.
 .avatar {
