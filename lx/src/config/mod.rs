@@ -41,15 +41,15 @@ pub enum Error {
 
 impl Config {
    pub fn from_file(path: &Path) -> Result<Config, Error> {
-      let data = std::fs::read_to_string(path).map_err(|e| Error::BadFile {
+      let data = std::fs::read_to_string(path).map_err(|source| Error::BadFile {
          path: path.to_owned(),
-         source: e,
+         source,
       })?;
 
       let mut config: Config =
-         serde_yaml::from_str(&data).map_err(|e| Error::YamlParseError {
+         serde_yaml::from_str(&data).map_err(|source| Error::YamlParseError {
             path: path.to_owned(),
-            source: e,
+            source,
          })?;
 
       config.output = path
