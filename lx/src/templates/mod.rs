@@ -1,4 +1,5 @@
 mod filters;
+mod rendering;
 
 use std::{
    io::Write,
