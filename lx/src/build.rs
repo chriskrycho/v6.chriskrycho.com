@@ -45,7 +45,7 @@ pub fn build(
    trace!("Site files: {site_files}");
 
    let shared_dir = input_dir.parent().map(|parent| parent.join("_shared"));
-   let shared_files = shared_dir
+   let mut shared_files = shared_dir
       .as_ref()
       .map(|dir| SharedFiles::in_dir(&dir))
       .transpose()?;
@@ -58,12 +58,11 @@ pub fn build(
       }
    );
 
-   let mut shared_templates = shared_files
-      .map(|shared| shared.templates)
-      .unwrap_or_default();
-
    let mut all_templates = site_files.templates;
-   all_templates.append(&mut shared_templates);
+   if let Some(shared_files) = shared_files.as_mut() {
+      all_templates.append(&mut shared_files.templates);
+   }
+
    trace!("all templates: {all_templates:?}");
 
    let jinja_env = templates::load(all_templates, |path| {
@@ -145,8 +144,13 @@ pub fn build(
    // other such views above, now that I have split the phases apart.
    let archive = Archive::new(&pages, Order::NewFirst);
 
-   debug!("Copying {} static files", site_files.static_files.len());
-   for static_file in site_files.static_files {
+   let mut static_files = site_files.static_files;
+   if let Some(shared) = shared_files.as_mut() {
+      static_files.append(&mut shared.static_files);
+   }
+
+   debug!("Copying {} static files", static_files.len());
+   for static_file in static_files {
       let relative_path = static_file
          .strip_prefix(input_dir.join("_static"))
          .map_err(|_| Error::StripPrefix {
@@ -480,6 +484,7 @@ impl std::fmt::Display for SiteFiles {
 
 struct SharedFiles {
    templates: Vec<PathBuf>,
+   static_files: Vec<PathBuf>,
    styles: Vec<PathBuf>,
 }
 
@@ -489,6 +494,7 @@ impl SharedFiles {
 
       let site_files = SharedFiles {
          templates: resolved_paths_for(&format!("{root}/{}/*.jinja", UI_DIR.display()))?,
+         static_files: resolved_paths_for(&format!("{root}/_static/**/*"))?,
          styles: resolved_paths_for(&format!("{root}/_styles/**/*.scss"))?,
       };
 
