@@ -121,7 +121,7 @@ pub fn build(
    let (errors, pages): (Vec<_>, Vec<_>) = prepared_pages
       .into_par_iter()
       .map(|prepared| {
-         let source = prepared.source.path.clone(); // for error path only
+         let source_path = prepared.source.path.clone(); // for error path only
 
          // TODO: once the taxonomies exist, pass them here.
          prepared
@@ -132,7 +132,7 @@ pub fn build(
                // TODO: smarten the typography!
                Ok(after_jinja)
             })
-            .map_err(|e| (source, e))
+            .map_err(|e| (source_path, e))
       })
       .partition_map(Either::from);
 
