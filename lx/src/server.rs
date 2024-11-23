@@ -27,12 +27,11 @@ use serde::Serialize;
 use tokio::{
    net::TcpListener,
    runtime::Runtime,
-   signal,
    sync::{
       broadcast::{self, error::RecvError, Sender},
       mpsc,
    },
-   task::{self, JoinError},
+   task::JoinError,
 };
 use tower_http::services::ServeDir;
 use watchexec::error::CriticalError;
@@ -69,41 +68,15 @@ pub fn serve(site_dir: &Path) -> Result<(), Error> {
    // access to local receivers with `tx.subscribe()`.
    let (tx, _rx) = broadcast::channel(10);
 
-   let mut set = task::JoinSet::new();
-   let server_handle =
-      set.spawn_on(serve_in(config.output.clone(), tx.clone()), rt.handle());
-   let watcher_handle =
-      set.spawn_on(watch_in(config.output.clone(), tx.clone()), rt.handle());
+   let serve_handle = rt.spawn(serve_in(config.output.clone(), tx.clone()));
+   let watch_handle = rt.spawn(watch_in(config.output.clone(), tx.clone()));
+   let rebuild_handle = (); // TODO
 
-   set.spawn_on(
-      async move {
-         signal::ctrl_c()
-            .await
-            .map_err(|source| Error::Io { source })?;
-         server_handle.abort();
-         watcher_handle.abort();
-         Ok(())
-      },
-      rt.handle(),
-   );
-
-   // TODO: this currently reports an *error* when the Ctrl-C signal comes through, but
-   // that is an expected condition, not an error condition.
-   rt.block_on(async {
-      while let Some(result) = set.join_next().await {
-         match result {
-            Ok(Ok(_)) => {
-               trace!("completed an item from the serve join_set");
-               // ignore it and keep waiting for the rest to complete
-               // maybe: if one of them *completes* doesn’t that mean we should shut down?
-            }
-            Ok(Err(reason)) => return Err(reason),
-            Err(join_error) => return Err(Error::Serve { source: join_error }),
-         }
-      }
-
-      Ok(())
-   })
+   match rt.block_on(race_all([serve_handle, watch_handle])) {
+      Ok(Ok(_)) => Ok(()),
+      Ok(Err(reason)) => Err(reason),
+      Err(join_error) => Err(Error::Serve { source: join_error }),
+   }
 }
 
 async fn serve_in(path: PathBuf, state: Tx) -> Result<(), Error> {
@@ -397,4 +370,12 @@ where
       Either::Left((a, _f2)) => Either::Left(a),
       Either::Right((b, _f1)) => Either::Right(b),
    }
+}
+
+async fn race_all<F, I, T>(futures: I) -> T
+where
+   I: IntoIterator<Item = F>,
+   F: Future<Output = T> + Unpin,
+{
+   future::select_all(futures).await.0
 }
