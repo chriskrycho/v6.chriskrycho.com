@@ -1,4 +1,5 @@
 mod filters;
+mod functions;
 mod rendering;
 
 use std::{
@@ -6,7 +7,6 @@ use std::{
    path::{Path, PathBuf},
 };
 
-use filters::add_filters;
 use log::{debug, trace};
 use minijinja::Environment;
 use serde::Serialize;
@@ -65,7 +65,8 @@ where
       })?;
    }
 
-   add_filters(&mut env);
+   filters::add_all(&mut env);
+   functions::add_all(&mut env);
 
    Ok(env)
 }

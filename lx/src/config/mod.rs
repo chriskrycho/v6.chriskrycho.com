@@ -69,8 +69,8 @@ impl Config {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Title {
-   normal: String,
-   stylized: Option<String>,
+   pub(crate) normal: String,
+   pub(crate) stylized: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
