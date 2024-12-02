@@ -144,13 +144,38 @@ pub fn build(
    // other such views above, now that I have split the phases apart.
    let archive = Archive::new(&pages, Order::NewFirst);
 
-   let mut static_files = site_files.static_files;
+   // TODO: this and the below are identical, except for the directory from which they
+   // come. This is suggestive: maybe extract into a function for handling both, and
+   // implement a trait for both to use. In that case, it would also very likely make
+   // sense to include at least a reference to the source directory in the `shared_files`
+   // and `site_files` structs.
    if let Some(shared) = shared_files.as_mut() {
-      static_files.append(&mut shared.static_files);
+      debug!("Copying {} shared static files", shared.static_files.len());
+      for static_file in shared.static_files.iter() {
+         let relative_path = static_file
+            .strip_prefix(shared_dir.as_ref().unwrap().join("_static"))
+            .map_err(|_| Error::StripPrefix {
+               prefix: input_dir.to_owned(),
+               path: static_file.clone(),
+            })?;
+         let path = config.output.join(relative_path);
+         let output_dir = path.parent().expect("must have a real parent");
+         std::fs::create_dir_all(output_dir).map_err(|source| {
+            Error::CreateOutputDirectory {
+               path: output_dir.to_owned(),
+               source,
+            }
+         })?;
+         std::fs::copy(&static_file, &path).map_err(|source| Error::CopyFile {
+            from: static_file.clone(),
+            to: path,
+            source,
+         })?;
+      }
    }
 
-   debug!("Copying {} static files", static_files.len());
-   for static_file in static_files {
+   debug!("Copying {} static files", site_files.static_files.len());
+   for static_file in site_files.static_files.iter() {
       let relative_path = static_file
          .strip_prefix(input_dir.join("_static"))
          .map_err(|_| Error::StripPrefix {
@@ -166,7 +191,7 @@ pub fn build(
          }
       })?;
       std::fs::copy(&static_file, &path).map_err(|source| Error::CopyFile {
-         from: static_file,
+         from: static_file.clone(),
          to: path,
          source,
       })?;
