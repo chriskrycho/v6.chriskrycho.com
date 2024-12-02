@@ -1,17 +1,15 @@
 use minijinja::value::ViaDeserialize;
 
-use crate::config::Config;
+use crate::config::Title;
 
-fn full_title(page_title: String, site_config: ViaDeserialize<Config>) -> String {
-   page_title
-      + " | "
-      + &site_config
-         .title
-         .stylized
-         .as_ref()
-         .unwrap_or(&site_config.title.normal)
+fn page_title(page_title: Option<String>, title: ViaDeserialize<Title>) -> String {
+   let base = title.stylized.as_ref().unwrap_or(&title.normal);
+   match page_title {
+      Some(page_title) => page_title + " | " + &base,
+      None => base.clone(),
+   }
 }
 
 pub(crate) fn add_all(env: &mut minijinja::Environment<'_>) {
-   env.add_function("full_title", full_title);
+   env.add_function("page_title", page_title);
 }
