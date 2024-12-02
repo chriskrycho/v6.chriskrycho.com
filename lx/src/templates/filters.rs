@@ -1,7 +1,7 @@
 use log::trace;
 use minijinja::{Environment, State};
 
-pub fn add_filters(env: &mut Environment) {
+pub fn add_all(env: &mut Environment) {
    env.add_filter("page_title", page_title);
 }
 
