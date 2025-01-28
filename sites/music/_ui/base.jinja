@@ -8,16 +8,98 @@
       <div class="container">
          <header class="site-header">
             <h1>
-               <span class="header-me">Chris Krycho</span
-               ><!--
-               --><span class="header-sep">&ThinSpace;—&ThinSpace;</span
-               ><!--
+               <a href="/">
+               <span class="header-me">Chris Krycho</span><!--
+               --><span class="header-sep">&ThinSpace;—&ThinSpace;</span><!--
                --><span class="header-work">Composer</span>
+               </a>
             </h1>
          </header>
 
          {% block main -%}
          {%- endblock main %}
+
+         <hr class="section-break" />
+
+         <footer class="subscribe content">
+            <h1>Follow</h1>
+            <div class="options">
+               <div class="option newsletter">
+                  <h2>Newsletter</h2>
+                  <p>Updates in your inbox once a month or so.</p>
+                  <form
+                     class="email-subscribe"
+                     action="https://buttondown.email/api/emails/embed-subscribe/music-by-chris-krycho"
+                     method="post"
+                     target="popupwindow"
+                     onsubmit="window.open('https://buttondown.email/music-by-chris-krycho', 'popupwindow')"
+                     class="embeddable-buttondown-form"
+                  >
+                     <div class="email-subscribe__row">
+                        <label for="bd-email" class="email-subscribe__label"
+                           >Enter your email:</label
+                        >
+                        <input
+                           type="email"
+                           name="email"
+                           id="bd-email"
+                           class="email-subscribe__email"
+                        />
+                     </div>
+
+                     <div class="email-subscribe__row">
+                        <input
+                           type="submit"
+                           value="Subscribe"
+                           class="email-subscribe__submit"
+                        />
+                     </div>
+                  </form>
+               </div>
+               <div class="option music-services">
+                  <h2>Music</h2>
+                  <ul class="services">
+                     <li>
+                        <a
+                           href="https://open.spotify.com/artist/3o5cvdTdq42sUpHBYswCr1?si=F6_mNUBBQziEyXMNsh3SCw"
+                           >Spotify</a
+                        >
+                     </li>
+                     <li>
+                        <a
+                           href="https://music.apple.com/us/artist/chris-krycho/1576990611"
+                           >Apple Music</a
+                        >
+                     </li>
+                     <li><a href="https://chriskrycho.bandcamp.com">Bandcamp</a></li>
+                     <li>
+                        <a href="https://soundcloud.com/chriskrycho">Soundcloud</a>
+                     </li>
+                  </ul>
+               </div>
+               <div class="option social-media">
+                  <h2>Socials</h2>
+                  <ul class="services">
+                     <li>
+                        <a href="https://www.youtube.com/@chriskrycho-music"
+                           >YouTube</a
+                        >
+                     </li>
+                     <li>
+                        <a href="https://www.instagram.com/chriskrycho/">Instagram</a>
+                     </li>
+                     <li>
+                        <a href="https://www.threads.net/@chriskrycho">Threads</a>
+                     </li>
+                     <li>
+                        <a href="https://bsky.app/profile/music.chriskrycho.com"
+                           >Bluesky</a
+                        >
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </footer>
       </div>
    </body
 </html>

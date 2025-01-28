@@ -1,5 +1,58 @@
 {% extends 'base.jinja' %}
 {% block main %}
-<main class="work">
+<main class="link-page">
+   <header>
+      <h2 class="page-title">
+         <span class="work"><cite>{{data.work.title}}</cite></span><!--
+      -->, <span class="work-info">{{data.work.instrumentation}} ({{data.work.date}})</span>
+      </h2>
+   </header>
+
+   {% if data.work.video %}
+   <section class="featured-item content listen">
+      {% if data.work.video.kind == "YouTube" %}
+         <lite-youtube class="embed youtube-embed" videoid="{{data.work.video.id}}" style="
+               background-image: url('https://i.ytimg.com/vi/{{data.work.video.id}}/hqdefault.jpg');
+            " data-title="">
+            <a class="lty-playbtn" title="Play Video">
+               <span class="lyt-visually-hidden">Play Video: The Desert</span>
+            </a>
+         <noscript><iframe width="560" height="315" title="Play Video: The Desert" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen="" src="https://www.youtube-nocookie.com/embed/{{data.work.video.id}}?autoplay=1&amp;playsinline=1"></iframe></noscript></lite-youtube>
+      {% endif %}
+   </section>
+   {% endif %}
+
+   {% if data.work.listen %}
+      {% if data.work.listen.buy | length > 0 %}
+         <section class="link-section content buy">
+            <h1>Buy</h1>
+            <ul class="links">
+               {% for (key, value) in data.work.listen.buy | items %}
+                  <li class="item"><a href="{{value}}" class="link">{{key}}</a></li>
+               {% endfor %}
+            </ul>
+         </section>
+      {% endif %}
+
+      {% if data.work.listen.stream | length > 0 %}
+         <section class="link-section content stream">
+            <h1>Stream</h1>
+            <ul class="links">
+               {% for (key, value) in data.work.listen.stream | items %}
+                  <li class="item"><a href="{{value}}" class="link">{{key}}</a></li>
+               {% endfor %}
+            </ul>
+         </section>
+      {% endif %}
+   {% endif %}
+
+   {% if content %}
+   <hr class="section-break">
+
+   <section class="background content">
+      <h1>Background</h1>
+      {{content}}
+   </section>
+   {% endif %}
 </main>
 {% endblock main %}

@@ -4,7 +4,7 @@ permalink: /
 layout: index.jinja
 ---
 
-Chris is a composer of contemporary classical music—think somewhere between John Williams and John Tavener—with recent works ranging from small chamber pieces written for friends to a fanfare recorded with the [Budapest Scoring Orchestra][bso. (He is also a [software engineer][cv], [writer][v5], and more.)
+Chris is a composer of contemporary classical music—think somewhere between John Williams and John Tavener—with recent works ranging from small chamber pieces written for friends to a fanfare recorded with the [Budapest Scoring Orchestra][bso]. (He is also a [software engineer][cv], [writer][v5], and more.)
 
 [bso]: https://www.budapestscoring.com
 [cv]: https://v5.chriskrycho.com/cv/
