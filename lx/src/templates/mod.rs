@@ -7,7 +7,7 @@ use std::{
 };
 
 use log::{debug, trace};
-use minijinja::Environment;
+use minijinja::{context, Environment};
 use serde::Serialize;
 use thiserror::Error;
 
@@ -89,22 +89,22 @@ pub fn render(
 
    debug!(
       "Rendering page '{}' ({:?}) with layout '{}'",
-      page.metadata.title,
+      page.data.title,
       page.source.path.display(),
-      page.metadata.layout
+      page.data.layout
    );
 
-   let tpl = env.get_template(&page.metadata.layout).map_err(|source| {
-      Error::MissingTemplate {
-         source,
-         path: page.source.path.to_owned(),
-      }
-   })?;
+   let tpl =
+      env.get_template(&page.data.layout)
+         .map_err(|source| Error::MissingTemplate {
+            source,
+            path: page.source.path.to_owned(),
+         })?;
 
    tpl.render_to_write(
       Context {
          content: &page.content,
-         data: &page.metadata,
+         data: &page.data,
          config: site,
       },
       into,

@@ -211,7 +211,7 @@ pub fn build(
 
       let path = config.output.join(relative_path);
 
-      trace!("writing page {} to {}", page.metadata.title, path.display());
+      trace!("writing page {} to {}", page.data.title, path.display());
       let containing_dir = path
          .parent()
          .unwrap_or_else(|| panic!("{} should have a containing dir!", path.display()));

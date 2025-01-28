@@ -11,13 +11,13 @@ impl<'e> Archive<'e> {
    pub fn new(pages: &'e [Page<'e>], order: Order) -> Result<Archive<'e>, Error> {
       let mut pages = pages
          .iter()
-         .filter(|page| page.metadata.date.is_some())
+         .filter(|page| page.data.date.is_some())
          .collect::<Vec<&Page>>();
 
       pages.sort_by(|a, b| {
          // I just filtered to items which have dates.
-         let a_date = a.metadata.date.unwrap();
-         let b_date = b.metadata.date.unwrap();
+         let a_date = a.data.date.unwrap();
+         let b_date = b.data.date.unwrap();
          match order {
             Order::OldFirst => a_date.partial_cmp(&b_date).unwrap(),
             Order::NewFirst => b_date.partial_cmp(&a_date).unwrap(),
@@ -27,7 +27,7 @@ impl<'e> Archive<'e> {
       let mut year_map = HashMap::new();
 
       for page in pages {
-         if let Some(date) = &page.metadata.date {
+         if let Some(date) = &page.data.date {
             let year = date.year_ce().1;
 
             let month = date.month();

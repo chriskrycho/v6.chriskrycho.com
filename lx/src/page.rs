@@ -36,7 +36,7 @@ pub fn prepare<'e>(
       to_render,
    } = lx_md::prepare(&source.contents)?;
 
-   let metadata = metadata_src
+   let data = metadata_src
       .ok_or(Error::MissingMetadata)
       .and_then(|src| serial::Item::try_parse(&src).map_err(Error::from))
       .and_then(|item_metadata| {
@@ -52,7 +52,7 @@ pub fn prepare<'e>(
 
    Ok(Prepared {
       id,
-      metadata,
+      data,
       to_render,
       source,
    })
@@ -62,7 +62,7 @@ pub struct Prepared<'e> {
    pub id: Id,
 
    /// The fully-parsed metadata associated with the page.
-   pub metadata: Metadata,
+   pub data: Metadata,
 
    pub source: &'e Source,
 
@@ -81,9 +81,9 @@ impl<'e> Prepared<'e> {
       Ok(Page {
          id: self.id,
          content: md
-            .emit(self.to_render, |text| rewrite(text, &self.metadata))?
+            .emit(self.to_render, |text| rewrite(text, &self.data))?
             .html(),
-         metadata: self.metadata,
+         data: self.data,
          source: self.source,
       })
    }
@@ -113,13 +113,13 @@ impl Id {
 /// In this struct, the metadata has been parsed and resolved, and the content has been
 /// converted from Markdown to HTML and preprocessed with both the templating engine and
 /// my typography tooling. It is ready to render into the target layout template specified
-/// by its `metadata: Metadata` and then to print to the file system.
+/// by its `data: Metadata` and then to print to the file system.
 #[derive(Debug)]
 pub struct Page<'e> {
    pub id: Id,
 
    /// The fully-parsed metadata associated with the page.
-   pub metadata: Metadata,
+   pub data: Metadata,
 
    /// The fully-rendered contents of the page.
    pub content: String,
@@ -166,7 +166,7 @@ pub enum Error {
 
 impl<'e> Page<'e> {
    pub fn path_from_root(&self, root_dir: &Path) -> Result<RootedPath, Error> {
-      match &self.metadata.slug {
+      match &self.data.slug {
          Slug::Permalink(str) => Ok(RootedPath(PathBuf::from(str))),
          Slug::FromPath(path_buf) => path_buf
             .strip_prefix(root_dir)
@@ -203,20 +203,16 @@ impl<'e> From<&Page<'e>> for json_feed::FeedItem {
          id: page.id.to_string(),
          url: None,          // TODO: this *definitely* needs to be set!
          external_url: None, // TODO: support for page.link etc.
-         title: Some(page.metadata.title.clone()),
+         title: Some(page.data.title.clone()),
          content_text: None, // TODO: use this for microblogging?
          content_html: Some(page.content.clone()),
-         summary: page
-            .metadata
-            .summary
-            .as_ref()
-            .map(|summary| summary.plain()),
+         summary: page.data.summary.as_ref().map(|summary| summary.plain()),
          image: None,        // TODO: add support for images to metadata
          banner_image: None, // TODO: add support for these if I care?
-         date_published: page.metadata.date.map(|date| date.to_rfc3339()),
+         date_published: page.data.date.map(|date| date.to_rfc3339()),
          date_modified: None, // TODO: from `page.metadata.updated` in some way
          author: None,        // TODO: it me!
-         tags: Some(page.metadata.tags.clone()),
+         tags: Some(page.data.tags.clone()),
          attachments: None,
       }
    }
@@ -233,7 +229,7 @@ impl<'e> Updated for [Page<'e>] {
    fn updated(&self) -> chrono::DateTime<chrono::FixedOffset> {
       self
          .iter()
-         .map(|p| &p.metadata)
+         .map(|p| &p.data)
          .map(|m| {
             m.updated
                .iter()
