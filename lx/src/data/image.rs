@@ -4,14 +4,23 @@ use serde::{Deserialize, Serialize};
 
 /// A resolved image URL.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Image(String);
+pub struct Image {
+   url: String,
+}
+
+impl Image {
+   pub fn url(&self) -> &str {
+      self.url.as_str()
+   }
+}
 
 impl From<serial::Image> for Image {
    fn from(value: serial::Image) -> Self {
-      Image(match value {
+      let url = match value {
          serial::Image::Cdn(path) => format!("https://cdn.chriskrycho.com/images/{path}"),
          serial::Image::Url { url } => url,
-      })
+      };
+      Image { url }
    }
 }
 

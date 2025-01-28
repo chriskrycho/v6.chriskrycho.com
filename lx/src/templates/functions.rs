@@ -1,3 +1,5 @@
+use crate::data::image::Image;
+
 use minijinja::value::ViaDeserialize;
 
 fn resolved_title(page_title: Option<String>, site_title: String) -> String {
@@ -7,6 +9,19 @@ fn resolved_title(page_title: Option<String>, site_title: String) -> String {
    }
 }
 
+// TODO: generate image when it is not present and don’t fall back to config
+// value; that will make it so there is no need to set it.
+fn resolved_image(
+   from_page: ViaDeserialize<Option<Image>>,
+   from_config: ViaDeserialize<Image>,
+) -> String {
+   from_page
+      .0
+      .map(|image| image.url().to_string())
+      .unwrap_or(from_config.0.url().to_string())
+}
+
 pub(crate) fn add_all(env: &mut minijinja::Environment<'_>) {
    env.add_function("resolved_title", resolved_title);
+   env.add_function("resolved_image", resolved_image);
 }
