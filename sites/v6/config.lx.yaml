@@ -27,3 +27,4 @@ nav:
   - { type: 'page', title: 'Curriculum Vitae', path: '/cv/' }
   - { type: 'separator' }
   - { type: 'page', title: 'Colophon', path: '/colophon/' }
+image: sympolymathesy-social.png
