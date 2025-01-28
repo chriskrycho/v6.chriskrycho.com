@@ -1,6 +1,4 @@
 ---
-title: Fanfare for a New Era of American Spaceflight
-
 work:
     title: Fanfare for a New Era of American Spaceflight
     instrumentation: Symphony Orchestra
