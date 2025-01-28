@@ -2,9 +2,13 @@
 //! and associated data from JSON/TOML/YAML/JSON5/whatever else I decide to
 //! support in data files.
 
+use std::collections::HashMap;
+
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use crate::data::image::serial::Image;
 
 #[derive(Deserialize, Debug, Default)]
 pub struct Item {
@@ -12,20 +16,22 @@ pub struct Item {
    pub subtitle: Option<String>,
    pub summary: Option<String>,
    pub date: Option<DateTime<FixedOffset>>,
+   pub permalink: Option<String>,
+   pub qualifiers: Option<Qualifiers>,
    /// When was the item first created? Useful for distinguishing between item creation
    /// and item publication, when letting something bake in public for a while.
    pub started: Option<DateTime<FixedOffset>>,
    #[serde(default)]
    pub updated: Vec<Update>,
-   pub permalink: Option<String>,
-   pub qualifiers: Option<Qualifiers>,
    // --- Begin section of fields also available in AmbientMetadata --- //
+   pub book: Option<Book>,
+   #[serde(default)]
+   pub featured: bool,
+   pub image: Option<Image>,
+   pub layout: Option<String>,
+   pub series: Option<Series>,
    pub thanks: Option<String>,
    pub tags: Option<Vec<String>>,
-   pub featured: Option<bool>,
-   pub layout: Option<String>,
-   pub book: Option<Book>,
-   pub series: Option<Series>,
    pub work: Option<MusicalWork>,
 }
 
@@ -55,14 +61,16 @@ pub struct Update {
 /// from a `my-dir.lx.yaml` or some such colocated next to a file.
 #[derive(Deserialize, Debug, Default)]
 pub struct Ambient {
-   pub qualifiers: Option<Qualifiers>,
-   pub thanks: Option<String>,
-   pub tags: Option<Vec<String>>,
-   pub featured: Option<bool>,
-   pub layout: Option<String>,
    pub book: Option<Book>,
+   #[serde(default)]
+   pub featured: bool,
+   pub image: Option<Image>,
+   pub layout: Option<String>,
+   pub qualifiers: Option<Qualifiers>,
    pub series: Option<Series>,
    pub subscribe: Option<Subscribe>,
+   pub tags: Option<Vec<String>>,
+   pub thanks: Option<String>,
    pub work: Option<MusicalWork>,
 }
 
@@ -70,6 +78,22 @@ pub struct Ambient {
 pub struct Qualifiers {
    pub audience: Option<String>,
    pub epistemic: Option<String>,
+   pub context: Option<String>,
+   pub discusses: Vec<String>,
+   pub disclosure: Option<String>,
+   pub retraction: Option<Retraction>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum Video {
+   YouTube { yt: String },
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct Retraction {
+   pub url: String,
+   pub title: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -80,17 +104,17 @@ pub struct Subscribe {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Book {
-   title: Option<String>,
-   author: Option<String>,
+   pub title: Option<String>,
+   pub author: Option<String>,
    /// Year is a `String`, rather than something like a `u16`, because years
    /// are a lot more complicated than a number represents. If I write "400
    /// B.C.", for example, the system should still work.
-   year: Option<String>,
-   editors: Option<Vec<String>>,
-   translators: Option<Vec<String>>,
-   cover: Option<String>,
-   link: Option<String>,
-   review: Option<Review>,
+   pub year: Option<String>,
+   pub editors: Option<Vec<String>>,
+   pub translators: Option<Vec<String>>,
+   pub cover: Option<Image>,
+   pub link: Option<String>,
+   pub review: Option<Review>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -165,8 +189,23 @@ pub struct MusicalWork {
    pub title: Option<String>,
    /// An intentionally unformatted string describing the instrumentation.
    pub instrumentation: Option<String>,
-   /// A subtitle for the work, if any.
+   /// A subtitle for the work.
    pub subtitle: Option<String>,
    /// When the work was published.
    pub date: Option<String>,
+   /// Where to listen to the work.
+   pub listen: Option<Listen>,
+   /// A video of the work to embed.
+   pub video: Option<Video>,
+   // TODO: require a format: `(\d{1,2}:)?\d{2}:\d{2}
+   /// How long is the piece?
+   pub duration: Option<String>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct Listen {
+   /// Where to buy the cue or album.
+   pub buy: HashMap<String, String>,
+   /// Where to stream the cue or album.
+   pub stream: HashMap<String, String>,
 }

@@ -8,13 +8,17 @@ use thiserror::Error;
 
 use lx_md::Markdown;
 
-use crate::archive::{Archive, Order};
-use crate::canonicalized::Canonicalized;
-use crate::config::{self, Config};
-use crate::error::write_to_fmt;
-use crate::metadata::cascade::{Cascade, CascadeLoadError};
-use crate::page::{self, Source};
-use crate::templates;
+use crate::{
+   archive::{Archive, Order},
+   canonicalized::Canonicalized,
+   data::{
+      config::{self, Config},
+      item::cascade::{Cascade, CascadeLoadError},
+   },
+   error::write_to_fmt,
+   page::{self, Source},
+   templates,
+};
 
 pub fn build_in(directory: Canonicalized) -> Result<(), Error> {
    let config = config_for(&directory)?;
@@ -207,11 +211,7 @@ pub fn build(
 
       let path = config.output.join(relative_path);
 
-      trace!(
-         "writing page {} to {}",
-         page.metadata.title.as_deref().unwrap_or("[untitled]"),
-         path.display()
-      );
+      trace!("writing page {} to {}", page.metadata.title, path.display());
       let containing_dir = path
          .parent()
          .unwrap_or_else(|| panic!("{} should have a containing dir!", path.display()));

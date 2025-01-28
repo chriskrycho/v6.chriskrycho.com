@@ -69,7 +69,6 @@ pub fn convert(
          }?;
 
          yaml_to_html(&metadata_table, &mut output)?;
-         // write(&metadata, &mut output)?;
       }
    }
 

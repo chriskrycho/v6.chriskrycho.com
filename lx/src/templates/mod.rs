@@ -11,7 +11,10 @@ use minijinja::Environment;
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::{config::Config, metadata::Metadata, page::Page};
+use crate::{
+   data::{config::Config, item::Metadata},
+   page::Page,
+};
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -86,7 +89,7 @@ pub fn render(
 
    debug!(
       "Rendering page '{}' ({:?}) with layout '{}'",
-      page.metadata.title.as_deref().unwrap_or("[untitled]"),
+      page.metadata.title,
       page.source.path.display(),
       page.metadata.layout
    );

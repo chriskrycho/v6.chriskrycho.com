@@ -10,7 +10,9 @@ use std::{
 use log::trace;
 use thiserror::Error;
 
-use super::{serial::Ambient, Book, MusicalWork, Qualifiers, Series, Subscribe};
+use crate::data::image::serial::Image;
+
+use super::serial::*;
 
 // NOTE: this is currently quite naïve and in fact *wrong* as a result: what I
 // will actually need is a *tree*, where each point in the tree has two pieces
@@ -29,8 +31,11 @@ pub enum CascadeLoadError {
       file: PathBuf,
    },
 
-   #[error("could not parse metadata")]
-   ParseMetadata(Box<dyn std::error::Error + Send + Sync>),
+   #[error("could not parse metadata from '{}'", .file.display())]
+   ParseMetadata {
+      source: Box<dyn std::error::Error + Send + Sync>,
+      file: PathBuf,
+   },
 }
 
 impl Cascade {
@@ -45,8 +50,12 @@ impl Cascade {
             file: path.clone(),
          })?;
 
-         let metadata: Ambient = serde_yaml::from_reader(&fd)
-            .map_err(|e| CascadeLoadError::ParseMetadata(Box::new(e)))?;
+         let metadata: Ambient = serde_yaml::from_reader(&fd).map_err(|e| {
+            CascadeLoadError::ParseMetadata {
+               source: Box::new(e),
+               file: path.clone(),
+            }
+         })?;
 
          // Panic instead of returning a `Result` because this means there is
          // a real bug in the path construction (not something missing on disk).
@@ -93,6 +102,10 @@ impl Cascade {
       self.find_map(p.as_ref(), &|m| m.subscribe.clone())
    }
 
+   pub fn image<P: AsRef<Path>>(&self, p: P) -> Option<Image> {
+      self.find_map(p.as_ref(), &|m| m.image.clone())
+   }
+
    pub fn book<P: AsRef<Path>>(&self, p: P) -> Option<Book> {
       self.find_map(p.as_ref(), &|m| m.book.clone())
    }
@@ -120,8 +133,6 @@ impl Cascade {
 
 #[cfg(test)]
 mod tests {
-   use crate::metadata::Ambient;
-
    use super::*;
 
    #[test]

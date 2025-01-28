@@ -11,9 +11,9 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::{
+use crate::data::{
    config::Config,
-   metadata::{self, cascade::Cascade, serial, Metadata, Slug},
+   item::{self, cascade::Cascade, serial, Metadata, Slug},
 };
 
 pub fn prepare<'e>(
@@ -147,7 +147,7 @@ pub enum Error {
    #[error("could not resolve metadata")]
    MetadataResolution {
       #[from]
-      source: metadata::Error,
+      source: item::Error,
    },
 
    #[error(transparent)]
@@ -203,7 +203,7 @@ impl<'e> From<&Page<'e>> for json_feed::FeedItem {
          id: page.id.to_string(),
          url: None,          // TODO: this *definitely* needs to be set!
          external_url: None, // TODO: support for page.link etc.
-         title: page.metadata.title.clone(),
+         title: Some(page.metadata.title.clone()),
          content_text: None, // TODO: use this for microblogging?
          content_html: Some(page.content.clone()),
          summary: page

@@ -1,6 +1,7 @@
 pub mod cascade;
 pub mod serial;
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
 use std::path::StripPrefixError;
@@ -13,10 +14,10 @@ use serde::Serialize;
 use slug::slugify;
 use thiserror::Error;
 
+use super::image::Image;
 use crate::page;
 
 use self::cascade::Cascade;
-use self::serial::*;
 
 /// Fully resolved metadata for an item, after merging the data from the item's
 /// own header with all items in its data cascade.
@@ -29,7 +30,7 @@ use self::serial::*;
 #[derive(Debug, Serialize)]
 pub struct Metadata {
    /// The title of the item.
-   pub title: Option<String>,
+   pub title: String,
 
    /// The date the item was published.
    pub date: Option<DateTime<FixedOffset>>,
@@ -40,21 +41,22 @@ pub struct Metadata {
    /// Which layout should be used to render this?
    pub layout: String,
 
+   pub book: Option<Book>,
+   pub featured: bool,
+   pub image: Option<Image>, // TODO: make it `Image`, not `Option`, and generate it .
+   pub qualifiers: Qualifiers,
+   pub series: Option<serial::Series>,
+   pub subscribe: Option<serial::Subscribe>,
    pub subtitle: Option<Rendered>,
    pub summary: Option<Rendered>,
-   pub qualifiers: Qualifiers,
-   pub updated: Vec<Update>,
-   pub thanks: Option<Rendered>,
    pub tags: Vec<String>,
-   pub featured: bool,
-   pub book: Option<Book>,
-   pub series: Option<Series>,
-   pub subscribe: Option<Subscribe>,
-   pub work: Option<Work>,
+   pub thanks: Option<Rendered>,
+   pub updated: Vec<Update>,
+   pub work: Option<MusicalWork>,
 }
 
 impl Metadata {
-   pub(super) fn resolved(
+   pub fn resolved(
       item: serial::Item,
       source: &page::Source,
       cascade: &Cascade,
@@ -75,12 +77,18 @@ impl Metadata {
 
       let render = |s: String| Rendered::as_markdown(&s, md);
 
-      if matches!((&item.title, &item.date), (None, None)) {
-         return Err(Error::MissingRequiredField);
-      }
+      let work = MusicalWork::resolved(item.work, cascade.work(dir))?;
+
+      let title = work
+         .as_ref()
+         .map(|work| work.title.clone())
+         .or_else(|| item.title)
+         .ok_or_else(|| Error::MissingRequiredField {
+            name: "title".to_string(),
+         })?;
 
       let metadata = Metadata {
-         title: item.title,
+         title,
          date: item.date,
          slug: Slug::new(permalink.as_deref(), &source.path)?,
          subtitle: item.subtitle.map(render).transpose()?,
@@ -96,6 +104,23 @@ impl Metadata {
             Qualifiers {
                audience: from_item.audience.or(from_cascade.audience),
                epistemic: from_item.epistemic.or(from_cascade.epistemic),
+               context: from_item.context.or(from_cascade.context),
+               discusses: {
+                  let discusses = from_item
+                     .discusses
+                     .iter()
+                     .map(String::as_str)
+                     .chain(from_cascade.discusses.iter().map(String::as_str))
+                     .collect::<Vec<_>>();
+
+                  nice_list(&discusses)
+                     .map(|formatted| format!("{DISCUSSES} {formatted}"))
+               },
+               disclosure: from_item.disclosure.or(from_cascade.disclosure),
+               retraction: from_item
+                  .retraction
+                  .or(from_cascade.retraction)
+                  .map(Into::into),
             }
          },
          updated: item.updated.into_iter().try_fold(
@@ -118,91 +143,12 @@ impl Metadata {
             tags.extend(cascade.tags(dir));
             tags
          },
-         featured: item.featured.unwrap_or_default(),
-         book: item.book.or(cascade.book(dir)),
+         featured: item.featured,
+         image: item.image.or(cascade.image(dir)).map(Image::from),
+         book: item.book.or(cascade.book(dir)).map(Book::from),
          series: item.series.or(cascade.series(dir)),
          subscribe: cascade.subscribe(dir),
-         work: match (item.work, cascade.work(dir)) {
-            (Some(from_item), Some(from_cascade)) => {
-               let title = from_item
-                  .title
-                  .or(from_cascade.title)
-                  .ok_or(FieldError::Work(WorkError::Title, WorkMissingFrom::Both))?;
-
-               let subtitle = from_item.subtitle.or(from_cascade.subtitle);
-
-               let date = from_item
-                  .date
-                  .or(from_cascade.date)
-                  .ok_or(FieldError::Work(WorkError::Date, WorkMissingFrom::Both))?;
-
-               let instrumentation = from_item
-                  .instrumentation
-                  .or(from_cascade.instrumentation)
-                  .ok_or(FieldError::Work(
-                     WorkError::Instrumentation,
-                     WorkMissingFrom::Both,
-                  ))?;
-
-               Some(Work {
-                  title,
-                  date,
-                  instrumentation,
-                  subtitle,
-               })
-            }
-
-            (Some(from_item), None) => {
-               let title = from_item
-                  .title
-                  .ok_or(FieldError::Work(WorkError::Title, WorkMissingFrom::Item))?;
-
-               let subtitle = from_item.subtitle;
-
-               let date = from_item
-                  .date
-                  .ok_or(FieldError::Work(WorkError::Date, WorkMissingFrom::Item))?;
-
-               let instrumentation = from_item.instrumentation.ok_or(
-                  FieldError::Work(WorkError::Instrumentation, WorkMissingFrom::Item),
-               )?;
-
-               Some(Work {
-                  title,
-                  subtitle,
-                  date,
-                  instrumentation,
-               })
-            }
-
-            (None, Some(from_cascade)) => {
-               let title = from_cascade.title.ok_or(Error::bad_field(
-                  FieldError::Work(WorkError::Title, WorkMissingFrom::Cascade),
-               ))?;
-
-               let subtitle = from_cascade.subtitle;
-
-               let date = from_cascade.date.ok_or(Error::bad_field(FieldError::Work(
-                  WorkError::Date,
-                  WorkMissingFrom::Cascade,
-               )))?;
-
-               let instrumentation = from_cascade.instrumentation.ok_or(
-                  Error::bad_field(FieldError::Work(
-                     WorkError::Instrumentation,
-                     WorkMissingFrom::Cascade,
-                  )),
-               )?;
-
-               Some(Work {
-                  title,
-                  subtitle,
-                  date,
-                  instrumentation,
-               })
-            }
-            (None, None) => None,
-         },
+         work,
       };
 
       Ok(metadata)
@@ -279,8 +225,71 @@ impl Slug {
    }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct Qualifiers {
+   pub audience: Option<String>,
+   pub epistemic: Option<String>,
+   pub context: Option<String>,
+   pub discusses: Option<String>,
+   pub disclosure: Option<String>,
+   pub retraction: Option<Retraction>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct Retraction(String);
+
+impl From<serial::Retraction> for Retraction {
+   fn from(serial::Retraction { url, title }: serial::Retraction) -> Self {
+      let content = format!(
+         r#"<p><strong>Caveat lector:</strong> I have since retracted this (see <a href="{url}">{title}</a>), but as a matter of policy I leave even work I have retracted publicly available as a matter of record.<p>"#
+      );
+      Retraction(content)
+   }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Work {
+pub struct Book {
+   title: Option<String>,
+   author: Option<String>,
+   /// Year is a `String`, rather than something like a `u16`, because years
+   /// are a lot more complicated than a number represents. If I write "400
+   /// B.C.", for example, the system should still work.
+   year: Option<String>,
+   editors: Option<Vec<String>>,
+   translators: Option<Vec<String>>,
+   cover: Option<Image>,
+   link: Option<String>,
+   review: Option<serial::Review>,
+}
+
+impl From<serial::Book> for Book {
+   fn from(
+      serial::Book {
+         title,
+         author,
+         year,
+         editors,
+         translators,
+         cover,
+         link,
+         review,
+      }: serial::Book,
+   ) -> Self {
+      Book {
+         title,
+         author,
+         year,
+         editors,
+         translators,
+         cover: cover.map(Image::from),
+         link,
+         review,
+      }
+   }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MusicalWork {
    /// The title of the work.
    pub title: String,
    /// An intentionally unformatted string describing the instrumentation.
@@ -291,12 +300,143 @@ pub struct Work {
    // TODO: parse this, at minimum into a known-valid form (`\d{4}`).
    /// When the work was published.
    pub date: String,
+
+   /// Where to listen to the work. Optional because it may not be included (at
+   /// least: so I presently suppose!).
+   pub listen: Option<Listen>,
+
+   /// A video of the work to embed.
+   pub video: Option<Video>,
+}
+
+impl MusicalWork {
+   fn resolved(
+      from_item: Option<serial::MusicalWork>,
+      from_cascade: Option<serial::MusicalWork>,
+   ) -> Result<Option<MusicalWork>, Error> {
+      Ok(match (from_item, from_cascade) {
+         (Some(from_item), Some(from_cascade)) => {
+            let title = from_item
+               .title
+               .or(from_cascade.title)
+               .ok_or(FieldError::Work(WorkError::Title, WorkMissingFrom::Both))?;
+
+            let subtitle = from_item.subtitle.or(from_cascade.subtitle);
+
+            let date = from_item
+               .date
+               .or(from_cascade.date)
+               .ok_or(FieldError::Work(WorkError::Date, WorkMissingFrom::Both))?;
+
+            let instrumentation = from_item
+               .instrumentation
+               .or(from_cascade.instrumentation)
+               .ok_or(FieldError::Work(
+                  WorkError::Instrumentation,
+                  WorkMissingFrom::Both,
+               ))?;
+
+            let listen = from_item.listen.or(from_cascade.listen).map(Listen::from);
+            let video = from_item.video.or(from_cascade.video).map(Video::from);
+
+            Some(MusicalWork {
+               title,
+               date,
+               instrumentation,
+               subtitle,
+               listen,
+               video,
+            })
+         }
+
+         (Some(from_item), None) => {
+            let title = from_item
+               .title
+               .ok_or(FieldError::Work(WorkError::Title, WorkMissingFrom::Item))?;
+
+            let date = from_item
+               .date
+               .ok_or(FieldError::Work(WorkError::Date, WorkMissingFrom::Item))?;
+
+            let instrumentation = from_item.instrumentation.ok_or(FieldError::Work(
+               WorkError::Instrumentation,
+               WorkMissingFrom::Item,
+            ))?;
+
+            Some(MusicalWork {
+               title,
+               subtitle: from_item.subtitle,
+               date,
+               instrumentation,
+               listen: from_item.listen.map(Listen::from),
+               video: from_item.video.map(Video::from),
+            })
+         }
+
+         (None, Some(from_cascade)) => {
+            let title = from_cascade.title.ok_or(Error::bad_field(FieldError::Work(
+               WorkError::Title,
+               WorkMissingFrom::Cascade,
+            )))?;
+
+            let date = from_cascade.date.ok_or(Error::bad_field(FieldError::Work(
+               WorkError::Date,
+               WorkMissingFrom::Cascade,
+            )))?;
+
+            let instrumentation =
+               from_cascade
+                  .instrumentation
+                  .ok_or(Error::bad_field(FieldError::Work(
+                     WorkError::Instrumentation,
+                     WorkMissingFrom::Cascade,
+                  )))?;
+
+            Some(MusicalWork {
+               title,
+               subtitle: from_cascade.subtitle,
+               date,
+               instrumentation,
+               listen: from_cascade.listen.map(Listen::from),
+               video: from_cascade.video.map(Video::from),
+            })
+         }
+         (None, None) => None,
+      })
+   }
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct Listen {
+   buy: HashMap<String, String>,
+   stream: HashMap<String, String>,
+}
+
+impl std::convert::From<serial::Listen> for Listen {
+   fn from(serial::Listen { buy, stream }: serial::Listen) -> Self {
+      Listen { buy, stream }
+   }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "kind")]
+pub enum Video {
+   YouTube { id: String },
+   Url { url: String },
+}
+
+impl From<serial::Video> for Video {
+   fn from(value: serial::Video) -> Self {
+      match value {
+         serial::Video::YouTube { yt } => Video::YouTube { id: yt },
+      }
+   }
 }
 
 #[derive(Error, Debug)]
 pub enum Error {
-   #[error("missing both date and time")]
-   MissingRequiredField,
+   #[error("missing required field '{name}'")]
+   MissingRequiredField { name: String },
 
    #[error("bad field data")]
    BadField {
@@ -373,6 +513,20 @@ impl std::fmt::Display for WorkMissingFrom {
    }
 }
 
+fn nice_list(strings: &[&str]) -> Option<String> {
+   match strings.len() {
+      0 => None,
+      1 => Some(strings[0].to_string()),
+      2 => Some(format!("{} and {}", strings[0], strings[1])),
+      _ => {
+         let (last, init) = strings.split_last().unwrap();
+         Some(format!("{}, and {last}", init.join(", ")))
+      }
+   }
+}
+
+const DISCUSSES: &'static str = "<b>Heads up:</b> this post directly discusses";
+
 #[cfg(test)]
 mod tests {
    use super::*;
@@ -406,7 +560,7 @@ mod tests {
    }
 
    #[test]
-   fn slug_from_compelx_relative_path_with_simple_title() {
+   fn slug_from_complex_relative_path_with_simple_title() {
       let source = PathBuf::from("a/B C/d/q.rs");
       let expected = PathBuf::from("a/B C/d/q");
 
@@ -414,10 +568,21 @@ mod tests {
    }
 
    #[test]
-   fn slug_from_compelx_relative_path_with_complex_title() {
+   fn slug_from_complex_relative_path_with_complex_title() {
       let source = PathBuf::from("a/B C/d/Q R S.rs");
       let expected = PathBuf::from("a/B C/d/q-r-s");
 
       assert_eq!(Slug::new(None, &source).unwrap(), Slug::FromPath(expected));
+   }
+
+   #[test]
+   fn nice_list_formatting() {
+      assert_eq!(
+         nice_list(&vec!["a", "b", "c"]),
+         Some(String::from("a, b, and c"))
+      );
+      assert_eq!(nice_list(&vec!["a", "b"]), Some(String::from("a and b")));
+      assert_eq!(nice_list(&vec!["a"]), Some(String::from("a")));
+      assert_eq!(nice_list(&vec![]), None);
    }
 }

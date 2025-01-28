@@ -1,12 +1,9 @@
 use minijinja::value::ViaDeserialize;
 
-use crate::config::Title;
-
-fn resolved_title(page_title: Option<String>, title: ViaDeserialize<Title>) -> String {
-   let base = title.stylized.as_ref().unwrap_or(&title.normal);
+fn resolved_title(page_title: Option<String>, site_title: String) -> String {
    match page_title {
-      Some(page_title) => page_title + " | " + &base,
-      None => base.clone(),
+      Some(page_title) => page_title + " | " + &site_title,
+      None => site_title.clone(),
    }
 }
 

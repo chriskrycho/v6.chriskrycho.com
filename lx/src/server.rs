@@ -13,7 +13,7 @@ use axum::{
       State, WebSocketUpgrade,
    },
    response::Response,
-   routing::{self, get},
+   routing::{self},
    Router,
 };
 use futures::{

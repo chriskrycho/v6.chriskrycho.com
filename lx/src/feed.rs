@@ -7,7 +7,7 @@ use json_feed::{AuthorOptions, JSONFeed};
 use thiserror::Error;
 
 use crate::{
-   config::Config,
+   data::config::Config,
    page::{Page, Updated},
 };
 
