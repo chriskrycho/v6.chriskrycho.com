@@ -1,5 +1,7 @@
 {% macro head(content, data, config) %}
 <head>
+   {% set image = resolved_image(data.image, config.image) %}
+
    <meta charset="UTF-8" />
    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,10 +15,7 @@
    <meta property="og:type" content="website" />
    {# TODO: build per-page URL; use config for site URL -#}
    <meta property="og:url" content="https://music.chriskrycho.com/" />
-   <meta
-      property="og:image"
-      content="https://cdn.chriskrycho.com/images/music-banner-1200%C3%97800.jpg"
-   />
+   <meta property="og:image" content="{{ image }}" />
    {# TODO: use config for site URL -#}
    <meta name="article:author" content="https://music.chriskrycho.com/" />
    <meta
@@ -28,11 +27,7 @@
    <meta name="twitter:creator" content="@chriskrycho" />
    {# TODO: use config for site URL -#}
    <meta name="article:author" content="https://music.chriskrycho.com/" />
-   {# TODO: build dynamically from page image -#}
-   <meta
-      name="twitter:image"
-      content="https://cdn.chriskrycho.com/images/music-banner-1200%C3%97800.jpg"
-   />
+   <meta name="twitter:image" content="{{ image }}" />
 
    <meta name="fediverse:creator" content="@chriskrycho@mastodon.social" />
    <meta name="fediverse:creator" content="@chriskrycho@threads.net" />
