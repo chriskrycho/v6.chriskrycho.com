@@ -5,8 +5,19 @@
 {
    "tab_size": 3,
    "wrap_guides": [90],
+   "soft_wrap": null,
    "languages": {
       "TOML": { "tab_size": 4 },
-      "YAML": { "tab_size": 2 }
+      "YAML": { "tab_size": 2 },
+      "Rust": {
+         "soft_wrap": "bounded",
+         "preferred_line_length": 90
+      },
+      "Markdown": {
+         "show_wrap_guides": false,
+         "soft_wrap": "bounded",
+         "preferred_line_length": 80,
+         "tab_size": 4
+      }
    }
 }
