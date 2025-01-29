@@ -1,12 +1,14 @@
 {% macro head(content, data, config) %}
-<head>
-   {% set image = resolved_image(data.image, config.image) %}
 
+{% set image = resolved_image(data.image, config.image) %}
+{% set desc = description(data.summary, config.description) | safe %}
+<head>
    <meta charset="UTF-8" />
    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
    <title>{{ resolved_title(data.title, config.title) }}</title>
+   <meta name="description" content="{{ desc }}"/>
 
    <link rel="stylesheet" href="/style.css" media="screen" />
    <link rel="stylesheet" href="/vendor/lite-yt-embed.css" media="screen" />
@@ -18,10 +20,7 @@
    <meta property="og:image" content="{{ image }}" />
    {# TODO: use config for site URL -#}
    <meta name="article:author" content="https://music.chriskrycho.com/" />
-   <meta
-      name="twitter:description"
-      content="Contemporary classical works for orchestras and chamber ensembles, congregational church songs, and the occasional bit of electronica."
-   />
+   <meta name="twitter:description" content="{{ desc }}" />
    <meta name="twitter:card" content="summary_large_image" />
    <meta name="twitter:site" content="@chriskrycho" />
    <meta name="twitter:creator" content="@chriskrycho" />
@@ -42,4 +41,4 @@
 
    <script defer src="/vendor/lite-yt-embed.js"></script>
 </head>
-{% endmacro %}
+{% endmacro %} #}

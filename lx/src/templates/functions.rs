@@ -1,6 +1,6 @@
-use crate::data::image::Image;
-
 use minijinja::value::ViaDeserialize;
+
+use crate::data::{image::Image, item::Rendered};
 
 fn resolved_title(page_title: Option<String>, site_title: String) -> String {
    match page_title {
@@ -21,7 +21,18 @@ fn resolved_image(
       .unwrap_or(from_config.0.url().to_string())
 }
 
+fn description(
+   from_page: ViaDeserialize<Option<Rendered>>,
+   from_config: String,
+) -> String {
+   from_page
+      .0
+      .map(|rendered| rendered.plain())
+      .unwrap_or(from_config)
+}
+
 pub(crate) fn add_all(env: &mut minijinja::Environment<'_>) {
    env.add_function("resolved_title", resolved_title);
    env.add_function("resolved_image", resolved_image);
+   env.add_function("description", description);
 }

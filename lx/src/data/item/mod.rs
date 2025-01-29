@@ -155,7 +155,7 @@ impl Metadata {
    }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Rendered {
    source: String,
    html: String,
