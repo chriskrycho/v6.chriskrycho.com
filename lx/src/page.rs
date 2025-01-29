@@ -21,16 +21,6 @@ pub fn prepare<'e>(
    source: &'e Source,
    cascade: &Cascade,
 ) -> Result<Prepared<'e>, Error> {
-   // TODO: This is the right idea for where I want to take this, but ultimately I
-   // don't want to do it based on the source path (or if I do, *only* initially as
-   // a way of generating it to start). It'll go in the database, so more likely I'll
-   // just use an SQLite id for it! However, this is a fine intermediate point since it
-   // can be used for a weaker form of caching for now.
-   let id = Id(Uuid::new_v5(
-      &Uuid::NAMESPACE_OID,
-      source.path.as_os_str().as_bytes(),
-   ));
-
    let lx_md::Prepared {
       metadata_src,
       to_render,
@@ -51,7 +41,6 @@ pub fn prepare<'e>(
       })?;
 
    Ok(Prepared {
-      id,
       data,
       to_render,
       source,
@@ -59,10 +48,8 @@ pub fn prepare<'e>(
 }
 
 pub struct Prepared<'e> {
-   pub id: Id,
-
    /// The fully-parsed metadata associated with the page.
-   pub data: Metadata,
+   data: Metadata,
 
    pub source: &'e Source,
 
@@ -77,9 +64,8 @@ impl<'e> Prepared<'e> {
          &str,
          &Metadata,
       ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
-   ) -> Result<Page<'e>, Error> {
-      Ok(Page {
-         id: self.id,
+   ) -> Result<Rendered<'e>, Error> {
+      Ok(Rendered {
          content: md
             .emit(self.to_render, |text| rewrite(text, &self.data))?
             .html(),
@@ -89,8 +75,14 @@ impl<'e> Prepared<'e> {
    }
 }
 
+pub struct Rendered<'e> {
+   content: String,
+   data: Metadata,
+   source: &'e Source,
+}
+
 /// Source data for a file: where it came from, and its original contents.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Source {
    /// Original source location for the file.
    pub path: PathBuf,
@@ -125,6 +117,33 @@ pub struct Page<'e> {
    pub content: String,
 
    pub source: &'e Source,
+
+   pub path: RootedPath,
+}
+
+impl<'e> Page<'e> {
+   pub fn from_rendered(
+      rendered: Rendered<'e>,
+      in_dir: &Path,
+   ) -> Result<Page<'e>, Error> {
+      // TODO: This is the right idea for where I want to take this, but ultimately I
+      // don't want to do it based on the source path (or if I do, *only* initially as
+      // a way of generating it to start).
+      let id = Id(Uuid::new_v5(
+         &Uuid::NAMESPACE_OID,
+         rendered.source.path.as_os_str().as_bytes(),
+      ));
+
+      let path = RootedPath::new(&rendered.data.slug, in_dir)?;
+
+      Ok(Page {
+         id,
+         content: rendered.content,
+         data: rendered.data,
+         source: rendered.source,
+         path,
+      })
+   }
 }
 
 #[derive(Error, Debug)]
@@ -164,9 +183,12 @@ pub enum Error {
    },
 }
 
-impl<'e> Page<'e> {
-   pub fn path_from_root(&self, root_dir: &Path) -> Result<RootedPath, Error> {
-      match &self.data.slug {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RootedPath(PathBuf);
+
+impl RootedPath {
+   pub fn new(slug: &Slug, root_dir: &Path) -> Result<RootedPath, Error> {
+      match slug {
          Slug::Permalink(str) => Ok(RootedPath(PathBuf::from(str))),
          Slug::FromPath(path_buf) => path_buf
             .strip_prefix(root_dir)
@@ -178,11 +200,7 @@ impl<'e> Page<'e> {
             }),
       }
    }
-}
 
-pub struct RootedPath(PathBuf);
-
-impl RootedPath {
    /// Given a config, generate the (canonicalized) URL for the rooted path
    pub fn url(&self, config: &Config) -> String {
       String::from(config.url.trim_end_matches('/'))

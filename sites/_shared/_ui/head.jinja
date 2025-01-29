@@ -1,7 +1,9 @@
 {% macro head(content, data, config) %}
 
 {% set image = resolved_image(data.image, config.image) %}
-{% set desc = description(data.summary, config.description) | safe %}
+{% set desc = description(data.summary, config.description) %}
+{% set url = url_for(path, config) %}
+
 <head>
    <meta charset="UTF-8" />
    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -15,17 +17,14 @@
 
    {# TODO: extract this -#}
    <meta property="og:type" content="website" />
-   {# TODO: build per-page URL; use config for site URL -#}
-   <meta property="og:url" content="https://music.chriskrycho.com/" />
+   <meta property="og:url" content="{{ url }}" />
    <meta property="og:image" content="{{ image }}" />
-   {# TODO: use config for site URL -#}
-   <meta name="article:author" content="https://music.chriskrycho.com/" />
+   <meta name="article:author" content="{{ url }}" />
    <meta name="twitter:description" content="{{ desc }}" />
    <meta name="twitter:card" content="summary_large_image" />
    <meta name="twitter:site" content="@chriskrycho" />
    <meta name="twitter:creator" content="@chriskrycho" />
-   {# TODO: use config for site URL -#}
-   <meta name="article:author" content="https://music.chriskrycho.com/" />
+   <meta name="article:author" content="{{ url }}" />
    <meta name="twitter:image" content="{{ image }}" />
 
    <meta name="fediverse:creator" content="@chriskrycho@mastodon.social" />

@@ -16,7 +16,7 @@ use crate::{
       item::cascade::{Cascade, CascadeLoadError},
    },
    error::write_to_fmt,
-   page::{self, Source},
+   page::{self, Page, Source},
    templates,
 };
 
@@ -136,6 +136,7 @@ pub fn build(
                // TODO: smarten the typography!
                Ok(after_jinja)
             })
+            .and_then(|rendered| Page::from_rendered(rendered, input_dir))
             .map_err(|e| (source_path, e))
       })
       .partition_map(Either::from);
@@ -203,11 +204,7 @@ pub fn build(
 
    // TODO: this can and probably should use async?
    for page in pages {
-      let relative_path = page
-         .path_from_root(&input_dir.join("content"))
-         .map_err(|source| Error::PagePath { source })?
-         .as_ref()
-         .join("index.html");
+      let relative_path = page.path.as_ref().join("index.html");
 
       let path = config.output.join(relative_path);
 

@@ -7,13 +7,13 @@ use std::{
 };
 
 use log::{debug, trace};
-use minijinja::{context, Environment};
+use minijinja::Environment;
 use serde::Serialize;
 use thiserror::Error;
 
 use crate::{
    data::{config::Config, item::Metadata},
-   page::Page,
+   page::{Page, RootedPath},
 };
 
 #[derive(Error, Debug)]
@@ -85,6 +85,7 @@ pub fn render(
       content: &'a str,
       data: &'a Metadata,
       config: &'a Config,
+      path: &'a RootedPath,
    }
 
    debug!(
@@ -106,6 +107,7 @@ pub fn render(
          content: &page.content,
          data: &page.data,
          config: site,
+         path: &page.path,
       },
       into,
    )

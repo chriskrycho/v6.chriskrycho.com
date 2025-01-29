@@ -18,6 +18,7 @@ use std::fmt::Debug;
 use lazy_static::lazy_static;
 pub use pulldown_cmark::Options;
 use pulldown_cmark::{html, CowStr, Event, MetadataBlockKind, Parser, Tag, TagEnd};
+use serde::Deserialize;
 use syntect::parsing::SyntaxSet;
 use thiserror::Error;
 
@@ -215,6 +216,7 @@ pub struct RenderError {
 
 /// The result of successfully rendering content: HTML. It can be extracted via
 /// the `.html()` method.
+#[derive(Debug, Deserialize)]
 #[repr(transparent)]
 pub struct Rendered(String);
 
