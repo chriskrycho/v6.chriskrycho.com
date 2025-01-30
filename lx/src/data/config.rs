@@ -114,7 +114,6 @@ pub mod serial {
    #[derive(Serialize, Deserialize, Debug)]
    pub struct Author {
       pub name: String,
-      #[serde(deserialize_with = "Email::de_from_str")]
       pub email: Email,
       pub links: HashMap<String, String>,
    }
