@@ -222,8 +222,8 @@ pub struct Rendered(String);
 
 impl Rendered {
    #[inline(always)]
-   pub fn html(self) -> String {
-      self.0
+   pub fn html(&self) -> &str {
+      self.0.as_str()
    }
 }
 

@@ -1,7 +1,7 @@
 {% macro head(content, data, config) %}
 
 {% set image = resolved_image(data.image, config.image) %}
-{% set desc = description(data.summary, config.description) %}
+{% set desc = description(data, content) %}
 {% set url = url_for(path, config) %}
 
 <head>

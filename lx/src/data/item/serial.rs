@@ -2,7 +2,10 @@
 //! and associated data from JSON/TOML/YAML/JSON5/whatever else I decide to
 //! support in data files.
 
-use std::collections::HashMap;
+use std::{
+   collections::HashMap,
+   fmt::{self},
+};
 
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
@@ -141,6 +144,12 @@ pub struct Review {
    summary: String,
 }
 
+impl fmt::Display for Review {
+   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+      write!(f, "{}: {}", self.rating, self.summary)
+   }
+}
+
 // TODO: right now this assumes it can be deserialized from the associated text,
 // but in fact it should be derived from the same text as its `Display`
 // implementation below. (A later enhancement: converting "****" etc. to it or
@@ -157,8 +166,8 @@ enum Rating {
    Required,
 }
 
-impl std::fmt::Display for Rating {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Rating {
+   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
       write!(
          f,
          "{}",

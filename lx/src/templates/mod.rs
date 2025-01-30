@@ -104,7 +104,7 @@ pub fn render(
 
    tpl.render_to_write(
       Context {
-         content: &page.content,
+         content: page.content.html(),
          data: &page.data,
          config: site,
          path: &page.path,

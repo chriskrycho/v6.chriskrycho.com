@@ -66,9 +66,7 @@ impl<'e> Prepared<'e> {
       ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
    ) -> Result<Rendered<'e>, Error> {
       Ok(Rendered {
-         content: md
-            .emit(self.to_render, |text| rewrite(text, &self.data))?
-            .html(),
+         content: md.emit(self.to_render, |text| rewrite(text, &self.data))?,
          data: self.data,
          source: self.source,
       })
@@ -76,7 +74,7 @@ impl<'e> Prepared<'e> {
 }
 
 pub struct Rendered<'e> {
-   content: String,
+   content: lx_md::Rendered,
    data: Metadata,
    source: &'e Source,
 }
@@ -114,7 +112,7 @@ pub struct Page<'e> {
    pub data: Metadata,
 
    /// The fully-rendered contents of the page.
-   pub content: String,
+   pub content: lx_md::Rendered,
 
    pub source: &'e Source,
 
@@ -215,15 +213,20 @@ impl AsRef<Path> for RootedPath {
    }
 }
 
-impl<'e> From<&Page<'e>> for json_feed::FeedItem {
-   fn from(page: &Page) -> Self {
+/// Convenience to allow `From` for `FeedItem`.
+pub struct PageAndConfig<'p, 'c, 'e>(pub &'p Page<'e>, pub &'c Config);
+
+// TODO: This will need to take `From` a different type, one that wraps `Page`
+// and probably also `Config` (e.g. to build the full URL).
+impl<'p, 'c, 'e> From<PageAndConfig<'p, 'c, 'e>> for json_feed::FeedItem {
+   fn from(PageAndConfig(page, config): PageAndConfig) -> Self {
       json_feed::FeedItem {
          id: page.id.to_string(),
-         url: None,          // TODO: this *definitely* needs to be set!
+         url: Some(page.path.url(config)),
          external_url: None, // TODO: support for page.link etc.
          title: Some(page.data.title.clone()),
          content_text: None, // TODO: use this for microblogging?
-         content_html: Some(page.content.clone()),
+         content_html: Some(page.content.html().to_string()),
          summary: page.data.summary.as_ref().map(|summary| summary.plain()),
          image: None,        // TODO: add support for images to metadata
          banner_image: None, // TODO: add support for these if I care?

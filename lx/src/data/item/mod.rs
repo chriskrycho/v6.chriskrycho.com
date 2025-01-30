@@ -27,7 +27,7 @@ use self::cascade::Cascade;
 /// no easy way to deal with a nested sum type. One or the other *is* required,
 /// but this is handled by way of runtime validation. (Nothing makes me want so
 /// badly to implement my own type-safe template language…)
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Metadata {
    /// The title of the item.
    pub title: String,
@@ -166,7 +166,7 @@ impl Rendered {
       md.render(src, |s| Ok(s.to_string()))
          .map(|(_, rendered)| Rendered {
             source: src.to_owned(),
-            html: rendered.html(),
+            html: rendered.html().to_string(),
          })
          .map_err(Error::from)
    }
@@ -178,13 +178,13 @@ impl Rendered {
    }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Update {
    pub at: DateTime<FixedOffset>,
    pub changes: Option<String>,
 }
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum Slug {
    Permalink(String),
    FromPath(PathBuf),
@@ -259,7 +259,7 @@ pub struct Book {
    translators: Option<Vec<String>>,
    cover: Option<Image>,
    link: Option<String>,
-   review: Option<serial::Review>,
+   pub review: Option<serial::Review>,
 }
 
 impl From<serial::Book> for Book {

@@ -8,7 +8,7 @@ use thiserror::Error;
 
 use crate::{
    data::config::Config,
-   page::{Page, Updated},
+   page::{Page, PageAndConfig, Updated},
 };
 
 /// Required resources for a `Feed`.
@@ -48,7 +48,11 @@ impl<'a> TryFrom<Feed<'a>> for JSONFeed {
    type Error = Error;
 
    fn try_from(feed: Feed<'a>) -> Result<Self, Self::Error> {
-      let items = feed.items.iter().map(|page| page.into()).collect();
+      let items = feed
+         .items
+         .iter()
+         .map(|page| json_feed::FeedItem::from(PageAndConfig(page, feed.site_config)))
+         .collect();
 
       // TODO: needs the info for the *feed* URL.
       let feed = JSONFeed::builder(&feed.title, items)

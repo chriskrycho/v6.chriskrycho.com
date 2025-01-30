@@ -1,7 +1,10 @@
-use minijinja::value::ViaDeserialize;
+use minijinja::{
+   value::{Rest, ViaDeserialize},
+   Value,
+};
 
 use crate::{
-   data::{config::Config, image::Image, item::Rendered},
+   data::{config::Config, image::Image, item::Metadata},
    page::RootedPath,
 };
 
@@ -10,6 +13,7 @@ pub(crate) fn add_all(env: &mut minijinja::Environment<'_>) {
    env.add_function("resolved_image", resolved_image);
    env.add_function("description", description);
    env.add_function("url_for", url_for);
+   env.add_function("fdbg", fancy_debug);
 }
 
 fn resolved_title(page_title: Option<String>, site_title: String) -> String {
@@ -39,11 +43,42 @@ fn resolved_image(
 }
 
 fn description(
-   from_page: ViaDeserialize<Option<Rendered>>,
-   from_config: String,
+   ViaDeserialize(page_data): ViaDeserialize<Metadata>,
+   content: &str,
 ) -> String {
-   from_page
-      .0
-      .map(|rendered| rendered.plain())
-      .unwrap_or(from_config)
+   page_data
+      .summary
+      .map(|summary| summary.plain())
+      .or(
+         page_data
+            .book
+            .and_then(|book| book.review.map(|review| review.to_string())),
+      )
+      .or(page_data.subtitle.map(|subtitle| subtitle.plain()))
+      .unwrap_or(truncate(content))
+}
+
+fn truncate(content: &str) -> String {
+   // TODO: strip the tags!
+   if content.len() > 155 {
+      let mut truncated = String::from(content);
+      truncated.truncate(155);
+      truncated += "…";
+      truncated
+   } else {
+      content.to_string()
+   }
+}
+
+fn fancy_debug(name: Option<&str>, args: Rest<Value>) -> String {
+   let title = name.map(|n| format!("<p>{n}:</p>")).unwrap_or_default();
+   let args = if args.is_empty() {
+      format!("{{no args!}}")
+   } else if args.len() == 1 {
+      format!("{:#?}", args.0[0])
+   } else {
+      format!("{:#?}", &args.0[..])
+   };
+
+   format!("{title}<pre><code>{args}</code></pre>")
 }
