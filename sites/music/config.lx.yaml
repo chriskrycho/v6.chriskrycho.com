@@ -1,7 +1,7 @@
 url: 'https://music.chriskrycho.com/'
 repo: 'https://github.com/chriskrycho/v6.chriskrycho.com'
-title: { normal: 'Chris Krycho' }
-subtitle: 'Composer'
+title:
+  normal: 'Chris Krycho – Composer'
 description: 'Contemporary classical works for orchestras and chamber ensembles, congregational church songs, and the occasional bit of electronica.'
 author:
   name: 'Chris Krycho'
