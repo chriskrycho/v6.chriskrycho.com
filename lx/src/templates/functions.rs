@@ -18,7 +18,13 @@ pub(crate) fn add_all(env: &mut minijinja::Environment<'_>) {
 
 fn resolved_title(page_title: Option<String>, site_title: String) -> String {
    match page_title {
-      Some(page_title) => page_title + " | " + &site_title,
+      Some(page_title) => {
+         if page_title != site_title {
+            page_title + " | " + &site_title
+         } else {
+            page_title
+         }
+      }
       None => site_title.clone(),
    }
 }
