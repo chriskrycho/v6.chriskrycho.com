@@ -106,8 +106,9 @@ pub fn build(
       // the map call depending on what kind of file it is.
       .filter(|source| source.path.extension().is_some_and(|ext| ext == "md"))
       .map(|source| {
-         let path = source.path.clone();
-         page::prepare(&md, &source, &cascade).map_err(|e| (path, e))
+         page::prepare(&md, &source, &cascade)
+            .map(|prepared| (prepared, source))
+            .map_err(|e| (source.path.clone(), e))
       })
       .partition_map(Either::from);
 
@@ -124,9 +125,7 @@ pub fn build(
 
    let (errors, pages): (Vec<_>, Vec<_>) = prepared_pages
       .into_par_iter()
-      .map(|prepared| {
-         let source_path = prepared.source.path.clone(); // for error path only
-
+      .map(|(prepared, source)| {
          // TODO: once the taxonomies exist, pass them here.
          prepared
             .render(md, |text, metadata| {
@@ -136,8 +135,8 @@ pub fn build(
                // TODO: smarten the typography!
                Ok(after_jinja)
             })
-            .and_then(|rendered| Page::from_rendered(rendered, input_dir))
-            .map_err(|e| (source_path, e))
+            .and_then(|rendered| Page::from_rendered(rendered, source, input_dir))
+            .map_err(|e| (source.path.clone(), e))
       })
       .partition_map(Either::from);
 

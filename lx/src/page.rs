@@ -40,18 +40,12 @@ pub fn prepare<'e>(
          .map_err(Error::from)
       })?;
 
-   Ok(Prepared {
-      data,
-      to_render,
-      source,
-   })
+   Ok(Prepared { data, to_render })
 }
 
 pub struct Prepared<'e> {
    /// The fully-parsed metadata associated with the page.
    data: Metadata,
-
-   pub source: &'e Source,
 
    to_render: ToRender<'e>,
 }
@@ -64,19 +58,17 @@ impl<'e> Prepared<'e> {
          &str,
          &Metadata,
       ) -> Result<String, Box<dyn std::error::Error + Send + Sync>>,
-   ) -> Result<Rendered<'e>, Error> {
+   ) -> Result<Rendered, Error> {
       Ok(Rendered {
          content: md.emit(self.to_render, |text| rewrite(text, &self.data))?,
          data: self.data,
-         source: self.source,
       })
    }
 }
 
-pub struct Rendered<'e> {
+pub struct Rendered {
    content: lx_md::Rendered,
    data: Metadata,
-   source: &'e Source,
 }
 
 /// Source data for a file: where it came from, and its original contents.
@@ -105,7 +97,7 @@ impl Id {
 /// my typography tooling. It is ready to render into the target layout template specified
 /// by its `data: Metadata` and then to print to the file system.
 #[derive(Debug)]
-pub struct Page<'e> {
+pub struct Page<'s> {
    pub id: Id,
 
    /// The fully-parsed metadata associated with the page.
@@ -114,22 +106,23 @@ pub struct Page<'e> {
    /// The fully-rendered contents of the page.
    pub content: lx_md::Rendered,
 
-   pub source: &'e Source,
+   pub source: &'s Source,
 
    pub path: RootedPath,
 }
 
-impl<'e> Page<'e> {
+impl<'s> Page<'s> {
    pub fn from_rendered(
-      rendered: Rendered<'e>,
+      rendered: Rendered,
+      source: &'s Source,
       in_dir: &Path,
-   ) -> Result<Page<'e>, Error> {
+   ) -> Result<Page<'s>, Error> {
       // TODO: This is the right idea for where I want to take this, but ultimately I
       // don't want to do it based on the source path (or if I do, *only* initially as
       // a way of generating it to start).
       let id = Id(Uuid::new_v5(
          &Uuid::NAMESPACE_OID,
-         rendered.source.path.as_os_str().as_bytes(),
+         source.path.as_os_str().as_bytes(),
       ));
 
       let path = RootedPath::new(&rendered.data.slug, in_dir)?;
@@ -138,7 +131,7 @@ impl<'e> Page<'e> {
          id,
          content: rendered.content,
          data: rendered.data,
-         source: rendered.source,
+         source,
          path,
       })
    }
