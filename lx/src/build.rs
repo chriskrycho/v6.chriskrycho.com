@@ -158,7 +158,7 @@ pub fn build(
 
    // TODO: this is the wrong spot for this. There is enough info to generate this and
    // other such views above, now that I have split the phases apart.
-   let archive = Archive::new(&pages, Order::NewFirst);
+   let _archive = Archive::new(&pages, Order::NewFirst);
 
    // TODO: this and the below are identical, except for the directory from which they
    // come. This is suggestive: maybe extract into a function for handling both, and
@@ -347,9 +347,6 @@ pub enum Error {
 
    #[error(transparent)]
    Glob { source: glob::GlobError },
-
-   #[error("bad path for page")]
-   PagePath { source: page::Error },
 
    #[error("could not strip prefix '{prefix}' from path '{path}'")]
    StripPrefix { prefix: PathBuf, path: PathBuf },

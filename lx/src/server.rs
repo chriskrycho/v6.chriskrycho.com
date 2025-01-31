@@ -71,7 +71,8 @@ pub fn serve(site_dir: &Path) -> Result<(), Error> {
 
    let serve_handle = rt.spawn(serve_in(config.output.clone(), tx.clone()));
    let watch_handle = rt.spawn(watch_in(config.output.clone(), tx.clone()));
-   let rebuild_handle = (); // TODO
+   // TODO: actually *use* the handle!
+   let _rebuild_handle = (); // TODO
 
    match rt.block_on(race_all([serve_handle, watch_handle])) {
       Ok(Ok(_)) => Ok(()),

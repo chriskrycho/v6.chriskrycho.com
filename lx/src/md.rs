@@ -159,7 +159,7 @@ pub enum Error {
 }
 
 #[derive(Debug)]
-enum InvalidKind {
+pub enum InvalidKind {
    Null,
    Bool,
    Number,
