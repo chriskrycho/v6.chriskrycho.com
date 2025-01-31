@@ -43,6 +43,9 @@ pub fn build(
    md: &Markdown,
 ) -> Result<(), Error> {
    trace!("Building in {directory}");
+   trace!("Removing output directory {}", config.output.display());
+
+   std::fs::remove_dir_all(&config.output).expect("can remove directory, right?");
 
    let input_dir = directory.as_ref();
    let site_files = SiteFiles::in_dir(input_dir)?;
@@ -123,6 +126,8 @@ pub fn build(
    // avoids having to do the sorting more than once. So build the taxonomies
    // *second*, as filtered versions of the Archive?
 
+   let content_dir = input_dir.join("content");
+
    let (errors, pages): (Vec<_>, Vec<_>) = prepared_pages
       .into_par_iter()
       .map(|(prepared, source)| {
@@ -135,7 +140,7 @@ pub fn build(
                // TODO: smarten the typography!
                Ok(after_jinja)
             })
-            .and_then(|rendered| Page::from_rendered(rendered, source, input_dir))
+            .and_then(|rendered| Page::from_rendered(rendered, source, &content_dir))
             .map_err(|e| (source.path.clone(), e))
       })
       .partition_map(Either::from);
