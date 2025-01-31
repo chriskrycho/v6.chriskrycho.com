@@ -61,7 +61,7 @@ fn description(
             .and_then(|book| book.review.map(|review| review.to_string())),
       )
       .or(page_data.subtitle.map(|subtitle| subtitle.plain()))
-      .unwrap_or(truncate(content))
+      .unwrap_or_else(|| truncate(content))
 }
 
 fn truncate(content: &str) -> String {
