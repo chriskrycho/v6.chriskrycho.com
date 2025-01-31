@@ -45,7 +45,14 @@ pub fn build(
    trace!("Building in {directory}");
    trace!("Removing output directory {}", config.output.display());
 
-   std::fs::remove_dir_all(&config.output).expect("can remove directory, right?");
+   if let Err(io_err) = std::fs::remove_dir_all(&config.output) {
+      if io_err.kind() != std::io::ErrorKind::NotFound {
+         return Err(Error::RemoveDir {
+            source: io_err,
+            path: config.output.clone(),
+         });
+      }
+   }
 
    let input_dir = directory.as_ref();
    let site_files = SiteFiles::in_dir(input_dir)?;
@@ -355,6 +362,12 @@ pub enum Error {
 
    #[error("invalid template path {path}")]
    TemplatePath { path: PathBuf },
+
+   #[error("could not delete directory '{path}'")]
+   RemoveDir {
+      path: PathBuf,
+      source: std::io::Error,
+   },
 }
 
 impl Error {
