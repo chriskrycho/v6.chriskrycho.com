@@ -11,10 +11,7 @@ lazy_static! {
 
 #[derive(Debug)]
 pub struct Email {
-   /// The username, the bit before the `@`
-   pub local: String,
-   /// The email host, the bit after the `@`
-   pub host: String,
+   validated: String,
 }
 
 impl<'de> Deserialize<'de> for Email {
@@ -38,7 +35,7 @@ impl Serialize for Email {
 
 impl fmt::Display for Email {
    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-      write!(f, "{}@{}", self.local, self.host)
+      write!(f, "{}", self.validated)
    }
 }
 
@@ -50,9 +47,8 @@ impl std::str::FromStr for Email {
          .ok_or(format!("could not parse {}", s))
          .and_then(
             |captures| match (captures.name("local"), captures.name("host")) {
-               (Some(local), Some(host)) => Ok(Email {
-                  local: local.as_str().to_owned(),
-                  host: host.as_str().to_owned(),
+               (Some(..), Some(..)) => Ok(Email {
+                  validated: s.to_string(),
                }),
                (Some(..), None) => Err(format!("missing host name in {}", s)),
                (None, Some(..)) => Err(format!("missing username in {}", s)),
@@ -70,8 +66,7 @@ mod tests {
    #[test]
    fn deserializes_correctly() {
       let result = serde_json::from_str::<Email>(r#""user@example.com""#).unwrap();
-      assert_eq!(result.local, "user");
-      assert_eq!(result.host, "example.com");
+      assert_eq!(result.validated, "user@example.com");
    }
 
    #[test]
