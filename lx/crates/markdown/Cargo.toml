@@ -20,8 +20,8 @@ log = { workspace = true }
 latex2mathml = "0.2"
 lazy_static = { workspace = true }
 pulldown-cmark = { version = "0.12", default-features = false, features = [
-   "simd",
-   "html",
+    "simd",
+    "html",
 ] }
 simplelog = { workspace = true }
 syntect = { workspace = true }

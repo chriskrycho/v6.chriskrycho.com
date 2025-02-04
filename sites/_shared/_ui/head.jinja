@@ -1,4 +1,4 @@
-{% macro head(content, data, config) %}
+{% macro head(content, data, source, config) %}
 
 {% set image = resolved_image(data.image, config.image) %}
 {% set desc = description(data, content) %}
@@ -36,6 +36,12 @@
    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#005fb2" />
    <meta name="msapplication-TileColor" content="#afc7de" />
    <meta name="theme-color" content="#314557" />
+
+   <meta name="twitter:label1" content="Author" />
+   <meta name="twitter:data1" content="Chris Krycho" />
+
+   <meta name="twitter:label2" content="Length" />
+   <meta name="twitter:data2" content="{{ approximate_length(source.contents) }}" />
 
    <script defer src="/vendor/lite-yt-embed.js"></script>
 </head>

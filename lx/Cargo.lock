@@ -451,6 +451,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
+name = "count-md"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a83ca1be73e50a49521ae1c1f1a7c588b1a03c499649d01846b3bc2631f8418e"
+dependencies = [
+ "bitflags 2.6.0",
+ "clap",
+ "clap_complete",
+ "notify 6.1.1",
+ "pulldown-cmark 0.10.3",
+ "rayon",
+ "thiserror 1.0.69",
+ "unicode-segmentation",
+ "xmlparser",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -865,6 +882,15 @@ checksum = "85649ca51fd72272d7821adaf274ad91c288277713d9c18820d8499a7ff69e9a"
 dependencies = [
  "typenum",
  "version_check",
+]
+
+[[package]]
+name = "getopts"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14dbbfd5c71d70241ecf9e6f13737f7b5ce823821063188d7e46c41d371eebd5"
+dependencies = [
+ "unicode-width 0.1.14",
 ]
 
 [[package]]
@@ -1532,6 +1558,7 @@ dependencies = [
  "chrono",
  "clap",
  "clap_complete",
+ "count-md",
  "dirs",
  "futures",
  "glob",
@@ -1572,7 +1599,7 @@ dependencies = [
  "latex2mathml",
  "lazy_static",
  "log",
- "pulldown-cmark",
+ "pulldown-cmark 0.12.2",
  "serde",
  "serde_yaml",
  "simplelog",
@@ -1973,15 +2000,34 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76979bea66e7875e7509c4ec5300112b316af87fa7a252ca91c448b32dfe3993"
+dependencies = [
+ "bitflags 2.6.0",
+ "getopts",
+ "memchr",
+ "pulldown-cmark-escape 0.10.1",
+ "unicase",
+]
+
+[[package]]
+name = "pulldown-cmark"
 version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f86ba2052aebccc42cbbb3ed234b8b13ce76f75c3551a303cb2bcffcff12bb14"
 dependencies = [
  "bitflags 2.6.0",
  "memchr",
- "pulldown-cmark-escape",
+ "pulldown-cmark-escape 0.11.0",
  "unicase",
 ]
+
+[[package]]
+name = "pulldown-cmark-escape"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd348ff538bc9caeda7ee8cad2d1d48236a1f443c1fa3913c6a02fe0043b1dd3"
 
 [[package]]
 name = "pulldown-cmark-escape"
@@ -2704,6 +2750,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "unicode-segmentation"
+version = "1.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
+
+[[package]]
 name = "unicode-width"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3079,6 +3131,12 @@ checksum = "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "xmlparser"
+version = "0.13.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66fee0b777b0f5ac1c69bb06d361268faafa61cd4682ae064a171c16c433e9e4"
 
 [[package]]
 name = "yaml-rust"

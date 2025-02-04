@@ -9,6 +9,7 @@ use crate::{
 };
 
 pub(crate) fn add_all(env: &mut minijinja::Environment<'_>) {
+   env.add_function("approximate_length", approximate_length);
    env.add_function("resolved_title", resolved_title);
    env.add_function("resolved_image", resolved_image);
    env.add_function("description", description);
@@ -87,4 +88,40 @@ fn fancy_debug(name: Option<&str>, args: Rest<Value>) -> String {
    };
 
    format!("{title}<pre><code>{args}</code></pre>")
+}
+
+fn approximate_length(source: &str) -> String {
+   let actual = count_md::count(source);
+
+   let rounded = if actual < 100 {
+      (actual / 10) * 10
+   } else if actual < 1_000 {
+      (actual / 50) * 50
+   } else {
+      (actual / 100) * 100
+   };
+
+   let formatted = {
+      let formatted_number = rounded.to_string();
+      if formatted_number.len() <= 3 {
+         formatted_number
+      } else {
+         formatted_number
+            .chars()
+            .rev()
+            .enumerate()
+            .fold(String::new(), |mut s, (idx, c)| {
+               if idx > 0 && idx % 3 == 0 {
+                  s.push(',');
+               }
+               s.push(c);
+               s
+            })
+            .chars()
+            .rev()
+            .collect()
+      }
+   };
+
+   format!("About {formatted} words")
 }

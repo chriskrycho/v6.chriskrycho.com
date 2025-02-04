@@ -13,7 +13,7 @@ use thiserror::Error;
 
 use crate::{
    data::{config::Config, item::Metadata},
-   page::{Page, RootedPath},
+   page::{Page, RootedPath, Source},
 };
 
 #[derive(Error, Debug)]
@@ -86,6 +86,7 @@ pub fn render(
       data: &'a Metadata,
       config: &'a Config,
       path: &'a RootedPath,
+      source: &'a Source,
    }
 
    debug!(
@@ -108,6 +109,7 @@ pub fn render(
          data: &page.data,
          config: site,
          path: &page.path,
+         source: &page.source,
       },
       into,
    )

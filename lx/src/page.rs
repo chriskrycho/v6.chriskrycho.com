@@ -72,7 +72,7 @@ pub struct Rendered {
 }
 
 /// Source data for a file: where it came from, and its original contents.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Source {
    /// Original source location for the file.
    pub path: PathBuf,
