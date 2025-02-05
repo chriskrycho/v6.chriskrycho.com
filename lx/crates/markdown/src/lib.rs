@@ -134,8 +134,9 @@ impl Markdown {
    }
 }
 
-pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
+pub fn prepare(src: &str) -> Result<(u64, Prepared<'_>), Error> {
    let parser = Parser::new_ext(src, *OPTIONS);
+   let count = todo!();
 
    let mut state = first_pass::FirstPass::new();
 
@@ -198,13 +199,16 @@ pub fn prepare(src: &str) -> Result<Prepared<'_>, Error> {
    let (metadata, first_pass_events, footnote_definitions) =
       state.finalize().map_err(PrepareError::from)?;
 
-   Ok(Prepared {
-      metadata_src: metadata.map(|m| m.to_string()),
-      to_render: ToRender {
-         first_pass_events,
-         footnote_definitions,
+   Ok((
+      count,
+      Prepared {
+         metadata_src: metadata.map(|m| m.to_string()),
+         to_render: ToRender {
+            first_pass_events,
+            footnote_definitions,
+         },
       },
-   })
+   ))
 }
 
 #[derive(Error, Debug)]
