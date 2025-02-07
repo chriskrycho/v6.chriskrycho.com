@@ -51,7 +51,7 @@ pub fn serve(site_dir: &Path) -> Result<(), Error> {
    // This does not presently change for any reason. In principle it *could*, e.g. if I
    // wanted to reload it when config changed to support reloading syntaxes. For now,
    // though, this is sufficient.
-   let md = Markdown::new();
+   let md = Markdown::new(None);
 
    // 1. Run an initial build.
    // 2. Create a watcher on the *input* directory, *not* the output directory.

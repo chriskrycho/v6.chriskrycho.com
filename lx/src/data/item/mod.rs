@@ -82,7 +82,7 @@ impl Metadata {
       let title = work
          .as_ref()
          .map(|work| work.title.clone())
-         .or_else(|| item.title)
+         .or(item.title)
          .ok_or_else(|| Error::MissingRequiredField {
             name: "title".to_string(),
          })?;
@@ -525,7 +525,7 @@ fn nice_list(strings: &[&str]) -> Option<String> {
    }
 }
 
-const DISCUSSES: &'static str = "<b>Heads up:</b> this post directly discusses";
+const DISCUSSES: &str = "<b>Heads up:</b> this post directly discusses";
 
 #[cfg(test)]
 mod tests {
@@ -578,11 +578,11 @@ mod tests {
    #[test]
    fn nice_list_formatting() {
       assert_eq!(
-         nice_list(&vec!["a", "b", "c"]),
+         nice_list(&["a", "b", "c"]),
          Some(String::from("a, b, and c"))
       );
-      assert_eq!(nice_list(&vec!["a", "b"]), Some(String::from("a and b")));
-      assert_eq!(nice_list(&vec!["a"]), Some(String::from("a")));
-      assert_eq!(nice_list(&vec![]), None);
+      assert_eq!(nice_list(&["a", "b"]), Some(String::from("a and b")));
+      assert_eq!(nice_list(&["a"]), Some(String::from("a")));
+      assert_eq!(nice_list(&[]), None);
    }
 }

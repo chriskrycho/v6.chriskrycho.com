@@ -69,7 +69,7 @@ pub(super) fn second_pass<'e>(
    Ok(state.into_iter())
 }
 
-impl<'e, 's> State<'e, 's> {
+impl<'e> State<'e, '_> {
    /// Returns `Some(String)` when it could successfully emit an event but there was
    /// something unexpected about it, e.g. a footnote with a missing definition.
    fn handle(
@@ -371,7 +371,7 @@ enum Highlighting<'s> {
    KnownSyntax(ClassedHTMLGenerator<'s>),
 }
 
-impl<'a> std::fmt::Debug for Highlighting<'a> {
+impl std::fmt::Debug for Highlighting<'_> {
    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
       match self {
          Self::RequiresFirstLineParse => write!(f, "RequiresFirstLineParse"),

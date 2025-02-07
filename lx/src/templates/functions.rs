@@ -80,7 +80,7 @@ fn truncate(content: &str) -> String {
 fn fancy_debug(name: Option<&str>, args: Rest<Value>) -> String {
    let title = name.map(|n| format!("<p>{n}:</p>")).unwrap_or_default();
    let args = if args.is_empty() {
-      format!("{{no args!}}")
+      "{no args!}".to_string()
    } else if args.len() == 1 {
       format!("{:#?}", args.0[0])
    } else {

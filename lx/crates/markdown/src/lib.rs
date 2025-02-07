@@ -90,9 +90,9 @@ pub struct Markdown {
 }
 
 impl Markdown {
-   pub fn new() -> Markdown {
+   pub fn new(syntax_set: Option<SyntaxSet>) -> Markdown {
       Markdown {
-         syntax_set: load_syntaxes(), // TODO: pull from location?
+         syntax_set: syntax_set.unwrap_or_else(load_syntaxes), // TODO: pull from location?
       }
    }
 
