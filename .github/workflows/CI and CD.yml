@@ -46,7 +46,7 @@ jobs:
   check:
     name: Lint and Test
     needs: [changes]
-    if: needs.changes.outputs.lx == 'true' || github.event_name == 'workflow_dispatch'
+    if: ${{ needs.changes.outputs.lx == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -63,7 +63,11 @@ jobs:
   release:
     name: Create and upload release
     needs: [check]
-    if: github.event.pull_request.user.login == 'chriskrycho'
+    if: ${{
+      github.event.push.commits.author.username == 'chriskrycho' ||
+      github.event.pull_request.user.login == 'chriskrycho' ||
+      github.actor == 'chriskrycho'
+      }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
