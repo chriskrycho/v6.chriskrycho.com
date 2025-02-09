@@ -8,12 +8,14 @@ IFS=$'\n\t'
 
 RELEASES="https://github.com/chriskrycho/v6.chriskrycho.com/releases"
 LATEST="${RELEASES}/latest/download/lx"
-OUTPUT="lx.tgz"
+OUTPUT="lx-cli"
+rm -f $OUTPUT
 
 download() {
   local url="$1"
   local output="$2"
-  echo "fetching ${url}"
+
+  echo "fetching '$url' to '$output'"
 
   curl --location \
     --proto '=https' --tlsv1.2 \
@@ -26,13 +28,17 @@ download_for_pr() {
   local sha
   sha=$(git rev-parse --short HEAD)
 
-  local pr="${RELEASES}/lx-${sha}/download/lx-${sha}.tgz"
+  local pr="${RELEASES}/download/lx-${sha}/lx"
 
   local pr_result
-  pr_result=$(download "$pr" $OUTPUT)
+  pr_result=$(download "$pr" "$OUTPUT")
 
-  if [[ "$pr_result" -ne 0 ]]; then
-    download "$LATEST" "$OUTPUT"
+  local pr_exit=$?;
+  echo "PR: $pr_exit $pr_result"
+
+  if [[ "$pr_exit" -ne 0 ]]; then
+    echo "falling back to latest: $LATEST"
+    download $LATEST $OUTPUT
   fi
 }
 
@@ -40,8 +46,9 @@ download_for_pr() {
 # was triggered by a pull request or not.
 download_for_pr || exit $?
 
-tar --extract --gzip --file "$OUTPUT"
+chmod +x $OUTPUT
 
 # build the site!
 SITE_NAME="$1"
-./lx build "./sites/${SITE_NAME}"
+echo "building '$SITE_NAME'"
+./lx-cli build "./sites/${SITE_NAME}"
