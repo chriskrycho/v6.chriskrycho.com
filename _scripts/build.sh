@@ -13,6 +13,8 @@ OUTPUT="lx.tgz"
 download() {
   local url="$1"
   local output="$2"
+  echo "fetching ${url}"
+
   curl --location \
     --proto '=https' --tlsv1.2 \
     --silent --show-error --fail \
