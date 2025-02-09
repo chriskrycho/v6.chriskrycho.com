@@ -151,9 +151,16 @@ jobs:
       }}
     runs-on: ubuntu-latest
     steps:
-      - env:
-          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_MUSIC }}
-        run: curl "$deploy_url"
+      - uses: actions/checkout@v4
+      - name: Render deploy hook
+        env:
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_V6 }}
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            SHA=$(git rev-parse --short HEAD)
+            deploy_url="${deploy_url}&ref=${SHA}"
+          fi
+          curl "$deploy_url"
 
   trigger-deploy-v6:
     needs: [changes, run-everything, build-check]
@@ -163,6 +170,13 @@ jobs:
       }}
     runs-on: ubuntu-latest
     steps:
-      - env:
+      - uses: actions/checkout@v4
+      - name: Render deploy hook
+        env:
           deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_V6 }}
-        run: curl "$deploy_url"
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            SHA=$(git rev-parse --short HEAD)
+            deploy_url="${deploy_url}&ref=${SHA}"
+          fi
+          curl "$deploy_url"
