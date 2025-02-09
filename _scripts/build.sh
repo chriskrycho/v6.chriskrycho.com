@@ -22,7 +22,7 @@ download() {
 
 download_for_pr() {
   local sha
-  sha=$(git rev-parse HEAD)
+  sha=$(git rev-parse --short HEAD)
 
   local pr="${RELEASES}/lx-${sha}/download/lx-${sha}.tgz"
 
@@ -34,11 +34,9 @@ download_for_pr() {
   fi
 }
 
-if [[ "$IS_PULL_REQUEST" == "true" ]]; then
-  download_for_pr || exit $?
-else
-  download || exit $?
-fi
+# This works regardless of whether Render understands that a given deploy hook
+# was triggered by a pull request or not.
+download_for_pr || exit $?
 
 tar --extract --gzip --file "$OUTPUT"
 
