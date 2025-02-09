@@ -43,27 +43,10 @@ jobs:
       www: ${{ steps.filter.outputs.www }}
       cfg: ${{ steps.filter.outputs.cfg }}
 
-  run-everything:
-    needs: [changes]
-    name: Figure out whether to run everything
-    runs-on: ubuntu-latest
-    steps:
-      - id: check
-        name: Check whether workflow was manually dispatched or changed config
-        run: |
-          because_dispatch="$([[ ${{ github.event_name == 'workflow_dispatch' }} ]] && echo true || echo false)"
-          because_cfg_change="$([[ ${{ needs.changes.outputs.cfg == 'true' }} ]] && echo true || echo false)"
-
-          STATE=$([[ $because_dispatch == "true" || $because_cfg_change == "true" ]] && echo true || echo false)
-          echo "state: $STATE"
-          echo "state=$STATE" >> $GITHUB_OUTPUT
-    outputs:
-      state: ${{ steps.check.outputs.state }}
-
   check:
     name: Lint and Test
-    needs: [changes, run-everything]
-    if: needs.changes.outputs.lx == 'true' || needs.run-everything.outputs.state == 'true'
+    needs: [changes]
+    if: needs.changes.outputs.lx == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -142,9 +125,9 @@ jobs:
       state: ${{ steps.check.outputs.state }}
 
   trigger-deploy-music:
-    needs: [changes, run-everything, build-check]
+    needs: [changes, build-check]
     if: ${{
-      ((needs.changes.outputs.music == 'true' || needs.run-everything.outputs.state == 'true')
+      ((needs.changes.outputs.music == 'true' || needs.changes.outputs.cfg == 'true' || github.event_name == 'workflow_dispatch')
       && needs.build-check.outputs.state == 'non-needed'
       )
       || needs.build-check.outputs.state == 'succeeded'
@@ -154,7 +137,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Render deploy hook
         env:
-          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_V6 }}
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_MUSIC }}
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             SHA=$(git rev-parse --short HEAD)
@@ -163,9 +146,10 @@ jobs:
           curl "$deploy_url"
 
   trigger-deploy-v6:
-    needs: [changes, run-everything, build-check]
+    needs: [changes, build-check]
     if: ${{
-      ((needs.changes.outputs.v6 == 'true' || needs.run-everything.outputs.state == 'true') && needs.build-check.outputs.state == 'non-needed')
+      ((needs.changes.outputs.v6 == 'true' || needs.changes.outputs.cfg == 'true' || github.event_name == 'workflow_dispatch')
+      && needs.build-check.outputs.state == 'non-needed')
       || needs.build-check.outputs.state == 'succeeded'
       }}
     runs-on: ubuntu-latest
