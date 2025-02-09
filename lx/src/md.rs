@@ -17,7 +17,7 @@ pub fn convert(
       .read_to_string(&mut src)
       .map_err(|source| Error::ReadBuffer { source })?;
 
-   let (meta, rendered) = lx_md::Markdown::new()
+   let (meta, rendered) = lx_md::Markdown::new(None)
       .render(&src, |s| Ok(s.to_string()))
       .map_err(Error::from)?;
 
@@ -72,7 +72,7 @@ pub fn convert(
       }
    }
 
-   write(&rendered.html(), &mut output)?;
+   write(rendered.html(), &mut output)?;
 
    if include.wrapping_html {
       write("</body></html>", &mut output)?;
@@ -89,46 +89,46 @@ fn write(src: &str, dest: &mut Box<dyn Write>) -> Result<(), Error> {
 
 fn yaml_to_html(
    source: &serde_yaml::Value,
-   mut output: &mut Box<dyn Write>,
+   output: &mut Box<dyn Write>,
 ) -> Result<(), Error> {
    match source {
-      Value::Null => write("(null)", &mut output),
-      Value::Bool(bool) => write(&bool.to_string(), &mut output),
-      Value::Number(number) => write(&number.to_string(), &mut output),
-      Value::String(string) => write(&string, &mut output),
+      Value::Null => write("(null)", output),
+      Value::Bool(bool) => write(&bool.to_string(), output),
+      Value::Number(number) => write(&number.to_string(), output),
+      Value::String(string) => write(string, output),
       Value::Sequence(values) => {
-         write("<ul>", &mut output)?;
+         write("<ul>", output)?;
          for value in values {
-            yaml_to_html(value, &mut output)?;
+            yaml_to_html(value, output)?;
          }
-         write("</ul>", &mut output)?;
+         write("</ul>", output)?;
          Ok(())
       }
       Value::Mapping(mapping) => {
-         write("<table>", &mut output)?;
+         write("<table>", output)?;
          let (keys, values) = mapping.into_iter().collect::<(Vec<_>, Vec<_>)>();
-         if keys.len() > 0 {
-            write("<thead><tr>", &mut output)?;
+         if !keys.is_empty() {
+            write("<thead><tr>", output)?;
             for key in keys {
-               write("<th>", &mut output)?;
-               yaml_to_html(key, &mut output)?;
-               write("</th>", &mut output)?;
+               write("<th>", output)?;
+               yaml_to_html(key, output)?;
+               write("</th>", output)?;
             }
-            write("</tr></thead>", &mut output)?;
+            write("</tr></thead>", output)?;
 
-            write("<tbody><tr>", &mut output)?;
+            write("<tbody><tr>", output)?;
             for value in values {
-               write("<td>", &mut output)?;
-               yaml_to_html(value, &mut output)?;
-               write("</td>", &mut output)?;
+               write("<td>", output)?;
+               yaml_to_html(value, output)?;
+               write("</td>", output)?;
             }
-            write("</tr></tbody>", &mut output)?;
+            write("</tr></tbody>", output)?;
          }
 
-         write("</table>", &mut output)?;
+         write("</table>", output)?;
          Ok(())
       }
-      Value::Tagged(tagged_value) => write(&format!("{tagged_value:?}"), &mut output),
+      Value::Tagged(tagged_value) => write(&format!("{tagged_value:?}"), output),
    }
 }
 

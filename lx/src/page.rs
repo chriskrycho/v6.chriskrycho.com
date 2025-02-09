@@ -1,5 +1,6 @@
 use std::{
    collections::HashMap,
+   fmt,
    hash::Hash,
    os::unix::prelude::OsStrExt,
    path::{Path, PathBuf},
@@ -35,7 +36,7 @@ pub fn prepare<'e>(
             source,
             cascade,
             String::from("base.jinja"), // TODO: not this
-            &md,
+            md,
          )
          .map_err(Error::from)
       })?;
@@ -50,7 +51,7 @@ pub struct Prepared<'e> {
    to_render: ToRender<'e>,
 }
 
-impl<'e> Prepared<'e> {
+impl Prepared<'_> {
    pub fn render(
       self,
       md: &Markdown,
@@ -84,9 +85,9 @@ pub struct Source {
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Deserialize, Serialize)]
 pub struct Id(Uuid);
 
-impl Id {
-   fn to_string(&self) -> String {
-      self.0.to_string()
+impl fmt::Display for Id {
+   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+      write!(f, "{}", self.0)
    }
 }
 
@@ -211,7 +212,7 @@ pub struct PageAndConfig<'p, 'c, 'e>(pub &'p Page<'e>, pub &'c Config);
 
 // TODO: This will need to take `From` a different type, one that wraps `Page`
 // and probably also `Config` (e.g. to build the full URL).
-impl<'p, 'c, 'e> From<PageAndConfig<'p, 'c, 'e>> for json_feed::FeedItem {
+impl From<PageAndConfig<'_, '_, '_>> for json_feed::FeedItem {
    fn from(PageAndConfig(page, config): PageAndConfig) -> Self {
       json_feed::FeedItem {
          id: page.id.to_string(),
@@ -239,7 +240,7 @@ pub trait Updated {
    fn updated(&self) -> DateTime<FixedOffset>;
 }
 
-impl<'e> Updated for [Page<'e>] {
+impl Updated for [Page<'_>] {
    fn updated(&self) -> chrono::DateTime<chrono::FixedOffset> {
       self
          .iter()

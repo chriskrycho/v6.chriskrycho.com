@@ -57,7 +57,7 @@ where
    for path in templates {
       let path = path.as_ref();
       let name = trim_root(path)?.to_string_lossy().to_string();
-      let content = std::fs::read_to_string(&path)?;
+      let content = std::fs::read_to_string(path)?;
       trace!("Adding template at {name}");
       env.add_template_owned(name, content).map_err(|source| {
          Error::CouldNotAddTemplate {
@@ -109,7 +109,7 @@ pub fn render(
          data: &page.data,
          config: site,
          path: &page.path,
-         source: &page.source,
+         source: page.source,
       },
       into,
    )

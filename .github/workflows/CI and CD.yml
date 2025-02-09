@@ -1,0 +1,145 @@
+name: Continuous Integration and Deployment
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
+
+jobs:
+  changes:
+    name: Identify changes
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            lx:
+              - lx/Cargo.toml
+              - lx/Cargo.lock
+              - lx/src/**
+              - lx/crates/**
+            links: [sites/music/**]
+            music: [sites/music/**]
+            v6: [sites/v6/**]
+            www: [sites/www/**]
+    outputs:
+      lx: ${{ steps.filter.outputs.lx }}
+      links: ${{ steps.filter.outputs.links }}
+      music: ${{ steps.filter.outputs.music }}
+      v6: ${{ steps.filter.outputs.v6 }}
+      www: ${{ steps.filter.outputs.www }}
+
+  check:
+    name: Lint and Test
+    needs: changes
+    if: needs.changes.outputs.lx == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lx
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@nextest
+      - run: cargo fmt --all --quiet -- --check
+      - run: cargo clippy --locked --no-deps
+      - run: cargo nextest run --no-fail-fast
+
+  release:
+    name: Create and upload release
+    needs: [check]
+    if: github.event.pull_request.user.login == 'chriskrycho'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lx
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Create release build
+        run: cargo build --locked --release
+
+      - name: Confirm release results
+        run: ls -l target/release/lx
+
+      - name: Generate Release Name
+        id: release_name
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          echo "release_name=lx-${SHA}" >> $GITHUB_OUTPUT
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: lx/target/release/lx
+          fail_on_unmatched_files: true
+          name: ${{ steps.release_name.outputs.release_name }}
+          tag_name: ${{ steps.release_name.outputs.release_name }}
+          prerelease: ${{ github.event_name == 'pull_request' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-check:
+    name: Check build results
+    needs: [check, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        id: check
+        run: |
+          check_result="${{ needs.check.result }}"
+          release_result="${{ needs.release.result }}"
+
+          all_skipped=$([[ $check_result == "skipped" ]] && echo true || echo false)
+          all_success=$([[ $check_result == "success" && $release_result == "success" ]] && echo true || echo false)
+
+          if [[ $all_skipped == "true" ]]; then
+            STATE=not-needed
+          elif [[ $all_success == "true" ]]; then
+            STATE=succeeded
+          else
+            STATE=failed
+          fi
+
+          echo "state: $STATE"
+          echo "state=$STATE" >> $GITHUB_OUTPUT
+    outputs:
+      state: ${{ steps.check.outputs.state }}
+
+  trigger-deploy-music:
+    needs: [changes, build-check]
+    if: ${{
+      (needs.changes.outputs.music == 'true' && needs.build-check.outputs.state == 'non-needed')
+      || needs.build-check.outputs.state == 'succeeded'
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_MUSIC }}
+        run: curl "$deploy_url"
+
+  trigger-deploy-v6:
+    needs: [changes, build-check]
+    if: ${{
+      (needs.changes.outputs.v6 == 'true' && needs.build-check.outputs.state == 'non-needed')
+      || needs.build-check.outputs.state == 'succeeded'
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_V6 }}
+        run: curl "$deploy_url"

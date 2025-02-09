@@ -101,7 +101,7 @@ impl State<ExtractingMetadata> {
 /// received the 'end the metadata block' event.
 #[derive(Debug)]
 pub(super) struct ExtractedMetadata<'e>(CowStr<'e>);
-impl<'e> ParseState for ExtractedMetadata<'e> {}
+impl ParseState for ExtractedMetadata<'_> {}
 
 impl<'e> State<ExtractedMetadata<'e>> {
    pub(super) fn start_content(self) -> State<Content<'e>> {
@@ -132,7 +132,7 @@ impl<'e> Content<'e> {
    }
 }
 
-impl<'e> ParseState for Content<'e> {}
+impl ParseState for Content<'_> {}
 
 impl<'e> State<Content<'e>> {
    /// "Handling" events consists, at this stage, of just distinguishing between
@@ -209,6 +209,6 @@ mod private {
    pub(crate) trait Sealed {}
    impl Sealed for super::Initial {}
    impl Sealed for super::ExtractingMetadata {}
-   impl<'e> Sealed for super::ExtractedMetadata<'e> {}
-   impl<'e> Sealed for super::Content<'e> {}
+   impl Sealed for super::ExtractedMetadata<'_> {}
+   impl Sealed for super::Content<'_> {}
 }

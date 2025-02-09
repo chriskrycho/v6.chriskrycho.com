@@ -9,6 +9,7 @@
    "languages": {
       "TOML": { "tab_size": 4 },
       "YAML": { "tab_size": 2 },
+      "Shell Script": { "tab_size": 2 },
       "Rust": {
          "soft_wrap": "bounded",
          "preferred_line_length": 90
@@ -18,6 +19,15 @@
          "soft_wrap": "bounded",
          "preferred_line_length": 80,
          "tab_size": 4
+      }
+   },
+   "lsp": {
+      "rust-analyzer": {
+         "initialization_options": {
+            "check": {
+               "command": "clippy" // rust-analyzer.check.command (default: "check")
+            }
+         }
       }
    }
 }

@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+   error, fmt, fs, io,
+   path::{Path, PathBuf},
+};
 
 use lazy_static::lazy_static;
 use log::{debug, error, trace};
@@ -22,7 +25,7 @@ use crate::{
 
 pub fn build_in(directory: Canonicalized) -> Result<(), Error> {
    let config = config_for(&directory)?;
-   let md = Markdown::new();
+   let md = Markdown::new(None);
 
    // TODO: further split this apart.
    build(directory, &config, &md)
@@ -45,8 +48,8 @@ pub fn build(
    trace!("Building in {directory}");
    trace!("Removing output directory {}", config.output.display());
 
-   if let Err(io_err) = std::fs::remove_dir_all(&config.output) {
-      if io_err.kind() != std::io::ErrorKind::NotFound {
+   if let Err(io_err) = fs::remove_dir_all(&config.output) {
+      if io_err.kind() != io::ErrorKind::NotFound {
          return Err(Error::RemoveDir {
             source: io_err,
             path: config.output.clone(),
@@ -61,7 +64,7 @@ pub fn build(
    let shared_dir = input_dir.parent().map(|parent| parent.join("_shared"));
    let mut shared_files = shared_dir
       .as_ref()
-      .map(|dir| SharedFiles::in_dir(&dir))
+      .map(|dir| SharedFiles::in_dir(dir))
       .transpose()?;
 
    trace!(
@@ -100,7 +103,7 @@ pub fn build(
    })?;
 
    // TODO: actual error handling here, please.
-   std::fs::create_dir_all(&config.output).expect("Can create output dir");
+   fs::create_dir_all(&config.output).expect("Can create output dir");
 
    let sources = load_sources(&site_files.content)?;
 
@@ -116,7 +119,7 @@ pub fn build(
       // the map call depending on what kind of file it is.
       .filter(|source| source.path.extension().is_some_and(|ext| ext == "md"))
       .map(|source| {
-         page::prepare(&md, &source, &cascade)
+         page::prepare(md, source, &cascade)
             .map(|prepared| (prepared, source))
             .map_err(|e| (source.path.clone(), e))
       })
@@ -176,13 +179,13 @@ pub fn build(
             })?;
          let path = config.output.join(relative_path);
          let output_dir = path.parent().expect("must have a real parent");
-         std::fs::create_dir_all(output_dir).map_err(|source| {
+         fs::create_dir_all(output_dir).map_err(|source| {
             Error::CreateOutputDirectory {
                path: output_dir.to_owned(),
                source,
             }
          })?;
-         std::fs::copy(&static_file, &path).map_err(|source| Error::CopyFile {
+         fs::copy(static_file, &path).map_err(|source| Error::CopyFile {
             from: static_file.clone(),
             to: path,
             source,
@@ -200,13 +203,11 @@ pub fn build(
          })?;
       let path = config.output.join(relative_path);
       let output_dir = path.parent().expect("must have a real parent");
-      std::fs::create_dir_all(output_dir).map_err(|source| {
-         Error::CreateOutputDirectory {
-            path: output_dir.to_owned(),
-            source,
-         }
+      fs::create_dir_all(output_dir).map_err(|source| Error::CreateOutputDirectory {
+         path: output_dir.to_owned(),
+         source,
       })?;
-      std::fs::copy(&static_file, &path).map_err(|source| Error::CopyFile {
+      fs::copy(static_file, &path).map_err(|source| Error::CopyFile {
          from: static_file.clone(),
          to: path,
          source,
@@ -224,17 +225,15 @@ pub fn build(
          .parent()
          .unwrap_or_else(|| panic!("{} should have a containing dir!", path.display()));
 
-      std::fs::create_dir_all(containing_dir).map_err(|e| {
-         Error::CreateOutputDirectory {
-            path: containing_dir.to_owned(),
-            source: e,
-         }
+      fs::create_dir_all(containing_dir).map_err(|e| Error::CreateOutputDirectory {
+         path: containing_dir.to_owned(),
+         source: e,
       })?;
 
       let mut buf = Vec::new();
       templates::render(&jinja_env, &page, config, &mut buf)?;
 
-      std::fs::write(&path, buf).map_err(|source| Error::WriteFile { path, source })?;
+      fs::write(&path, buf).map_err(|source| Error::WriteFile { path, source })?;
    }
 
    for sass_file in site_files
@@ -253,8 +252,7 @@ pub fn build(
             })?;
 
       let path = config.output.join(relative_path).with_extension("css");
-      std::fs::write(&path, converted)
-         .map_err(|source| Error::WriteFile { path, source })?;
+      fs::write(&path, converted).map_err(|source| Error::WriteFile { path, source })?;
    }
 
    Ok(())
@@ -269,7 +267,7 @@ where
    let mut errors = Vec::new();
    for path in source_files {
       let path = path.as_ref();
-      match std::fs::read_to_string(path) {
+      match fs::read_to_string(path) {
          Ok(contents) => sources.push(Source {
             path: path.to_owned(),
             contents,
@@ -321,23 +319,17 @@ pub enum Error {
    Page(PageError),
 
    #[error("could not create output directory '{path}'")]
-   CreateOutputDirectory {
-      path: PathBuf,
-      source: std::io::Error,
-   },
+   CreateOutputDirectory { path: PathBuf, source: io::Error },
 
    #[error("could not copy from {from} to {to}")]
    CopyFile {
       from: PathBuf,
       to: PathBuf,
-      source: std::io::Error,
+      source: io::Error,
    },
 
    #[error("could not write to {path}")]
-   WriteFile {
-      path: PathBuf,
-      source: std::io::Error,
-   },
+   WriteFile { path: PathBuf, source: io::Error },
 
    #[error("bad glob pattern: '{pattern}'")]
    GlobPattern {
@@ -361,17 +353,14 @@ pub enum Error {
    TemplatePath { path: PathBuf },
 
    #[error("could not delete directory '{path}'")]
-   RemoveDir {
-      path: PathBuf,
-      source: std::io::Error,
-   },
+   RemoveDir { path: PathBuf, source: io::Error },
 }
 
 impl Error {
    fn rewrite(
       source: minijinja::Error,
       text: &str,
-   ) -> Box<dyn std::error::Error + Send + Sync> {
+   ) -> Box<dyn error::Error + Send + Sync> {
       Box::new(Error::Rewrite {
          source,
          text: text.to_owned(),
@@ -405,8 +394,8 @@ pub struct PageError {
    kind: PageErrorKind,
 }
 
-impl std::fmt::Display for PageError {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for PageError {
+   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
       let count = self.errors.len();
       match self.kind {
          PageErrorKind::Prepare => {
@@ -427,8 +416,8 @@ impl std::fmt::Display for PageError {
 #[derive(Error, Debug)]
 pub struct RewriteErrors(Vec<(PathBuf, minijinja::Error)>);
 
-impl std::fmt::Display for RewriteErrors {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for RewriteErrors {
+   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
       let errors = &self.0;
       writeln!(f, "could not rewrite {} pages", errors.len())?;
       for (path, error) in errors {
@@ -443,7 +432,7 @@ impl std::fmt::Display for RewriteErrors {
 #[derive(Error, Debug)]
 #[error("Could not load file {path}")]
 pub struct ContentError {
-   source: std::io::Error,
+   source: io::Error,
    path: PathBuf,
 }
 
@@ -487,8 +476,8 @@ impl SiteFiles {
    }
 }
 
-impl std::fmt::Display for SiteFiles {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for SiteFiles {
+   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
       let sep = String::from("\n      ");
       let empty = String::from(" (none)");
 
@@ -538,8 +527,8 @@ impl SharedFiles {
    }
 }
 
-impl std::fmt::Display for SharedFiles {
-   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for SharedFiles {
+   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
       let sep = String::from("\n      ");
       let empty = String::from(" (none)");
 
