@@ -1,6 +1,7 @@
 name: Continuous Integration and Deployment
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -42,7 +43,7 @@ jobs:
   check:
     name: Lint and Test
     needs: changes
-    if: needs.changes.outputs.lx == 'true'
+    if: needs.changes.outputs.lx == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -123,7 +124,9 @@ jobs:
   trigger-deploy-music:
     needs: [changes, build-check]
     if: ${{
-      (needs.changes.outputs.music == 'true' && needs.build-check.outputs.state == 'non-needed')
+      ((needs.changes.outputs.music == 'true' || github.event_name == 'workflow_dispatch')
+      && needs.build-check.outputs.state == 'non-needed'
+      )
       || needs.build-check.outputs.state == 'succeeded'
       }}
     runs-on: ubuntu-latest
@@ -135,7 +138,7 @@ jobs:
   trigger-deploy-v6:
     needs: [changes, build-check]
     if: ${{
-      (needs.changes.outputs.v6 == 'true' && needs.build-check.outputs.state == 'non-needed')
+      ((needs.changes.outputs.v6 == 'true' || github.event_name == 'workflow_dispatch') && needs.build-check.outputs.state == 'non-needed')
       || needs.build-check.outputs.state == 'succeeded'
       }}
     runs-on: ubuntu-latest
