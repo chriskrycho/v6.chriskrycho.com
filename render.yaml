@@ -24,7 +24,7 @@ services:
         - site/styles/**
         - sites/music/**
     buildCommand: |
-      bash ./scripts/build music
+      bash ./_scripts/build music
 
     staticPublishPath: './sites/music/public'
     domain: music.chriskrycho.com
