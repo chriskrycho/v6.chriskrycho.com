@@ -7,7 +7,7 @@ set -o errexit -o nounset -o pipefail
 IFS=$'\n\t'
 
 RELEASES="https://github.com/chriskrycho/v6.chriskrycho.com/releases"
-LATEST="${RELEASES}/latest/download/lx"
+LATEST="${RELEASES}/latest/download/lx-linux-musl"
 OUTPUT="lx-cli"
 rm -f $OUTPUT
 
@@ -28,7 +28,7 @@ download_for_pr() {
   local sha
   sha=$(git rev-parse --short HEAD)
 
-  local pr="${RELEASES}/download/lx-${sha}/lx"
+  local pr="${RELEASES}/download/lx-${sha}/lx-linux-musl"
 
   local pr_result
   pr_result=$(download "$pr" "$OUTPUT")
