@@ -63,5 +63,5 @@ chmod +x $OUTPUT
 # build the site!
 SITE_NAME="$1"
 echo "building '$SITE_NAME'"
-lx-cli build "./sites/${SITE_NAME}" || { echo "Build failed with exit code $?"; }
-rm lx-cli
+./lx-cli publish "./sites/${SITE_NAME}" || { echo "Build failed with exit code $?"; }
+rm ./lx-cli
