@@ -15,7 +15,7 @@ env:
 jobs:
   changes:
     name: Identify changes
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     permissions:
       pull-requests: read
     steps:
@@ -33,7 +33,7 @@ jobs:
             music: [sites/music/**, sites/_shared]
             v6: [sites/v6/**, sites/_shared]
             www: [sites/www/**, sites/_shared]
-            cfg: [render.yaml, _scripts/**]
+            cfg: [render.yaml, _scripts/**, .github/workflows/**]
 
     outputs:
       lx: ${{ steps.filter.outputs.lx }}
@@ -46,14 +46,14 @@ jobs:
   check:
     name: Lint and Test
     needs: [changes]
-    if: ${{ needs.changes.outputs.lx == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
+    if: ${{ needs.changes.outputs.lx == 'true' || needs.changes.outputs.cfg == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
       - run: cargo fmt --all --quiet -- --check
+      - run: cargo check --locked
       - run: cargo clippy --locked -- --no-deps
       - run: cargo nextest run --locked --no-fail-fast
 
@@ -67,10 +67,9 @@ jobs:
       }}
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Create release build
         run: cargo build --locked --release
@@ -99,7 +98,7 @@ jobs:
   build-check:
     name: Check build results
     needs: [check, release]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Check results
         id: check
@@ -131,7 +130,7 @@ jobs:
       )
       || needs.build-check.outputs.state == 'succeeded'
       }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Render deploy hook
@@ -151,7 +150,7 @@ jobs:
       && needs.build-check.outputs.state == 'non-needed')
       || needs.build-check.outputs.state == 'succeeded'
       }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Render deploy hook
