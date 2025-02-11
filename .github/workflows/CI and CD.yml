@@ -15,7 +15,7 @@ env:
 jobs:
   changes:
     name: Identify changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       pull-requests: read
     steps:
@@ -25,8 +25,8 @@ jobs:
         with:
           filters: |
             lx:
-              - lx/Cargo.toml
-              - lx/Cargo.lock
+              - Cargo.toml
+              - Cargo.lock
               - lx/src/**
               - lx/crates/**
             links: [sites/music/**, sites/_shared]
@@ -48,19 +48,16 @@ jobs:
     needs: [changes]
     if: ${{ needs.changes.outputs.lx == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: lx
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: x86_64-unknown-linux-musl
+        # with:
+        # target: x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
       - run: cargo fmt --all --quiet -- --check
-      - run: cargo clippy --locked --no-deps
-      - run: cargo nextest run --no-fail-fast
+      - run: cargo clippy --locked -- --no-deps
+      - run: cargo nextest run --locked --no-fail-fast
 
   release:
     name: Create and upload release
@@ -73,9 +70,6 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: lx
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
@@ -89,7 +83,7 @@ jobs:
       - name: Confirm release results
         run: |
           ls -l target/release/lx
-          mv target/release/lx ../lx-linux-musl
+          mv target/release/lx lx-linux-musl
 
       - name: Generate Release Name
         id: release_name
