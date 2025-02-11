@@ -15,7 +15,7 @@ env:
 jobs:
   changes:
     name: Identify changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       pull-requests: read
     steps:
@@ -51,8 +51,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: x86_64-unknown-linux-musl
+        # with:
+        # target: x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
       - run: cargo fmt --all --quiet -- --check
