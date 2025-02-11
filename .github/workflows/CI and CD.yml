@@ -60,11 +60,7 @@ jobs:
   release:
     name: Create and upload release
     needs: [check]
-    if: ${{
-      github.event.push.commits.author.username == 'chriskrycho' ||
-      github.event.pull_request.user.login == 'chriskrycho' ||
-      github.actor == 'chriskrycho'
-      }}
+    if: ${{ github.event.push.commits.author.username == 'chriskrycho' && github.ref == 'refs/heads/main'}}
     permissions:
       contents: write
     runs-on: ubuntu-22.04
@@ -74,10 +70,11 @@ jobs:
       - name: Create release build
         run: cargo build --locked --release
 
-      - name: Confirm release results
-        run: |
-          ls -l target/release/lx
-          mv target/release/lx lx-linux
+      - name: Show release build info
+        run: ls -l target/release/lx
+
+      - name: Rename and move release binary
+        run: mv target/release/lx lx-linux
 
       - name: Generate Release Name
         id: release_name
@@ -91,7 +88,6 @@ jobs:
           fail_on_unmatched_files: true
           name: ${{ steps.release_name.outputs.release_name }}
           tag_name: ${{ steps.release_name.outputs.release_name }}
-          prerelease: ${{ github.event_name == 'pull_request' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -125,10 +121,10 @@ jobs:
   trigger-deploy-music:
     needs: [changes, build-check]
     if: ${{
-      ((needs.changes.outputs.music == 'true' || needs.changes.outputs.cfg == 'true' || github.event_name == 'workflow_dispatch')
-      && needs.build-check.outputs.state == 'non-needed'
-      )
-      || needs.build-check.outputs.state == 'succeeded'
+      github.ref == 'refs/heads/main' &&
+      (((needs.changes.outputs.music == 'true' || needs.changes.outputs.cfg == 'true' || github.event_name == 'workflow_dispatch')
+      && needs.build-check.outputs.state == 'non-needed')
+      || needs.build-check.outputs.state == 'succeeded')
       }}
     runs-on: ubuntu-22.04
     steps:
@@ -136,19 +132,15 @@ jobs:
       - name: Render deploy hook
         env:
           deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_MUSIC }}
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            SHA=$(git rev-parse --short HEAD)
-            deploy_url="${deploy_url}&ref=${SHA}"
-          fi
-          curl "$deploy_url"
+        run: curl "$deploy_url"
 
   trigger-deploy-v6:
     needs: [changes, build-check]
     if: ${{
-      ((needs.changes.outputs.v6 == 'true' || needs.changes.outputs.cfg == 'true' || github.event_name == 'workflow_dispatch')
+      github.ref == 'refs/heads/main' &&
+      (((needs.changes.outputs.v6 == 'true' || needs.changes.outputs.cfg == 'true' || github.event_name == 'workflow_dispatch')
       && needs.build-check.outputs.state == 'non-needed')
-      || needs.build-check.outputs.state == 'succeeded'
+      || needs.build-check.outputs.state == 'succeeded')
       }}
     runs-on: ubuntu-22.04
     steps:
@@ -156,9 +148,4 @@ jobs:
       - name: Render deploy hook
         env:
           deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_V6 }}
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            SHA=$(git rev-parse --short HEAD)
-            deploy_url="${deploy_url}&ref=${SHA}"
-          fi
-          curl "$deploy_url"
+        run: curl "$deploy_url"
