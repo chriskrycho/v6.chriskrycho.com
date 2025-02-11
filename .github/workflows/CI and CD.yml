@@ -15,7 +15,7 @@ env:
 jobs:
   changes:
     name: Identify changes
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     permissions:
       pull-requests: read
     steps:
@@ -51,8 +51,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-        # with:
-        # target: x86_64-unknown-linux-musl
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
       - run: cargo fmt --all --quiet -- --check
@@ -74,26 +72,23 @@ jobs:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: x86_64-unknown-linux-musl
-
       - name: Create release build
         run: cargo build --locked --release
 
       - name: Confirm release results
         run: |
           ls -l target/release/lx
-          mv target/release/lx lx-linux-musl
+          mv target/release/lx lx-linux
 
       - name: Generate Release Name
         id: release_name
         run: |
           SHA=$(git rev-parse --short HEAD)
-          echo "release_name=lx-${SHA}" >> $GITHUB_OUTPUT
+          echo "release_name=lx-${SHA}" >> "$GITHUB_OUTPUT"
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: lx-linux-musl
+          files: lx-linux
           fail_on_unmatched_files: true
           name: ${{ steps.release_name.outputs.release_name }}
           tag_name: ${{ steps.release_name.outputs.release_name }}
@@ -124,7 +119,7 @@ jobs:
           fi
 
           echo "state: $STATE"
-          echo "state=$STATE" >> $GITHUB_OUTPUT
+          echo "state=$STATE" >> "$GITHUB_OUTPUT"
     outputs:
       state: ${{ steps.check.outputs.state }}
 
