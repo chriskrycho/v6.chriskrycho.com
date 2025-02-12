@@ -250,7 +250,7 @@ impl From<serial::Retraction> for Retraction {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Book {
    title: Option<String>,
-   author: Option<String>,
+   author: Option<serial::Authorship>,
    /// Year is a `String`, rather than something like a `u16`, because years
    /// are a lot more complicated than a number represents. If I write "400
    /// B.C.", for example, the system should still work.

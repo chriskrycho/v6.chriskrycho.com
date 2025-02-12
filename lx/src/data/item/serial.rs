@@ -108,7 +108,7 @@ pub struct Subscribe {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Book {
    pub title: Option<String>,
-   pub author: Option<String>,
+   pub author: Option<Authorship>,
    /// Year is a `String`, rather than something like a `u16`, because years
    /// are a lot more complicated than a number represents. If I write "400
    /// B.C.", for example, the system should still work.
@@ -116,8 +116,15 @@ pub struct Book {
    pub editors: Option<Vec<String>>,
    pub translators: Option<Vec<String>>,
    pub cover: Option<Image>,
-   pub link: Option<String>,
+   pub link: Option<String>, // URL or Bookshop - much like `Image`
    pub review: Option<Review>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Authorship {
+   Single(String),
+   Multi(Vec<String>),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
