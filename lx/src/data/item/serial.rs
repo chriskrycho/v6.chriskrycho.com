@@ -11,7 +11,7 @@ use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::data::image::serial::Image;
+use crate::data::{image::serial::Image, item::nice_list};
 
 #[derive(Deserialize, Debug, Default)]
 pub struct Item {
@@ -113,8 +113,8 @@ pub struct Book {
    /// are a lot more complicated than a number represents. If I write "400
    /// B.C.", for example, the system should still work.
    pub year: Option<String>,
-   pub editors: Option<Vec<String>>,
-   pub translators: Option<Vec<String>>,
+   pub editors: Option<Authorship>,
+   pub translators: Option<Authorship>,
    pub cover: Option<Image>,
    pub link: Option<String>, // URL or Bookshop - much like `Image`
    pub review: Option<Review>,
@@ -125,6 +125,16 @@ pub struct Book {
 pub enum Authorship {
    Single(String),
    Multi(Vec<String>),
+}
+
+impl fmt::Display for Authorship {
+   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+      let s = match self {
+         Authorship::Single(name) => name.to_owned(),
+         Authorship::Multi(names) => nice_list(names).unwrap_or_default(),
+      };
+      write!(f, "{s}")
+   }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

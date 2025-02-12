@@ -2,6 +2,7 @@ pub mod cascade;
 pub mod serial;
 
 use std::collections::HashMap;
+use std::fmt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::path::StripPrefixError;
@@ -250,13 +251,13 @@ impl From<serial::Retraction> for Retraction {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Book {
    title: Option<String>,
-   author: Option<serial::Authorship>,
+   author: Option<String>,
    /// Year is a `String`, rather than something like a `u16`, because years
    /// are a lot more complicated than a number represents. If I write "400
    /// B.C.", for example, the system should still work.
    year: Option<String>,
-   editors: Option<Vec<String>>,
-   translators: Option<Vec<String>>,
+   editors: Option<String>,
+   translators: Option<String>,
    cover: Option<Image>,
    link: Option<String>,
    pub review: Option<serial::Review>,
@@ -277,10 +278,10 @@ impl From<serial::Book> for Book {
    ) -> Self {
       Book {
          title,
-         author,
+         author: author.map(|a| a.to_string()),
          year,
-         editors,
-         translators,
+         editors: editors.map(|e| e.to_string()),
+         translators: translators.map(|t| t.to_string()),
          cover: cover.map(Image::from),
          link,
          review,
@@ -513,14 +514,30 @@ impl std::fmt::Display for WorkMissingFrom {
    }
 }
 
-fn nice_list(strings: &[&str]) -> Option<String> {
+fn nice_list<I, S>(strings: I) -> Option<String>
+where
+   I: IntoIterator<Item = S>,
+   S: fmt::Display,
+{
+   // Might be a thing to think about cleaning up later to reduce allocations,
+   // but honestly I don’t think it will matter very often!
+   let strings = strings.into_iter().collect::<Vec<_>>();
    match strings.len() {
       0 => None,
       1 => Some(strings[0].to_string()),
       2 => Some(format!("{} and {}", strings[0], strings[1])),
       _ => {
          let (last, init) = strings.split_last().unwrap();
-         Some(format!("{}, and {last}", init.join(", ")))
+         Some(format!(
+            "{}, and {last}",
+            init.iter().fold(String::new(), |acc, s| {
+               if acc.is_empty() {
+                  s.to_string()
+               } else {
+                  acc + ", " + &s.to_string()
+               }
+            })
+         ))
       }
    }
 }
@@ -583,6 +600,6 @@ mod tests {
       );
       assert_eq!(nice_list(&["a", "b"]), Some(String::from("a and b")));
       assert_eq!(nice_list(&["a"]), Some(String::from("a")));
-      assert_eq!(nice_list(&[]), None);
+      assert_eq!(nice_list(&Vec::<String>::new()), None);
    }
 }
